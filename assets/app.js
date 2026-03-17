@@ -527,8 +527,12 @@ function getFinishNameForCarId(carId){
   }
 
   function getEnduranceRuleStateForTeam(teamId, raceId){
-    const minStint = Math.max(0, parseInt(state.modes.endurance?.minStintLaps||0,10) || 0);
-    const maxStint = Math.max(0, parseInt(state.modes.endurance?.maxStintLaps||0,10) || 0);
+    const race = raceId ? getRaceById(raceId) : null;
+    const minStint = Math.max(0, parseInt((race?.enduranceMinStintLaps ?? state.modes.endurance?.minStintLaps ?? 0),10) || 0);
+    const maxStint = Math.max(0, parseInt((race?.enduranceMaxStintLaps ?? state.modes.endurance?.maxStintLaps ?? 0),10) || 0);
+    const penaltySecondsPerViolation = Math.max(0, parseInt((race?.endurancePenaltySecondsPerViolation ?? state.modes.endurance?.penaltySecondsPerViolation ?? 0),10) || 0);
+    const penaltyLapThresholdSeconds = Math.max(0, parseInt((race?.endurancePenaltyLapThresholdSeconds ?? state.modes.endurance?.penaltyLapThresholdSeconds ?? 0),10) || 0);
+    const penaltyLapsPerThreshold = Math.max(0, parseInt((race?.endurancePenaltyLapsPerThreshold ?? state.modes.endurance?.penaltyLapsPerThreshold ?? 1),10) || 0);
     let stints = getEnduranceStintsForRaceTeam(raceId, teamId).slice();
     const ai = getEnduranceActiveInfo(teamId);
     if(ai && raceId && raceId === (state.session.currentRaceId||'')){
@@ -544,13 +548,33 @@ function getFinishNameForCarId(carId){
     const tooShort = minStint>0 ? stints.filter(st => Number(st.lapCount||0) < minStint) : [];
     const tooLong = maxStint>0 ? stints.filter(st => Number(st.lapCount||0) > maxStint) : [];
     const violations = [...tooShort, ...tooLong];
+    const penaltySecondsTotal = violations.length * penaltySecondsPerViolation;
+    const projectedDeductedLaps = (penaltyLapThresholdSeconds>0 && penaltyLapsPerThreshold>0)
+      ? (Math.floor(penaltySecondsTotal / penaltyLapThresholdSeconds) * penaltyLapsPerThreshold)
+      : 0;
+    const deductedLaps = race?.endedAt ? projectedDeductedLaps : 0;
     let statusText = 'OK';
-    if(tooShort.length && tooLong.length) statusText = `AW • Stint außerhalb ${minStint}-${maxStint} Runden`;
-    else if(tooShort.length) statusText = 'AW • Stint < ' + minStint + ' Runden';
-    else if(tooLong.length) statusText = 'AW • Stint > ' + maxStint + ' Runden';
+    if(false && tooShort.length && tooLong.length) statusText = `AW • Stint außerhalb ${minStint}-${maxStint} Runden`;
+    else if(false && tooShort.length) statusText = 'AW • Stint < ' + minStint + ' Runden';
+    else if(false && tooLong.length) statusText = 'AW • Stint > ' + maxStint + ' Runden';
+    if(violations.length){
+      const reasons = [];
+      if(tooShort.length) reasons.push((tooShort.length===1 ? 'Stint' : (tooShort.length+'x Stint')) + ' < ' + minStint + ' Runden');
+      if(tooLong.length) reasons.push((tooLong.length===1 ? 'Stint' : (tooLong.length+'x Stint')) + ' > ' + maxStint + ' Runden');
+      const penalties = [];
+      if(penaltySecondsTotal>0) penalties.push('+' + penaltySecondsTotal + 's');
+      if(projectedDeductedLaps>0) penalties.push((race?.endedAt ? '-' : 'nach Rennen -') + projectedDeductedLaps + ' Runde' + (projectedDeductedLaps===1 ? '' : 'n'));
+      statusText = 'Regelverstoss - ' + reasons.join(' - ') + (penalties.length ? ' - ' + penalties.join(' - ') : '');
+    }
     return {
       minStint,
       maxStint,
+      penaltySecondsPerViolation,
+      penaltySecondsTotal,
+      penaltyLapThresholdSeconds,
+      penaltyLapsPerThreshold,
+      projectedDeductedLaps,
+      deductedLaps,
       stints,
       tooShort,
       tooLong,
@@ -672,7 +696,7 @@ function getTeamsForMode(mode){
         single:{ finishMode:'time', timeLimitSec:180, lapLimit:20 },
         team:{ finishMode:'time', timeLimitSec:180, lapLimit:20, pointsScheme:'10,8,6,5,4,3,2,1', selectedDriverIds:[], teams:[{id:uid(), name:'Team 1', driverIds:[]},{id:uid(), name:'Team 2', driverIds:[]}] },
         loop:{ trainingSec:60, raceSec:120 },
-        endurance:{ durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, activeByTeamId:{}, stintHistoryByRace:{}, teams:[{id:uid(), name:'Team 1', driverIds:[]},{id:uid(), name:'Team 2', driverIds:[]}] }
+        endurance:{ durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, penaltySecondsPerViolation:0, penaltyLapThresholdSeconds:0, penaltyLapsPerThreshold:1, activeByTeamId:{}, stintHistoryByRace:{}, teams:[{id:uid(), name:'Team 1', driverIds:[]},{id:uid(), name:'Team 2', driverIds:[]}] }
       },
       session:{
         state:'IDLE', startedAt:null, startedAtMrc:null, pausedAt:null, pausedAtMrc:null, pauseAccumMs:0, pauseAccumMrcMs:0,
@@ -791,9 +815,12 @@ function getTeamsForMode(mode){
       if(!Number.isFinite(Number(merged.modes.team.timeLimitSec))) merged.modes.team.timeLimitSec = 180;
       if(!Number.isFinite(Number(merged.modes.team.lapLimit))) merged.modes.team.lapLimit = 20;
       if(!merged.modes.team.pointsScheme) merged.modes.team.pointsScheme = '10,8,6,5,4,3,2,1';
-      if(!merged.modes.endurance) merged.modes.endurance = { durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, activeByTeamId:{}, stintHistoryByRace:{}, teams:[] };
+      if(!merged.modes.endurance) merged.modes.endurance = { durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, penaltySecondsPerViolation:0, penaltyLapThresholdSeconds:0, penaltyLapsPerThreshold:1, activeByTeamId:{}, stintHistoryByRace:{}, teams:[] };
       if(!Number.isFinite(Number(merged.modes.endurance.maxStintLaps))) merged.modes.endurance.maxStintLaps = 0;
       if(!Number.isFinite(Number(merged.modes.endurance.minStintLaps))) merged.modes.endurance.minStintLaps = 5;
+      if(!Number.isFinite(Number(merged.modes.endurance.penaltySecondsPerViolation))) merged.modes.endurance.penaltySecondsPerViolation = 0;
+      if(!Number.isFinite(Number(merged.modes.endurance.penaltyLapThresholdSeconds))) merged.modes.endurance.penaltyLapThresholdSeconds = 0;
+      if(!Number.isFinite(Number(merged.modes.endurance.penaltyLapsPerThreshold))) merged.modes.endurance.penaltyLapsPerThreshold = 1;
       if(!merged.modes.endurance.activeByTeamId || typeof merged.modes.endurance.activeByTeamId!=='object') merged.modes.endurance.activeByTeamId = {};
       if(!merged.modes.endurance.stintHistoryByRace || typeof merged.modes.endurance.stintHistoryByRace!=='object') merged.modes.endurance.stintHistoryByRace = {};
       if(typeof merged.audio.sayPersonalBestSeason!=='boolean') merged.audio.sayPersonalBestSeason = true;
@@ -1030,13 +1057,54 @@ function downloadJson(filename, obj){
     const d = new Date();
     const fn = `zeitnahme_backup_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
     downloadJson(fn, payload);
-    toast('Export', 'Backup exportiert.', 'ok');
-    logLine('Export Backup: '+fn);
+    toast('Backup', 'App-Backup exportiert.', 'ok');
+    logLine('Export App-Backup: '+fn);
   }
 
   function normalizeName(s){ return String(s||'').trim().toLowerCase(); }
+  function normalizeChipCode(s){ return String(s||'').trim().toUpperCase(); }
 
-  function importStammdatenFromJson(obj, allowDupNames=false){
+  function isRestoreStateCandidate(obj){
+    if(!obj || typeof obj!=='object' || Array.isArray(obj)) return false;
+    const keys = ['settings','masterData','session','tracks','raceDay','season','modes','ui','audio'];
+    return keys.some(k => Object.prototype.hasOwnProperty.call(obj, k));
+  }
+
+  function extractRestorePayload(parsed){
+    if(parsed && parsed.kind==='zeitnahme_full_v1' && parsed.state && typeof parsed.state==='object'){
+      return parsed.state;
+    }
+    if(parsed && parsed.kind==='zeitnahme_stammdaten_v1'){
+      throw new Error('restore_received_masterdata_export');
+    }
+    if(parsed && parsed.kind==='zeitnahme_audio_db_v1'){
+      throw new Error('restore_received_audio_export');
+    }
+    if(isRestoreStateCandidate(parsed)){
+      return parsed;
+    }
+    throw new Error('restore_invalid_file');
+  }
+
+  async function importStammdatenFile(file, allowDupNames=false){
+    if(!file) throw new Error('import_missing_file');
+    const text = await file.text();
+    const obj = JSON.parse(text);
+    return importStammdatenFromJson(obj, allowDupNames);
+  }
+
+  async function restoreStateFromFile(file){
+    if(!file) throw new Error('restore_missing_file');
+    const parsed = JSON.parse(await file.text());
+    const restorePayload = extractRestorePayload(parsed);
+    state = deepMerge(defaultState(), restorePayload);
+    ensureAutoEntities(state);
+    saveState();
+    renderAll();
+    return true;
+  }
+
+  function importStammdatenFromJsonLegacy1(obj, allowDupNames=false){
     if(!obj || (obj.kind!=='zeitnahme_stammdaten_v1' && !(obj.drivers&&obj.cars))){
       toast('Import', 'Ungültige Datei.', 'err');
       return;
@@ -1086,6 +1154,110 @@ function downloadJson(filename, obj){
     renderAll();
     toast('Import', `Fahrer neu: ${addD}, übersprungen: ${skipD} • Autos neu: ${addC}, übersprungen: ${skipC}`, 'ok');
     logLine(`Import Stammdaten: Fahrer neu=${addD} skip=${skipD}, Autos neu=${addC} skip=${skipC}`);
+  }
+
+  function importStammdatenFromJsonLegacy2(obj, allowDupNames=false){
+    if(!obj || (obj.kind!=='zeitnahme_stammdaten_v1' && !(obj.drivers&&obj.cars))){
+      throw new Error('import_invalid_masterdata_file');
+    }
+    const driversIn = Array.isArray(obj.drivers) ? obj.drivers : [];
+    const carsIn = Array.isArray(obj.cars) ? obj.cars : [];
+
+    if(!state.masterData) state.masterData = {drivers:[], cars:[]};
+    if(!Array.isArray(state.masterData.drivers)) state.masterData.drivers = [];
+    if(!Array.isArray(state.masterData.cars)) state.masterData.cars = [];
+    const drivers = state.masterData.drivers;
+    const cars = state.masterData.cars;
+
+    const driverIdSet = new Set(drivers.map(d=>d.id));
+    const driverNameSet = new Set(drivers.map(d=>normalizeName(d.name)));
+    const carIdSet = new Set(cars.map(c=>c.id));
+    const carChipSet = new Set(cars.map(c=>normalizeChipCode(c.chipCode ?? c.chipId ?? '')).filter(Boolean));
+
+    let addD=0, skipD=0, addC=0, skipC=0;
+
+    for(const d of driversIn){
+      if(!d || !d.id){ skipD++; continue; }
+      const nameKey = normalizeName(d.name);
+      if(driverIdSet.has(d.id)){ skipD++; continue; }
+      if(!allowDupNames && nameKey && driverNameSet.has(nameKey)){ skipD++; continue; }
+      const importedDriver = JSON.parse(JSON.stringify(d));
+      drivers.push(importedDriver);
+      driverIdSet.add(importedDriver.id);
+      if(nameKey) driverNameSet.add(nameKey);
+      addD++;
+    }
+
+    for(const c of carsIn){
+      if(!c || !c.id){ skipC++; continue; }
+      const chip = normalizeChipCode(c.chipCode ?? c.chipId ?? '');
+      if(carIdSet.has(c.id)){ skipC++; continue; }
+      if(chip && carChipSet.has(chip)){ skipC++; continue; }
+      const importedCar = JSON.parse(JSON.stringify(c));
+      if(chip) importedCar.chipCode = chip;
+      cars.push(importedCar);
+      carIdSet.add(importedCar.id);
+      if(chip) carChipSet.add(chip);
+      addC++;
+    }
+
+    saveState();
+    renderAll();
+    toast('Import', `Fahrer neu: ${addD}, Ã¼bersprungen: ${skipD} â€¢ Autos neu: ${addC}, Ã¼bersprungen: ${skipC}`, 'ok');
+    logLine(`Import Stammdaten: Fahrer neu=${addD} skip=${skipD}, Autos neu=${addC} skip=${skipC}`);
+    return { addDrivers:addD, skipDrivers:skipD, addCars:addC, skipCars:skipC };
+  }
+
+  function importStammdatenFromJson(obj, allowDupNames=false){
+    if(!obj || (obj.kind!=='zeitnahme_stammdaten_v1' && !(obj.drivers&&obj.cars))){
+      throw new Error('import_invalid_masterdata_file');
+    }
+    const driversIn = Array.isArray(obj.drivers) ? obj.drivers : [];
+    const carsIn = Array.isArray(obj.cars) ? obj.cars : [];
+
+    if(!state.masterData) state.masterData = {drivers:[], cars:[]};
+    if(!Array.isArray(state.masterData.drivers)) state.masterData.drivers = [];
+    if(!Array.isArray(state.masterData.cars)) state.masterData.cars = [];
+    const drivers = state.masterData.drivers;
+    const cars = state.masterData.cars;
+
+    const driverIdSet = new Set(drivers.map(d=>d.id));
+    const driverNameSet = new Set(drivers.map(d=>normalizeName(d.name)));
+    const carIdSet = new Set(cars.map(c=>c.id));
+    const carChipSet = new Set(cars.map(c=>normalizeChipCode(c.chipCode ?? c.chipId ?? '')).filter(Boolean));
+
+    let addD=0, skipD=0, addC=0, skipC=0;
+
+    for(const d of driversIn){
+      if(!d || !d.id){ skipD++; continue; }
+      const nameKey = normalizeName(d.name);
+      if(driverIdSet.has(d.id)){ skipD++; continue; }
+      if(!allowDupNames && nameKey && driverNameSet.has(nameKey)){ skipD++; continue; }
+      const importedDriver = JSON.parse(JSON.stringify(d));
+      drivers.push(importedDriver);
+      driverIdSet.add(importedDriver.id);
+      if(nameKey) driverNameSet.add(nameKey);
+      addD++;
+    }
+
+    for(const c of carsIn){
+      if(!c || !c.id){ skipC++; continue; }
+      const chip = normalizeChipCode(c.chipCode ?? c.chipId ?? '');
+      if(carIdSet.has(c.id)){ skipC++; continue; }
+      if(chip && carChipSet.has(chip)){ skipC++; continue; }
+      const importedCar = JSON.parse(JSON.stringify(c));
+      if(chip) importedCar.chipCode = chip;
+      cars.push(importedCar);
+      carIdSet.add(importedCar.id);
+      if(chip) carChipSet.add(chip);
+      addC++;
+    }
+
+    saveState();
+    renderAll();
+    toast('Import', `Fahrer neu: ${addD}, uebersprungen: ${skipD} | Autos neu: ${addC}, uebersprungen: ${skipC}`, 'ok');
+    logLine(`Import Stammdaten: Fahrer neu=${addD} skip=${skipD}, Autos neu=${addC} skip=${skipC}`);
+    return { addDrivers:addD, skipDrivers:skipD, addCars:addC, skipCars:skipC };
   }
 
 
@@ -1231,7 +1403,7 @@ function openPresenterWindow(){
         const st = computeTeamStandingsGlobal(relevantLaps, race.mode, (state.session.finish?.pending?state.session.finish:null));
         rows = st.map((x,idx)=>({
           pos: idx+1,
-          name: (race.mode==='endurance' && x.compliant===false) ? ((x.name||'Team') + ' • AW') : x.name,
+          name: x.name,
           laps: x.lapCount,
           totalMs: x.totalMs,
           bestMs: x.bestMs ?? null,
@@ -2676,6 +2848,9 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       const durNode = document.getElementById('endDur');
       const minNode = document.getElementById('endMinStintLaps');
       const maxNode = document.getElementById('endMaxStintLaps');
+      const penaltyNode = document.getElementById('endPenaltySeconds');
+      const thresholdNode = document.getElementById('endPenaltyLapThresholdSeconds');
+      const lapsNode = document.getElementById('endPenaltyLapsPerThreshold');
       if(durNode){
         const v = Math.max(1, parseInt(durNode.value||0,10) || 0);
         if(Number.isFinite(v) && v > 0) state.modes.endurance.durationMin = v;
@@ -2685,6 +2860,15 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       }
       if(maxNode){
         state.modes.endurance.maxStintLaps = Math.max(0, parseInt(maxNode.value||0,10) || 0);
+      }
+      if(penaltyNode){
+        state.modes.endurance.penaltySecondsPerViolation = Math.max(0, parseInt(penaltyNode.value||0,10) || 0);
+      }
+      if(thresholdNode){
+        state.modes.endurance.penaltyLapThresholdSeconds = Math.max(0, parseInt(thresholdNode.value||0,10) || 0);
+      }
+      if(lapsNode){
+        state.modes.endurance.penaltyLapsPerThreshold = Math.max(0, parseInt(lapsNode.value||0,10) || 0);
       }
     }catch{}
   }
@@ -2714,6 +2898,9 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       race.enduranceDurationMin = getNormalizedEnduranceDurationMin();
       race.enduranceMinStintLaps = Math.max(0, parseInt(state.modes.endurance?.minStintLaps||0,10) || 0);
       race.enduranceMaxStintLaps = Math.max(0, parseInt(state.modes.endurance?.maxStintLaps||0,10) || 0);
+      race.endurancePenaltySecondsPerViolation = Math.max(0, parseInt(state.modes.endurance?.penaltySecondsPerViolation||0,10) || 0);
+      race.endurancePenaltyLapThresholdSeconds = Math.max(0, parseInt(state.modes.endurance?.penaltyLapThresholdSeconds||0,10) || 0);
+      race.endurancePenaltyLapsPerThreshold = Math.max(0, parseInt(state.modes.endurance?.penaltyLapsPerThreshold||0,10) || 0);
     }
     rd.races.push(race);
     state.session.currentRaceId = id;
@@ -3145,7 +3332,13 @@ function singleTick(){
         if(endDurPage) endDurPage.value = String(state.modes.endurance.durationMin);
         if(endMinPage) endMinPage.value = String(state.modes.endurance.minStintLaps);
         if(endMaxPage) endMaxPage.value = String(state.modes.endurance.maxStintLaps);
-        logLine(`Langstrecke Startparameter: ${state.modes.endurance.durationMin} Min, Mindeststint ${state.modes.endurance.minStintLaps}, Max-Stint ${state.modes.endurance.maxStintLaps||0}`);
+        const endPenaltyPage = document.getElementById('endPenaltySeconds');
+        const endPenaltyThresholdPage = document.getElementById('endPenaltyLapThresholdSeconds');
+        const endPenaltyLapsPage = document.getElementById('endPenaltyLapsPerThreshold');
+        if(endPenaltyPage) endPenaltyPage.value = String(state.modes.endurance.penaltySecondsPerViolation||0);
+        if(endPenaltyThresholdPage) endPenaltyThresholdPage.value = String(state.modes.endurance.penaltyLapThresholdSeconds||0);
+        if(endPenaltyLapsPage) endPenaltyLapsPage.value = String(state.modes.endurance.penaltyLapsPerThreshold||0);
+        logLine(`Langstrecke Startparameter: ${state.modes.endurance.durationMin} Min, Mindeststint ${state.modes.endurance.minStintLaps}, Max-Stint ${state.modes.endurance.maxStintLaps||0}, Strafe ${state.modes.endurance.penaltySecondsPerViolation||0}s, Rundenabzug ab ${state.modes.endurance.penaltyLapThresholdSeconds||0}s: ${state.modes.endurance.penaltyLapsPerThreshold||0}`);
       }
     }catch{}
 
@@ -3517,6 +3710,7 @@ function finishRaceNow(reason){
     logLine(`Read ohne Session: ${dn?dn+': ':''}${car.name} → ${msToTime(lapMs, 3)} • MRC`);
     renderDashboard();
     renderSessionControl();
+    try{ sendPresenterSnapshot(true); }catch{}
   }
 
   function handlePass(chip, ts){
@@ -3738,6 +3932,7 @@ const dn = getDriverNameForCar(car);
     logLine(`Lap: ${dn?dn+': ':''}${car.name} → ${msToTime(lapMs, 3)} (${lapPhase} • MRC)`);
     renderDashboard();
     renderSessionControl();
+    try{ sendPresenterSnapshot(true); }catch{}
     
 // finish window: once pending, the next valid lap for each active car counts as "finished"
 if(state.session.finish?.pending){
@@ -4843,8 +5038,6 @@ if(!stopRead){
   function getEnduranceStatusRows(){
     const teams = state.modes.endurance?.teams || [];
     const rid = state.session.currentRaceId || '';
-    const minStint = Math.max(0, parseInt(state.modes.endurance?.minStintLaps||0,10) || 0);
-    const maxStint = Math.max(0, parseInt(state.modes.endurance?.maxStintLaps||0,10) || 0);
     const activeMap = state.modes.endurance?.activeByTeamId || {};
     return teams.map(t=>{
       const ai = activeMap[t.id] || null;
@@ -4858,8 +5051,8 @@ if(!stopRead){
         driverName:d?.name||'—',
         carName:car?.name||'—',
         stint,
-        minStint,
-        maxStint,
+        minStint: rule.minStint || 0,
+        maxStint: rule.maxStint || 0,
         compliant: !!rule.compliant,
         invalidStintCount: rule.invalidStintCount||0,
         statusText: rule.statusText || 'OK'
@@ -4877,7 +5070,7 @@ if(!stopRead){
           <table class="table">
             <thead><tr><th>Team</th><th>Aktiver Fahrer</th><th>Stint</th><th>Status</th><th>Auto</th></tr></thead>
             <tbody>
-              ${rows.map(r=>`<tr><td>${esc(r.teamName)}</td><td>${esc(r.driverName)}</td><td>${r.stint} / min ${r.minStint}${r.maxStint>0 ? ' / max '+r.maxStint : ''}</td><td>${r.compliant?'<span class="ok">OK</span>':'<span class="err">'+esc(r.statusText||'AW')+'</span>'}</td><td>${esc(r.carName)}</td></tr>`).join('')}
+            ${rows.map(r=>`<tr><td>${esc(r.teamName)}</td><td>${esc(r.driverName)}</td><td>${r.stint} / min ${r.minStint}${r.maxStint>0 ? ' / max '+r.maxStint : ''}</td><td>${r.compliant?'<span class="ok">OK</span>':'<span class="err">'+esc(r.statusText||'Regelverstoss')+'</span>'}</td><td>${esc(r.carName)}</td></tr>`).join('')}
             </tbody>
           </table>
         </div>
@@ -5085,23 +5278,27 @@ arr.sort((a,b)=>{
           }
         }
         const raceTotal = raceId ? getTeamRaceTotalFromStartMs(raceId, t.id, mode, rel) : totalMs;
-        const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[] };
+        const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[], penaltySecondsTotal:0, deductedLaps:0, projectedDeductedLaps:0 };
         return {
           id:t.id,
           name:t.name||'Team',
           members,
-          lapCount,
-          totalMs: (raceTotal==null ? totalMs : raceTotal),
+          rawLapCount: lapCount,
+          rawTotalMs: (raceTotal==null ? totalMs : raceTotal),
+          lapCount: mode==='endurance' ? Math.max(0, lapCount - (rule.deductedLaps||0)) : lapCount,
+          totalMs: mode==='endurance' ? (((raceTotal==null ? totalMs : raceTotal) || 0) + ((rule.penaltySecondsTotal||0) * 1000)) : (raceTotal==null ? totalMs : raceTotal),
           bestMs,
           lastMs,
           finished,
           compliant: mode==='endurance' ? !!rule.compliant : true,
           invalidStintCount: mode==='endurance' ? (rule.invalidStintCount||0) : 0,
-          statusText: mode==='endurance' ? (rule.statusText||'OK') : 'OK'
+          statusText: mode==='endurance' ? (rule.statusText||'OK') : 'OK',
+          penaltySecondsTotal: mode==='endurance' ? (rule.penaltySecondsTotal||0) : 0,
+          deductedLaps: mode==='endurance' ? (rule.deductedLaps||0) : 0,
+          projectedDeductedLaps: mode==='endurance' ? (rule.projectedDeductedLaps||0) : 0
         };
       });
       rows.sort((a,b)=>{
-        if(mode==='endurance' && (!!a.compliant)!=(!!b.compliant)) return a.compliant ? -1 : 1;
         if(b.lapCount!==a.lapCount) return b.lapCount-a.lapCount;
         return (a.totalMs||0)-(b.totalMs||0);
       });
@@ -5217,7 +5414,7 @@ function buildPodiumConfettiHtml(){
               <tbody>
                 ${rest.map((t,i)=>`<tr>
                   <td class="mono">${i+4}</td>
-                  <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">Außer Wertung</div>`:''}</td>
+                  <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">${esc(t.statusText||'Regelverstoss')}</div>`:''}</td>
                   <td class="mono">${t.lapCount}</td>
                   <td class="mono">${t.totalMs?msToTime(t.totalMs, dec):'—'}</td>
                   <td class="mono">${t.bestMs!=null && isFinite(t.bestMs)?msToTime(t.bestMs, dec):'—'}</td>
@@ -5278,7 +5475,7 @@ function buildPodiumConfettiHtml(){
       const teamRows = computeTeamStandingsGlobal(relevantLaps.filter(l=>!raceId || l.raceId===raceId), raceMode, (state.session.finish?.pending?state.session.finish:null));
       const rowsHtml = teamRows.map((t,i)=>{
         const pos = i+1;
-        const status = (raceMode==='endurance') ? (t.compliant===false ? `<span class="pill bad">AW</span><div class="muted tiny">${esc(t.statusText||'')}</div>` : `<span class="pill ok">OK</span>`) : '';
+        const status = (raceMode==='endurance') ? (t.compliant===false ? `<span class="pill bad">Strafe</span><div class="muted tiny">${esc(t.statusText||'')}</div>` : `<span class="pill ok">OK</span>`) : '';
         return `<tr>
           <td class="mono">${pos}</td>
           <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${status}</td>
@@ -5291,7 +5488,7 @@ function buildPodiumConfettiHtml(){
       }).join('');
 
       return `
-        <div class="muted">Teamwertung: Runden (primär), Gesamtzeit als Tie-Breaker. ${raceMode==='endurance' ? 'Teams mit zu kurzem Stint sind außer Wertung (AW).' : 'Best-/Letzte Runde und Durchschnittsgeschwindigkeit je Team.'}</div>
+        <div class="muted">Teamwertung: Runden (primaer), Gesamtzeit als Tie-Breaker. ${raceMode==='endurance' ? 'Regelverstoesse geben Strafsekunden; ab Schwellwert werden nach Rennende Runden abgezogen.' : 'Best-/Letzte Runde und Durchschnittsgeschwindigkeit je Team.'}</div>
         <div class="hr"></div>
         <table class="table dashBig">
           <thead><tr><th>#</th><th>Team</th><th>Runden</th><th>Gesamtzeit</th><th>Best</th><th>Letzte</th></tr></thead>
@@ -5992,7 +6189,19 @@ arr.sort((a,b)=>{
               <label>Maximalrunden pro Stint (0 = aus)</label>
               <input class="input" id="endMaxStintLaps" type="number" min="0" step="1" value="${esc(state.modes.endurance.maxStintLaps||0)}"/>
             </div>
-            <div class="muted small">Langstrecke wird immer als Zeitrennen gewertet. Jeder Stint muss mindestens diese Rundenzahl erreichen. Optional kann auch eine maximale Rundenzahl pro Stint geprüft werden.</div>
+            <div class="field">
+              <label>Strafzeit pro Regelverstoss (Sekunden)</label>
+              <input class="input" id="endPenaltySeconds" type="number" min="0" step="1" value="${esc(state.modes.endurance.penaltySecondsPerViolation||0)}"/>
+            </div>
+            <div class="field">
+              <label>Rundenabzug ab Strafzeit gesamt (Sekunden, 0 = aus)</label>
+              <input class="input" id="endPenaltyLapThresholdSeconds" type="number" min="0" step="1" value="${esc(state.modes.endurance.penaltyLapThresholdSeconds||0)}"/>
+            </div>
+            <div class="field">
+              <label>Abzuziehende Runden pro Schwellwert</label>
+              <input class="input" id="endPenaltyLapsPerThreshold" type="number" min="0" step="1" value="${esc(state.modes.endurance.penaltyLapsPerThreshold||0)}"/>
+            </div>
+            <div class="muted small">Langstrecke wird immer als Zeitrennen gewertet. Jeder Stint muss mindestens diese Rundenzahl erreichen. Optional kann auch eine maximale Rundenzahl pro Stint geprueft werden. Bei Regelverstoessen werden Strafsekunden addiert; ab dem gesetzten Schwellwert werden nach Rennende Runden abgezogen.</div>
 
             <div class="hr"></div>
             <div class="field">
@@ -6028,14 +6237,20 @@ arr.sort((a,b)=>{
       const durNode = document.getElementById('endDur');
       const minNode = document.getElementById('endMinStintLaps');
       const maxNode = document.getElementById('endMaxStintLaps');
+      const penaltyNode = document.getElementById('endPenaltySeconds');
+      const thresholdNode = document.getElementById('endPenaltyLapThresholdSeconds');
+      const lapsNode = document.getElementById('endPenaltyLapsPerThreshold');
       state.modes.endurance.durationMin = clampInt(Number(durNode?.value||0), 1, 24*60);
       state.modes.endurance.minStintLaps = clampInt(Number(minNode?.value||0), 0, 99999);
       state.modes.endurance.maxStintLaps = clampInt(Number(maxNode?.value||0), 0, 99999);
+      state.modes.endurance.penaltySecondsPerViolation = clampInt(Number(penaltyNode?.value||0), 0, 99999);
+      state.modes.endurance.penaltyLapThresholdSeconds = clampInt(Number(thresholdNode?.value||0), 0, 99999);
+      state.modes.endurance.penaltyLapsPerThreshold = clampInt(Number(lapsNode?.value||0), 0, 99999);
       saveState();
       try{ renderSessionControl(); }catch(e){ console.warn('renderSessionControl failed after endurance settings save', e); }
       try{ renderDashboard(); }catch(e){ console.warn('renderDashboard failed after endurance settings save', e); }
     };
-    ['#endDur','#endMinStintLaps','#endMaxStintLaps'].forEach(sel=>{
+    ['#endDur','#endMinStintLaps','#endMaxStintLaps','#endPenaltySeconds','#endPenaltyLapThresholdSeconds','#endPenaltyLapsPerThreshold'].forEach(sel=>{
       const node = el.querySelector(sel);
       if(node) node.addEventListener('input', saveEnduranceSettings);
       if(node) node.addEventListener('change', ()=>{ saveEnduranceSettings(); toast('✅ gespeichert'); });
@@ -6075,12 +6290,18 @@ arr.sort((a,b)=>{
         const durNode = document.getElementById('endDur');
         const minNode = document.getElementById('endMinStintLaps');
         const maxNode = document.getElementById('endMaxStintLaps');
+        const penaltyNode = document.getElementById('endPenaltySeconds');
+        const thresholdNode = document.getElementById('endPenaltyLapThresholdSeconds');
+        const lapsNode = document.getElementById('endPenaltyLapsPerThreshold');
         state.modes.endurance.durationMin = clampInt(Number(durNode?.value||0), 1, 24*60);
         state.modes.endurance.minStintLaps = clampInt(Number(minNode?.value||0), 0, 99999);
         state.modes.endurance.maxStintLaps = clampInt(Number(maxNode?.value||0), 0, 99999);
+        state.modes.endurance.penaltySecondsPerViolation = clampInt(Number(penaltyNode?.value||0), 0, 99999);
+        state.modes.endurance.penaltyLapThresholdSeconds = clampInt(Number(thresholdNode?.value||0), 0, 99999);
+        state.modes.endurance.penaltyLapsPerThreshold = clampInt(Number(lapsNode?.value||0), 0, 99999);
         state.modes.activeMode='endurance';
         saveState();
-        logLine(`Langstrecke aktiviert: ${state.modes.endurance.durationMin} Min, Mindeststint ${state.modes.endurance.minStintLaps}, Max-Stint ${state.modes.endurance.maxStintLaps||0}`);
+        logLine(`Langstrecke aktiviert: ${state.modes.endurance.durationMin} Min, Mindeststint ${state.modes.endurance.minStintLaps}, Max-Stint ${state.modes.endurance.maxStintLaps||0}, Strafe ${state.modes.endurance.penaltySecondsPerViolation||0}s, Rundenabzug ab ${state.modes.endurance.penaltyLapThresholdSeconds||0}s: ${state.modes.endurance.penaltyLapsPerThreshold||0}`);
         renderAll();
         toast('✅ Langstrecke aktiv');
       }catch(e){
@@ -6834,25 +7055,29 @@ function computeTeamStandingsGlobal(laps, mode, finish){
       }
     }
     const raceTotal = raceId ? getTeamRaceTotalFromStartMs(raceId, t.id, mode, rel) : totalMs;
-    const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[] };
+    const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[], penaltySecondsTotal:0, deductedLaps:0, projectedDeductedLaps:0 };
     return {
       id:t.id,
       name:t.name||'Team',
       members,
-      lapCount,
-      totalMs: (raceTotal==null ? totalMs : raceTotal),
+      rawLapCount: lapCount,
+      rawTotalMs: (raceTotal==null ? totalMs : raceTotal),
+      lapCount: mode==='endurance' ? Math.max(0, lapCount - (rule.deductedLaps||0)) : lapCount,
+      totalMs: mode==='endurance' ? (((raceTotal==null ? totalMs : raceTotal) || 0) + ((rule.penaltySecondsTotal||0) * 1000)) : (raceTotal==null ? totalMs : raceTotal),
       bestMs,
       lastMs,
       finished,
       compliant: mode==='endurance' ? !!rule.compliant : true,
       invalidStintCount: mode==='endurance' ? (rule.invalidStintCount||0) : 0,
       statusText: mode==='endurance' ? (rule.statusText||'OK') : 'OK',
+      penaltySecondsTotal: mode==='endurance' ? (rule.penaltySecondsTotal||0) : 0,
+      deductedLaps: mode==='endurance' ? (rule.deductedLaps||0) : 0,
+      projectedDeductedLaps: mode==='endurance' ? (rule.projectedDeductedLaps||0) : 0,
       minStintLaps: mode==='endurance' ? (rule.minStint||0) : 0,
       stintCount: mode==='endurance' ? ((rule.stints||[]).length) : 0
     };
   });
   rows.sort((a,b)=>{
-    if(mode==='endurance' && (!!a.compliant)!=(!!b.compliant)) return a.compliant ? -1 : 1;
     if(b.lapCount!==a.lapCount) return b.lapCount-a.lapCount;
     return (a.totalMs||0)-(b.totalMs||0);
   });
@@ -7013,7 +7238,7 @@ function box(pos, data){
         <div class="podiumInfoCol">
           <div class="podiumName"><span class="nm">${esc(data.name)}</span>${data.finished?'<span class="finishFlag">🏁</span>':''}</div>
           <div class="podiumSub small muted">${esc(data.members)}</div>
-          ${(mode==='endurance' && data.compliant===false) ? `<div class="podiumSub small" style="color:#ff8f8f">Außer Wertung • ${esc(data.statusText||'')}</div>` : ''}
+          ${(mode==='endurance' && data.compliant===false) ? `<div class="podiumSub small" style="color:#ff8f8f">${esc(data.statusText||'Regelverstoss')}</div>` : ''}
           <div class="podiumStats small">
             ${(mode==='team')?`<div><span>Punkte</span><b>${data.points||0}</b></div>`:''}
             <div><span>Runden</span><b>${data.lapCount||0}</b></div>
@@ -7067,7 +7292,7 @@ const podiumHtml = `
         <tbody>
           ${rest.map((t,i)=>`<tr>
             <td class="mono">${i+4}</td>
-            <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">Außer Wertung</div>`:''}</td>
+            <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">${esc(t.statusText||'Regelverstoss')}</div>`:''}</td>
             <td class="mono">${t.lapCount}</td>
             <td class="mono">${t.totalMs?msToTime(t.totalMs, dec):'—'}</td>
             <td class="mono">${t.bestMs!=null && isFinite(t.bestMs)?msToTime(t.bestMs, dec):'—'}</td>
@@ -8764,7 +8989,6 @@ function renderRenntag(){
     function readSettingsForm(){
       return {
         appName: el.querySelector('#appName').value.trim() || 'Zeitnahme 2.0',
-        baudRate: Math.max(1, parseInt(el.querySelector('#baud').value,10)||19200),
         allowIdleReads: false,
         discordWebhook: String(el.querySelector('#webhook')?.value || '').trim(),
         discordAutoSend: !!el.querySelector('#discordAutoSend')?.checked,
@@ -8818,16 +9042,9 @@ function renderRenntag(){
             <div class="card settings-card" style="margin-bottom:12px">
             <div class="card-h"><h2>Allgemein</h2></div>
             <div class="card-b">
-              <div class="settings-form-row">
-                <div class="field">
-                  <label>Name im Header</label>
-                  <input class="input" id="appName" value="${esc(state.settings.appName)}"/>
-                </div>
-                <div class="field">
-                  <label>USB Baudrate</label>
-                  <input class="input" id="baud" type="number" min="1" step="1" value="${esc(state.settings.baudRate)}"/>
-                  <div class="muted">Standard: 19200</div>
-                </div>
+              <div class="field" style="margin-bottom:0">
+                <label>Name im Header</label>
+                <input class="input" id="appName" value="${esc(state.settings.appName)}"/>
               </div>
               <div class="settings-actionbar">
                 <div class="muted settings-action-note">Speichern uebernimmt alle editierbaren Felder in diesem Tab, inklusive Discord- und Massstab-Werten.</div>
@@ -8864,7 +9081,7 @@ function renderRenntag(){
           </div>
 
           <div class="settings-sectionlabel">Sicherung und Reset</div>
-          <div class="card settings-card" style="margin-bottom:12px">
+          <div class="card settings-card" id="settingsBackupCard" style="margin-bottom:12px">
             <div class="card-h"><h2>Backup / Restore</h2></div>
             <div class="card-b">
               <div class="muted">Backup exportiert alles als JSON. Restore importiert JSON und überschreibt den aktuellen Stand.</div>
@@ -8989,7 +9206,7 @@ function renderRenntag(){
             </div>
           </div>
 
-          <div class="card settings-card">
+          <div class="card settings-card" id="settingsDataExchangeCard">
             <div class="card-h"><h2>Import / Export</h2></div>
             <div class="card-b">
               <div class="settings-actions">
@@ -9009,6 +9226,86 @@ function renderRenntag(){
       </div>
       </div>
     `;
+
+    const backupCard = el.querySelector('#settingsBackupCard .card-b');
+    if(backupCard){
+      backupCard.innerHTML = `
+        <div class="settings-subcards settings-subcards-compact">
+          <div class="settings-subcard">
+            <div class="settings-tag">App-Backup</div>
+            <h3>Komplette App-Daten sichern</h3>
+            <div class="muted settings-subcopy">Exportiert Sessions, Renntag, Saison, Stammdaten und Einstellungen als JSON. Die Audio-DB wird separat im Audio-Tab exportiert.</div>
+            <div class="settings-actions">
+              <button class="btn" id="btnBackup">App-Backup exportieren</button>
+            </div>
+          </div>
+          <div class="settings-subcard">
+            <div class="settings-tag">Restore</div>
+            <h3>Backup zurueckspielen</h3>
+            <div class="muted settings-subcopy">Akzeptiert aktuelle App-Backups und aeltere rohe State-Backups. Stammdaten- und Audio-Exporte gehoeren nicht hier hinein.</div>
+            <div class="settings-actions">
+              <label class="btn" style="cursor:pointer;">
+                Backup importieren
+                <input id="fileRestore" type="file" accept="application/json" style="display:none"/>
+              </label>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const dataExchangeCard = el.querySelector('#settingsDataExchangeCard .card-b');
+    if(dataExchangeCard){
+      dataExchangeCard.innerHTML = `
+        <div class="settings-subcards settings-subcards-compact">
+          <div class="settings-subcard">
+            <div class="settings-tag">Stammdaten</div>
+            <h3>Fahrer und Autos austauschen</h3>
+            <div class="muted settings-subcopy">Exportiert und importiert nur Stammdaten. Bestehende Datensaetze werden nicht ueberschrieben; doppelte Chip-IDs werden uebersprungen.</div>
+            <div class="settings-actions">
+              <button class="btn" id="btnExportMaster">Stammdaten exportieren</button>
+            </div>
+            <div class="hr"></div>
+            <div class="field" style="margin-bottom:0">
+              <label>Stammdaten-Datei</label>
+              <input class="input settings-file-input" type="file" id="importFile" accept="application/json"/>
+            </div>
+            <label class="row settings-toggle" style="margin-top:12px">
+              <input type="checkbox" id="importAllowDupNames"/>
+              <span>Duplikate nach Name erlauben</span>
+            </label>
+            <div class="settings-actions">
+              <button class="btn" id="btnImportMaster">Stammdaten importieren</button>
+            </div>
+          </div>
+          <div class="settings-note">
+            <div class="settings-tag">Audio</div>
+            <h3 style="margin:8px 0 0">Audio-DB separat</h3>
+            <div class="muted settings-subcopy">Sounds liegen in IndexedDB und werden deshalb im Audio-Tab separat exportiert und importiert.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const generalFormRow = el.querySelector('.settings-form-row');
+    const baudField = el.querySelector('#baud')?.closest('.field');
+    if(baudField){
+      baudField.remove();
+      if(generalFormRow) generalFormRow.style.gridTemplateColumns = '1fr';
+    }
+
+    const lapTimeCard = el.querySelector('#setLapTimeSource')?.closest('.settings-card');
+    if(lapTimeCard) lapTimeCard.remove();
+
+    const settingsStacks = el.querySelectorAll('.settings-stack');
+    const dataExchangeCardNode = el.querySelector('#settingsDataExchangeCard');
+    const backupCardNode = el.querySelector('#settingsBackupCard');
+    const resetCardNode = el.querySelector('#btnResetAll')?.closest('.settings-card');
+    if(settingsStacks.length >= 2 && dataExchangeCardNode && backupCardNode){
+      settingsStacks[0].insertBefore(dataExchangeCardNode, resetCardNode || null);
+      const rightSectionLabel = settingsStacks[1].querySelector('.settings-sectionlabel');
+      if(rightSectionLabel) rightSectionLabel.textContent = 'Integrationen';
+    }
 
     el.querySelector('#saveSettings').onclick=()=>{
       saveSettingsFromForm({ notify:true, log:true });
@@ -9088,18 +9385,34 @@ function renderRenntag(){
       };
     }
 
-    el.querySelector('#btnBackup').onclick=()=>{
-      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href=url;
-      a.download = 'zeitnahme2_backup_' + new Date().toISOString().slice(0,10) + '.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 1500);
-      toast('Backup','Export gestartet.','ok');
-      logLine('Backup export gestartet');
+    const btnBackup = el.querySelector('#btnBackup');
+    if(btnBackup) btnBackup.onclick = ()=>{
+      exportAll();
+    };
+
+    const btnExportMaster = el.querySelector('#btnExportMaster');
+    if(btnExportMaster) btnExportMaster.onclick = ()=>{
+      exportStammdaten();
+    };
+
+    const btnImportMaster = el.querySelector('#btnImportMaster');
+    if(btnImportMaster) btnImportMaster.onclick = async ()=>{
+      const importFile = el.querySelector('#importFile');
+      const file = importFile?.files?.[0];
+      if(!file){ toast('Import','Bitte Datei auswaehlen.','warn'); return; }
+      try{
+        const allowDup = !!el.querySelector('#importAllowDupNames')?.checked;
+        await importStammdatenFile(file, allowDup);
+      }catch(err){
+        const code = String(err?.message || err || '');
+        const msg = code==='import_invalid_masterdata_file'
+          ? 'Ungueltige Stammdaten-Datei.'
+          : 'Konnte Datei nicht importieren.';
+        toast('Import', msg, 'err');
+        logLine('Import Fehler: ' + code);
+      } finally {
+        if(importFile) importFile.value = '';
+      }
     };
 
 
@@ -9128,19 +9441,18 @@ function renderRenntag(){
       const f = ev.target.files && ev.target.files[0];
       if(!f) return;
       try{
-        const parsed = JSON.parse(await f.text());
-        const restorePayload = (parsed && parsed.kind==='zeitnahme_full_v1' && parsed.state && typeof parsed.state==='object')
-          ? parsed.state
-          : parsed;
-        state = deepMerge(defaultState(), restorePayload);
-        ensureAutoEntities(state);
-        saveState();
-        toast('Restore','Import erfolgreich.','ok');
+        await restoreStateFromFile(f);
+        toast('Restore','Backup importiert.','ok');
         logLine('Restore import erfolgreich');
-        renderAll();
       }catch(e){
-        toast('Restore','Import fehlgeschlagen: ' + String(e?.message||e), 'err');
-        logLine('Restore Fehler: ' + String(e?.message||e));
+        const code = String(e?.message || e || '');
+        const msg = code==='restore_received_masterdata_export'
+          ? 'Das ist ein Stammdaten-Export. Bitte unten bei Stammdaten importieren.'
+          : (code==='restore_received_audio_export'
+            ? 'Das ist ein Audio-DB-Export. Bitte im Audio-Tab importieren.'
+            : 'Ungueltige Backup-Datei.');
+        toast('Restore', msg, 'err');
+        logLine('Restore Fehler: ' + code);
       } finally { ev.target.value=''; }
     };
 
@@ -9366,29 +9678,11 @@ sendPresenterSnapshot();
     document.getElementById('btnToggleLog').onclick=toggleLogPane;
     const btnToggleLogDock = document.getElementById('btnToggleLogDock');
     if(btnToggleLogDock) btnToggleLogDock.onclick = toggleLogPane;
+    const btnPresenter = document.getElementById('btnPresenter');
+    if(btnPresenter) btnPresenter.onclick = ()=>openPresenterWindow();
 
     wireLogResizer();
   
-    // Import / Export (Stammdaten)
-    const btnExportMaster = document.getElementById('btnExportMaster');
-    if(btnExportMaster) btnExportMaster.onclick = ()=>exportStammdaten();
-    const btnExportAll = document.getElementById('btnExportAll');
-    if(btnExportAll) btnExportAll.onclick = ()=>exportAll();
-
-    const btnImportMaster = document.getElementById('btnImportMaster');
-    if(btnImportMaster) btnImportMaster.onclick = async ()=>{
-      const file = document.getElementById('importFile')?.files?.[0];
-      if(!file){ toast('Import','Bitte Datei auswählen.','warn'); return; }
-      try{
-        const txt = await file.text();
-        const obj = JSON.parse(txt);
-        const allowDup = !!document.getElementById('importAllowDupNames')?.checked;
-        importStammdatenFromJson(obj, allowDup);
-      }catch(e){
-        toast('Import','Konnte Datei nicht lesen.','err');
-      }
-    };
-
 }
 
   // --------------------- Render all ---------------------
@@ -9468,10 +9762,12 @@ sendPresenterSnapshot();
     }, true);
     // raceDelete delegated
 
-    // Import/Export (delegated, robust gegen Re-Renders)
-    document.addEventListener('click', async (ev)=>{
+    // Legacy Import/Export path intentionally disabled; handled in renderEinstellungen.
+    if(false) document.addEventListener('click', async (ev)=>{
       const t = ev.target;
       if(!t || !t.id) return;
+      // handled directly in renderEinstellungen / wire to avoid duplicate exports/imports
+      return;
 
       if(t.id==='btnExportMaster'){
         try{ exportStammdaten(); }catch(e){ toast('Export','Fehler.','err'); logLine('Export error: '+(e?.message||e)); }
@@ -9512,5 +9808,3 @@ sendPresenterSnapshot();
   toast('Build', 'Geladen: ' + BUILD, 'ok');
   bleAutoReconnectOnLoad();
 })();
-    const btnPresenter = document.getElementById('btnPresenter');
-    if(btnPresenter) btnPresenter.onclick = ()=>openPresenterWindow();
