@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Zeitnahme – Presenter</title>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <style>
+    body{background:#05070d}
+    .presenter{padding:16px; overflow-x:hidden}
+    .topbar{display:grid; grid-template-columns:minmax(320px,360px) minmax(0,1fr); gap:12px; padding:10px 12px; border:1px solid var(--border); border-radius:18px; background:rgba(255,255,255,.03); align-items:start}
+    .topLeft{display:flex; align-items:flex-start; gap:12px; min-width:0}
+    .ptimer{display:block; min-width:4.8ch; font-size:76px; font-weight:900; letter-spacing:1px; line-height:1; text-align:left; font-variant-numeric:tabular-nums}
+    .pmono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-variant-numeric:tabular-nums}
+    .pbadge{border:1px solid var(--border); background:rgba(255,255,255,.02); padding:8px 10px; border-radius:12px}
+    .tableWrap{margin-top:14px}
+
+    .topMid{display:grid; grid-template-columns:max-content max-content max-content max-content minmax(280px,1fr); gap:8px 10px; align-items:start}
+    .midCell{border:1px solid var(--border); background:rgba(255,255,255,.02); padding:6px 8px; border-radius:12px; min-height:0; width:auto}
+    .midLabel{font-size:11px; opacity:.75; margin-bottom:2px}
+    .midValue{font-size:16px; line-height:1.15; font-variant-numeric:tabular-nums}
+    .midCell.trackDetailsCell{min-width:0; width:100%}
+    .midCell.trackDetailsCell .midValue{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .topRight{display:none}
+    .lastLapBox{display:none}
+    .lastLapBox .midValue{font-size:22px}
+
+    .podiumPresenter{display:block}
+    .rehInline{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; margin:12px 0 14px; align-items:stretch}
+    .rehCard{border:1px solid var(--border); background:rgba(255,255,255,.03); border-radius:16px}
+    .rehCardB{padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px}
+    .rehLabel{white-space:nowrap}
+    .rehValue{font-weight:800; text-align:right}
+    #pPodiumCard .card-h{display:none}
+    #pPodiumCard .card-b{padding:0; background:transparent}
+    #pPodiumCard{border:none; background:transparent; box-shadow:none; padding:0; overflow:visible}
+    @media (max-width:1100px){
+      .topbar{grid-template-columns:1fr}
+      .topMid{grid-template-columns:1fr}
+      .topRight{justify-content:flex-start}
+
+    }
+    /* make it match dashboard big table */
+    .table.dashBig{table-layout:fixed; width:100%}
+    .table.dashBig th:nth-child(1), .table.dashBig td:nth-child(1){width:28px; padding-left:6px; padding-right:4px; text-align:right}
+    .table.dashBig th:nth-child(2), .table.dashBig td:nth-child(2){width:38%; padding-left:8px}
+    .table.dashBig th:nth-child(3), .table.dashBig td:nth-child(3){width:78px}
+    .table.dashBig th:nth-child(4), .table.dashBig td:nth-child(4),
+    .table.dashBig th:nth-child(5), .table.dashBig td:nth-child(5),
+    .table.dashBig th:nth-child(6), .table.dashBig td:nth-child(6),
+    .table.dashBig th:nth-child(7), .table.dashBig td:nth-child(7){width:10.5%}
+    .table.dashBig td, .table.dashBig th{ font-size:24px !important; line-height:1.08 !important; padding:8px 10px !important; }
+    .table.dashBig td{vertical-align:middle}
+    .table.dashBig td.mono{ font-size:28px !important; font-weight:800; }
+    .table.dashBig .mono{ font-size: inherit !important; }
+    .table.dashBig .avatar{ width:38px; height:38px; }
+    .table.dashBig tbody tr{height:auto}
+    .table.dashBig tbody td{padding-top:7px !important; padding-bottom:7px !important;}
+.table.dashBig th:nth-child(2), .table.dashBig td:nth-child(2){white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .table.dashBig th:nth-child(1){letter-spacing:-0.02em}
+    .carSubRow td{padding-top:0 !important; border-top:0 !important; background:rgba(255,255,255,.02)}
+    .carSubNodes{display:flex; flex-wrap:nowrap; gap:8px 10px; overflow:hidden}
+    .carSubNode{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 10px; align-items:center; border:1px solid var(--border); border-radius:12px; padding:6px 10px; background:rgba(255,255,255,.03); min-width:0}
+    .carSubName{font-size:16px; font-weight:700; opacity:.95; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .carSubBest{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums}
+    @media (max-width:1100px){
+      .topbar{grid-template-columns:1fr}
+      .topMid{grid-template-columns:1fr}
+      .topRight{justify-content:flex-start}
+
+      .ptimer{font-size:70px}
+      .table.dashBig td, .table.dashBig th{ font-size:20px !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ampel Overlay (Presenter) -->
+  <div id="ampelOverlay" class="ampel-overlay hidden">
+    <div class="ampel-overlay-inner">
+      <div class="ampel-title">START</div>
+      <div class="ampel big">
+        <div class="lamp" id="lamp1"></div>
+        <div class="lamp" id="lamp2"></div>
+        <div class="lamp" id="lamp3"></div>
+        <div class="lamp" id="lamp4"></div>
+        <div class="lamp" id="lamp5"></div>
+      </div>
+      <div class="ampel-text" id="ampelText">—</div>
+    </div>
+  </div>
+
+  <div class="presenter">
+    
+    
+    <div class="topbar">
+      <div class="topLeft">
+        <div class="ptimer pmono" id="pTimer">—</div>
+      </div>
+
+      <div class="topMid">
+        <div class="midCell">
+          <div class="midLabel">Modus</div>
+          <div class="midValue" id="pMode">—</div>
+        </div>
+
+        <div class="midCell">
+          <div class="midLabel">Strecke</div>
+          <div class="midValue" id="pTrack">—</div>
+        </div>
+
+        <div class="midCell">
+          <div class="midLabel">Rekord</div>
+          <div class="midValue" id="pRecSeason">—</div>
+        </div>
+
+        <div class="midCell">
+          <div class="midLabel">Tagesrekord</div>
+          <div class="midValue" id="pRecDay">—</div>
+        </div>
+
+        <div class="midCell trackDetailsCell">
+          <div class="midLabel">Streckendetails</div>
+          <div class="midValue" id="pTrackDetails">—</div>
+        </div>
+      </div>
+    </div>
+
+<div class="card tableWrap" id="pEnduranceCard" style="display:none">
+      <div class="card-h"><h2>Langstrecke • Aktive Fahrer / Stints</h2></div>
+      <div class="card-b">
+        <table class="table dashBig" style="width:100%">
+          <thead><tr><th>Team</th><th>Aktiver Fahrer</th><th>Stint</th><th>Auto</th></tr></thead>
+          <tbody id="pEnduranceTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card tableWrap" id="pPodiumCard">
+      <div class="card-h"><h2>Podium</h2></div>
+      <div class="card-b">
+        <div class="podiumPresenter" id="pPodium"></div>
+      </div>
+    </div>
+    <div id="pRaceEndHighlights" class="tableWrap" style="display:none"></div>
+
+    <div class="card tableWrap">
+      <div class="card-b">
+        <table class="table dashBig" style="width:100%">
+          <thead><tr><th>#</th><th>Fahrer</th><th>Runden</th><th>Best</th><th>Letzte</th><th>Ø10</th><th>Ø km/h</th></tr></thead>
+          <tbody id="pTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+  function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[c])); }
+  function calcAvgKmh(bestMs, trackLengthMeters, scaleDenominator){
+    const lap = Number(bestMs || 0);
+    const len = Number(trackLengthMeters || 0);
+    const scale = Number(scaleDenominator || 50);
+    if(!lap || lap <= 0) return '—';
+    if(!len || len <= 0) return 'Länge fehlt';
+    if(!scale || scale <= 0) return 'Maßstab fehlt';
+    const realMeters = len * scale;
+    const kmh = (realMeters / (lap / 1000)) * 3.6;
+    if(!Number.isFinite(kmh)) return '—';
+    return String(kmh.toFixed(1)).replace('.', ',');
+  }
+
+  function msToTime(ms, decimals=3){
+    if(ms==null) return '—';
+    const s = ms/1000;
+    const m = Math.floor(s/60);
+    const rem = s - m*60;
+    const dp = Math.max(0, Math.min(3, decimals|0));
+    const remStr = rem.toFixed(dp).padStart(2 + (dp?dp+1:0), '0');
+    return m>0 ? `${m}:${remStr}` : remStr;
+  }
+  
+  function applyAmpel(a){
+    const ov = $('ampelOverlay');
+    if(!ov) return;
+    const show = !!(a && a.visible);
+    ov.classList.toggle('hidden', !show);
+    const step = a ? (a.step||0) : 0;
+    const go = a ? !!a.go : false;
+    const txt = a ? (a.text||'—') : '—';
+    const ids = ['lamp1','lamp2','lamp3','lamp4','lamp5'];
+    ids.forEach((id,i)=>{
+      const el = $(id);
+      if(!el) return;
+      el.classList.remove('on','go');
+      if(go){
+        if(i===4) el.classList.add('go');
+      }else{
+        if(i < step) el.classList.add('on');
+      }
+    });
+    const tEl = $('ampelText');
+    if(tEl) tEl.textContent = txt;
+  }
+
+
+  function buildPodiumConfettiHtml(){
+    const pieces = [];
+    for(let i=0;i<54;i++){
+      const left = (2 + (i*1.83)%96).toFixed(2);
+      const delay = (i*0.06).toFixed(2);
+      const dur = (2.4 + (i%6)*0.18).toFixed(2);
+      const drift = (((i%2===0)?1:-1) * (18 + (i%7)*8));
+      const x = (((i%3)-1) * (8 + (i%5)*3));
+      const fall = 280 + (i%8)*22;
+      pieces.push(`<i style="left:${left}%;--delay:${delay}s;--dur:${dur}s;--drift:${drift}px;--x:${x}px;--fall:${fall}px"></i>`);
+    }
+    return `<div class="podiumConfetti" aria-hidden="true">${pieces.join('')}</div>`;
+  }
+
+  function renderRaceEndHighlights(highlights){
+    const wrap = $('pRaceEndHighlights');
+    if(!wrap) return;
+    const h = highlights || null;
+    if(!h){ wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+    const item = (label, value) => `<div class="card rehCard"><div class="card-b rehCardB"><span class="muted small rehLabel">${label}</span><span class="rehValue">${value||'—'}</span></div></div>`;
+    wrap.style.display = '';
+    wrap.innerHTML = `<div class="rehInline">${item('Knappster Abstand', h.closestGapHtml)}${item('Größte Aufholjagd', h.comebackHtml)}${item('Schnellste Runde', h.fastestHtml)}${item('Meiste Führungsrunden', h.leadHtml)}</div>`;
+  }
+
+  function renderPodium(top3){
+    const el = $('pPodium');
+    const card = $('pPodiumCard');
+    if(!el) return;
+    const hasAny = (top3||[]).some(Boolean);
+    if(card) card.style.display = hasAny ? '' : 'none';
+    if(!hasAny){
+      el.innerHTML = '';
+      return;
+    }
+    function box(pos, x){
+      if(!x){
+        return `<div class="podiumStep p${pos}"><div class="podiumPos">${pos}</div><div class="podiumName muted">—</div></div>`;
+      }
+      const initials = esc(x.initials || ((x.name||'').trim().split(/\s+/).slice(0,2).map(v=>v[0]||'').join('').toUpperCase()) || '?');
+      const thumb = x.avatarUrl
+        ? `<img class="podiumThumb" src="${esc(x.avatarUrl)}" alt=""/>`
+        : `<div class="podiumThumb podiumThumbPlaceholder"><span>${initials}</span></div>`;
+      return `<div class="podiumStep p${pos}">
+        <div class="podiumPos">${pos}</div>
+        <div class="podiumProfile">
+          ${thumb}
+          <div class="podiumInfoCol">
+            <div class="podiumName"><span class="nm">${esc(x.name||'—')}</span></div>
+            <div class="podiumStats small">
+              <div><span>Runden</span><b>${esc(x.laps||0)}</b></div>
+              <div><span>Zeit</span><b class="mono">${esc(msToTime(x.totalMs, 3))}</b></div>
+              <div><span>Best</span><b class="mono">${esc(msToTime(x.bestMs, 3))}</b></div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+    el.innerHTML = `
+      <div class="podiumCard">
+        ${buildPodiumConfettiHtml()}
+        <div class="podiumWrap">
+          <div class="podiumCol second">${box(2, (top3||[])[1])}</div>
+          <div class="podiumCol first">${box(1, (top3||[])[0])}</div>
+          <div class="podiumCol third">${box(3, (top3||[])[2])}</div>
+        </div>
+      </div>`;
+  }
+
+function buildEnduranceHtml(erows){
+    return erows.map(r => `<tr><td>${esc(r.teamName||'—')}</td><td>${esc(r.driverName||'—')}</td><td>${esc(String(r.stint||0) + ' / ' + String(r.minStint||0))}</td><td>${esc(r.carName||'—')}</td></tr>`).join('');
+  }
+
+  function buildRowsHtml(snapshot){
+    return (snapshot.rows || []).map((r)=> {
+      const style = r.bg ? ` style="background:${r.bg};color:${r.tc||'#fff'}"` : '';
+      const subCars = snapshot.isFreeDriving ? (r.carBestRows || []).map(c=>`
+        <div class="carSubNode">
+          <div class="carSubName">${esc(c.carName||'—')}</div>
+          <div class="carSubBest pmono">${esc(msToTime(c.bestMs, 3))}</div>
+        </div>
+      `).join('') : '';
+      return `
+        <tr${style}>
+          <td class="mono">${esc(r.pos||'')}</td>
+          <td>${esc(r.name||'—')} ${r.finished?'🏁':''}</td>
+          <td class="mono">${esc(r.laps||0)}</td>
+          <td class="mono">${esc(msToTime(r.bestMs, 3))}</td>
+          <td class="mono">${esc(msToTime(r.lastMs, 3))}</td>
+          <td class="mono">${esc((r.avgLast10Ms!=null && Number.isFinite(r.avgLast10Ms)) ? msToTime(r.avgLast10Ms, 3) : ((r.avgLast10Text && String(r.avgLast10Text).trim()) || '—'))}</td>
+          <td class="mono">${esc(String(r.avgSpeedText || '—').replace(/\s*km\/h/ig,'').trim())}</td>
+        </tr>
+        ${subCars ? `<tr class="carSubRow"><td></td><td colspan="6"><div class="carSubNodes">${subCars}</div></td></tr>` : ''}
+      `;
+    }).join('') || `<tr><td colspan="7" class="muted">—</td></tr>`;
+  }
+
+  function stableStringify(v){
+    return JSON.stringify(v, (k, val)=>{
+      if(val && typeof val === 'object' && !Array.isArray(val)){
+        return Object.keys(val).sort().reduce((acc, key)=>{ acc[key]=val[key]; return acc; }, {});
+      }
+      return val;
+    });
+  }
+
+  function setTextIfChanged(id, value){
+    const el = $(id);
+    if(!el) return;
+    const next = value == null || value === '' ? '—' : String(value);
+    if(el.textContent !== next) el.textContent = next;
+  }
+
+  function render(snapshot){
+    if(!snapshot) return;
+    const fullSig = stableStringify(snapshot);
+    if(window.__lastFullSig === fullSig) return;
+    window.__lastFullSig = fullSig;
+
+    setTextIfChanged('pMode', snapshot.modeLabel || '—');
+    setTextIfChanged('pTimer', snapshot.timerText || '—');
+    setTextIfChanged('pTrack', snapshot.trackName || '—');
+    setTextIfChanged('pRecSeason', snapshot.recordSeason || '—');
+    setTextIfChanged('pRecDay', snapshot.recordDay || '—');
+    const td = $('pTrackDetails');
+    if(td){
+      const nextTrackDetails = String(snapshot.trackDetails || '—').replace(/^Modus:\s*/,'');
+      if(td.textContent !== nextTrackDetails) td.textContent = nextTrackDetails;
+    }
+
+    const erows = snapshot.enduranceRows || [];
+    const ecard = $('pEnduranceCard');
+    const etable = $('pEnduranceTable');
+    const enduranceSig = stableStringify(erows);
+    if(ecard && etable && window.__lastEnduranceSig !== enduranceSig){
+      window.__lastEnduranceSig = enduranceSig;
+      if(erows.length){
+        ecard.style.display = '';
+        etable.innerHTML = buildEnduranceHtml(erows);
+      } else {
+        ecard.style.display = 'none';
+        etable.innerHTML = '';
+      }
+    }
+
+    applyAmpel(snapshot.ampel);
+
+    const podiumPayload = (snapshot.inRace || snapshot.isFreeDriving) ? [] : ((snapshot.top3 && snapshot.top3.length) ? (snapshot.top3 || []) : (snapshot.showPodium ? (snapshot.top3 || []) : []));
+    const podiumSig = stableStringify(podiumPayload);
+    if(window.__lastPodiumSig !== podiumSig){
+      window.__lastPodiumSig = podiumSig;
+      renderPodium(podiumPayload);
+    }
+
+    const highlightPayload = (!snapshot.inRace && !snapshot.isFreeDriving && snapshot.raceEndHighlights) ? snapshot.raceEndHighlights : null;
+    const highlightSig = stableStringify(highlightPayload || {});
+    if(window.__lastHighlightSig !== highlightSig){
+      window.__lastHighlightSig = highlightSig;
+      renderRaceEndHighlights(highlightPayload);
+    }
+
+    const tableSig = stableStringify({
+      rows: snapshot.rows || [],
+      trackLengthMeters: snapshot.trackLengthMeters || 0,
+      scaleDenominator: snapshot.scaleDenominator || 0
+    });
+    if(window.__lastTableSig !== tableSig){
+      window.__lastTableSig = tableSig;
+      $('pTable').innerHTML = buildRowsHtml(snapshot);
+    }
+  }
+
+  let bc=null;
+  try{
+    bc = new BroadcastChannel('zeitnahme_presenter');
+    bc.onmessage = (e)=>{ if(e?.data?.type==='snapshot') render(e.data.payload); };
+  }catch{}
+  window.addEventListener('storage', (e)=>{
+    if(e.key==='ZN_PRES_SNAPSHOT' && e.newValue){
+      try{ render(JSON.parse(e.newValue)); }catch{}
+    }
+  });
+  try{
+    const raw = localStorage.getItem('ZN_PRES_SNAPSHOT');
+    if(raw) render(JSON.parse(raw));
+  }catch{}
+
+  // Fallback polling (some browsers/file:// don't fire storage/BC reliably)
+  setInterval(()=>{
+    try{
+      const raw = localStorage.getItem('ZN_PRES_SNAPSHOT');
+      if(!raw) return;
+      if(window.__lastSnapRaw === raw) return;
+      window.__lastSnapRaw = raw;
+      render(JSON.parse(raw));
+    }catch{}
+  }, 1000);
+
+</script>
+</body>
+</html>

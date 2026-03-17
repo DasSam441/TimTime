@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Zeitnahme 2.0</title>
+  <link rel="stylesheet" href="assets/styles.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="stopwatch" aria-hidden="true">⏱️</div>
+      <div class="brand-text">
+        <div class="brand-title" id="brandTitle">Zeitnahme 2.0</div>
+        <div class="brand-sub" id="brandSub">offline • HTML/JS/CSS</div>
+      </div>
+    </div>
+
+    <nav class="menu" id="topMenu" aria-label="Hauptmenü"></nav>
+
+    <div class="topbar-right">
+      <button class="btn btn-usb" id="btnUsb" title="USB verbinden">
+        <span class="dot" id="usbDot"></span>
+        <span id="usbLabel">USB verbinden</span>
+      </button>
+      <button class="btn btn-usb" id="btnBt" title="Bluetooth verbinden">
+        <span class="dot" id="btDot"></span>
+        <span id="btLabel">BT verbinden</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout" id="layoutRoot">
+    <aside class="side" aria-label="Session Control">
+      <div class="card">
+        <div class="card-h">
+          <h2>Session Control</h2>
+          <span class="badge" id="badgeSessionState">IDLE</span>
+        </div>
+        <div class="card-b">
+          <div class="kv">
+            <div class="k">Timer</div>
+            <div class="v mono" id="scTimer">00:00.0</div>
+
+            <div class="k">Aktueller Modus</div>
+            <div class="v" id="scMode">—</div>
+
+            <div class="k">Strecke</div>
+            <div class="v" id="scTrack">—</div>
+
+            <div class="k">Mindestzeit</div>
+            <div class="v mono" id="scMinLap">—</div>
+          </div>
+
+          <div class="hr"></div>
+
+
+          <div class="recordRow">
+            <div class="record">
+              <div class="record-title">Streckenrekord</div>
+              <div class="record-time mono" id="scRecordTime">—</div>
+              <div class="record-name" id="scRecordName">—</div>
+            </div>
+
+            <div class="record recordDay">
+              <div class="record-title">Tagesrekord</div>
+              <div class="record-time mono" id="scDayRecordTime">—</div>
+              <div class="record-name" id="scDayRecordName">—</div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row">
+            <button class="btn btn-primary" id="btnStart">Start</button>
+            <button class="btn" id="btnPause">Pause</button>
+            <button class="btn" id="btnResume">Weiter</button>
+            <button class="btn btn-danger" id="btnStop">Stopp</button>
+          </div>
+
+          <div class="hr" id="scEnduranceHr" style="display:none"></div>
+
+          <div id="scEnduranceBox" style="display:none">
+            <div class="muted small" id="scEnduranceStatus">—</div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="field">
+            <label>Freies Fahren</label>
+            <div class="row" style="gap:10px; align-items:center;">
+              <button class="btn btn-primary" id="btnFreeDrivingOn" type="button">An</button>
+              <button class="btn" id="btnFreeDrivingOff" type="button">Aus</button>
+              <span class="muted small" id="scFreeDrivingState">aus</span>
+            </div>
+            <div class="muted small">Startet sofort ohne Ampel, aber mit normaler Session und Ansagen.</div>
+          </div>
+
+          <div class="ampel-wrap" id="scAmpelWrap">
+            <div class="ampel-head">
+              <div class="ampel-title">Startampel</div>
+              <label class="row" style="gap:10px;">
+                <input type="checkbox" id="scUseAmpel" checked />
+                <span class="muted small">Ampel vor Start</span>
+              </label>
+            </div>
+            <div class="ampel">
+              <div class="lamp" id="lamp1"></div>
+              <div class="lamp" id="lamp2"></div>
+              <div class="lamp" id="lamp3"></div>
+              <div class="lamp" id="lamp4"></div>
+              <div class="lamp" id="lamp5"></div>
+            </div>
+            <div class="ampel-text mono" id="ampelText">—</div>
+            <div class="muted small">Ablauf: 5,4,3,2,1 (warten) Start</div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="muted small">
+            Start/Stop/Pause/Weiter steuert den aktuell aktiv gesetzten Rennmodus (inkl. Dauerschleife).
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Quick Status</h2></div>
+        <div class="card-b">
+          <div class="row wrap">
+            <span class="badge" id="badgeUsb">USB: aus</span>
+            <span class="badge" id="badgeBt">BT: aus</span>
+            <span class="badge" id="badgeSeason">Saison: —</span>
+            <span class="badge" id="badgeRaceDay">Renntag: —</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main" aria-label="Inhalt">
+      <section class="page" id="pageDashboard"></section>
+      <section class="page" id="pageEinzellaeufe"></section>
+      <section class="page" id="pageTeamrennen"></section>
+      <section class="page" id="pageDauerschleife"></section>
+      <section class="page" id="pageLangstrecke"></section>
+      <section class="page" id="pageStammdaten"></section>
+      <section class="page" id="pageStrecken"></section>
+      <section class="page" id="pageRenntag"></section>
+      <section class="page" id="pageRenntagAuswertung"></section>
+      <section class="page" id="pageSaison"></section>
+      <section class="page" id="pageSaisonAuswertung"></section>
+      <section class="page" id="pageAudio"></section>
+      <section class="page" id="pageEinstellungen"></section>
+    </main>
+
+    <div class="logwrap">
+      <button class="btn smallbtn log-dock-btn" id="btnToggleLogDock" title="Run Log ein-/ausklappen">Log ◂</button>
+      <div class="log-resizer" id="logResizer" title="ziehen zum Resize"></div>
+      <aside class="log" aria-label="Run Log" id="runLogPane">
+        <div class="card logcard">
+          <div class="card-h">
+            <h2>Run Log</h2>
+            <div class="row">
+              <button class="btn smallbtn" id="btnToggleLog" title="Run Log ein-/ausklappen">Log ◂</button>
+              <button class="btn smallbtn" id="btnClearLog">Clear</button>
+            </div>
+          </div>
+          <div class="card-b logbody">
+            <div class="loglist mono" id="runLog"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+
+  <!-- Fullscreen Startampel Overlay -->
+  <div class="ampel-overlay hidden" id="ampelOverlay" aria-hidden="true">
+    <div class="ampel-overlay-inner">
+      <div class="ampel big">
+        <div class="lamp" id="lampO1"></div>
+        <div class="lamp" id="lampO2"></div>
+        <div class="lamp" id="lampO3"></div>
+        <div class="lamp" id="lampO4"></div>
+        <div class="lamp" id="lampO5"></div>
+      </div>
+      <div class="ampel-text big mono" id="ampelTextO">—</div>
+    </div>
+  </div>
+
+  <div class="toast-host" id="toastHost" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
+            

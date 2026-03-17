@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fahrerbild Cropper</title>
+  <style>
+    :root {
+      --bg:#0f172a; --panel:#111827; --panel2:#1f2937; --border:#334155;
+      --text:#e5e7eb; --muted:#94a3b8; --accent:#2563eb;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; font-family:Arial,Helvetica,sans-serif; color:var(--text);
+      background:linear-gradient(180deg,#0b1220,#111827); min-height:100vh;
+    }
+    .app { max-width:1100px; margin:0 auto; padding:24px; }
+    h1 { margin:0 0 8px; font-size:28px; }
+    p.lead { margin:0 0 20px; color:var(--muted); }
+    .grid { display:grid; grid-template-columns:minmax(320px,1fr) 320px; gap:18px; }
+    .panel {
+      background:rgba(17,24,39,.95); border:1px solid var(--border);
+      border-radius:18px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .toolbar { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+    button, .fileBtn {
+      border:0; border-radius:12px; padding:10px 14px; font-size:14px; cursor:pointer;
+      background:var(--panel2); color:var(--text); text-decoration:none; display:inline-flex; align-items:center;
+    }
+    button.primary { background:var(--accent); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    input[type=file] { display:none; }
+    .canvasWrap {
+      border:1px solid var(--border); border-radius:18px; overflow:hidden; background:#0b1220;
+      display:flex; align-items:center; justify-content:center; min-height:640px;
+    }
+    canvas#stage { width:min(100%,760px); aspect-ratio:1 / 1; display:block; cursor:grab; touch-action:none; }
+    canvas#stage.dragging { cursor:grabbing; }
+    .previews { display:grid; gap:12px; margin-bottom:16px; }
+    .previewItem { display:flex; align-items:center; gap:12px; }
+    .previewFrame {
+      flex:0 0 auto; border-radius:18px; overflow:hidden;
+      border:1px solid var(--border); background:#0b1220;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .previewFrame.large { width:156px; height:156px; }
+    .previewFrame.medium { width:112px; height:112px; border-radius:16px; }
+    .previewFrame.small { width:92px; height:92px; border-radius:14px; }
+    .previewFrame.tiny { width:40px; height:40px; border-radius:10px; }
+    .previewFrame canvas { width:100%; height:100%; display:block; }
+    .previewText { font-size:14px; color:var(--muted); line-height:1.4; }
+    .previewText b { color:var(--text); }
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:14px; color:#cbd5e1; margin-bottom:8px; }
+    .field input[type=text] {
+      width:100%; border:1px solid var(--border); border-radius:12px; background:#0b1220;
+      color:var(--text); padding:10px 12px; font-size:14px;
+    }
+    .field input[type=range] { width:100%; }
+    .hint { font-size:13px; line-height:1.5; color:var(--muted); }
+    .meta { margin-top:16px; font-size:14px; color:var(--muted); }
+    .meta b { color:var(--text); }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns:1fr; }
+      .canvasWrap { min-height:440px; }
+      .previewFrame.large { width:132px; height:132px; }
+      .previewFrame.medium { width:104px; height:104px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Fahrerbild Cropper</h1>
+    <p class="lead">Separates Mini-Tool für quadratische Fahrerbilder. Bild laden, verschieben, zoomen und als 512×512 PNG exportieren.</p>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="toolbar">
+          <label class="fileBtn" for="fileInput">Bild laden</label>
+          <input id="fileInput" type="file" accept="image/*">
+          <button id="resetBtn" disabled>Zurücksetzen</button>
+          <button id="exportBtn" class="primary" disabled>PNG exportieren</button>
+        </div>
+        <div class="canvasWrap">
+          <canvas id="stage" width="800" height="800"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="previews">
+          <div class="previewItem">
+            <div class="previewFrame large"><canvas id="preview512" width="512" height="512"></canvas></div>
+            <div class="previewText"><b>Vorschau 512×512</b><br>Original-Exportgröße als PNG.</div>
+          </div>
+          <div class="previewItem">
+            <div class="previewFrame medium"><canvas id="preview256" width="256" height="256"></canvas></div>
+            <div class="previewText"><b>Vorschau 256×256</b><br>Mittlere Avatar-Größe.</div>
+          </div>
+          <div class="previewItem">
+            <div class="previewFrame small"><canvas id="preview92" width="92" height="92"></canvas></div>
+            <div class="previewText"><b>Vorschau 92×92</b><br>Kleine UI-Ansicht.</div>
+          </div>
+          <div class="previewItem">
+            <div class="previewFrame tiny"><canvas id="preview40" width="40" height="40"></canvas></div>
+            <div class="previewText"><b>Vorschau 40×40</b><br>Sehr kleine Listenansicht.</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="nameInput">Dateiname</label>
+          <input id="nameInput" type="text" value="fahrerbild">
+        </div>
+        <div class="field">
+          <label for="zoomInput">Zoom</label>
+          <input id="zoomInput" type="range" min="0.2" max="5" step="0.01" value="1" disabled>
+        </div>
+        <div class="hint">
+          Mit gedrückter Maus verschieben. Mit Mausrad oder Regler zoomen.<br>
+          Export immer als PNG in <b>512×512</b>.<br>
+          Rechts siehst du zusätzlich feste Vorschauen in <b>256×256</b>, <b>92×92</b> und <b>40×40</b>.
+        </div>
+        <div class="meta">
+          Format: <b>PNG</b><br>
+          Seitenverhältnis: <b>1:1</b><br>
+          Nutzung: <b>einzelne Fahrerbilder</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SIZE = 800;
+    const OUT = 512;
+    const stage = document.getElementById('stage');
+    const sctx = stage.getContext('2d');
+    const preview512 = document.getElementById('preview512');
+    const pctx512 = preview512.getContext('2d');
+    const preview256 = document.getElementById('preview256');
+    const pctx256 = preview256.getContext('2d');
+    const preview92 = document.getElementById('preview92');
+    const pctx92 = preview92.getContext('2d');
+    const preview40 = document.getElementById('preview40');
+    const pctx40 = preview40.getContext('2d');
+    const fileInput = document.getElementById('fileInput');
+    const resetBtn = document.getElementById('resetBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const zoomInput = document.getElementById('zoomInput');
+    const nameInput = document.getElementById('nameInput');
+
+    const state = {
+      img: null,
+      baseScale: 1,
+      zoom: 1,
+      x: 0,
+      y: 0,
+      dragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      startX: 0,
+      startY: 0,
+    };
+
+    function checker(ctx, w, h, step=32) {
+      for (let y=0; y<h; y+=step) {
+        for (let x=0; x<w; x+=step) {
+          ctx.fillStyle = ((x/step + y/step) % 2 === 0) ? '#0f172a' : '#1f2937';
+          ctx.fillRect(x, y, step, step);
+        }
+      }
+    }
+
+    function scaleNow() { return state.baseScale * state.zoom; }
+
+    function fitImage() {
+      const img = state.img;
+      if (!img) return;
+      state.baseScale = Math.max(SIZE / img.width, SIZE / img.height);
+      state.zoom = 1;
+      zoomInput.value = '1';
+      const dw = img.width * scaleNow();
+      const dh = img.height * scaleNow();
+      state.x = (SIZE - dw) / 2;
+      state.y = (SIZE - dh) / 2;
+      clampPos();
+      draw();
+    }
+
+    function clampPos() {
+      const img = state.img;
+      if (!img) return;
+      const dw = img.width * scaleNow();
+      const dh = img.height * scaleNow();
+      if (dw <= SIZE) state.x = (SIZE - dw) / 2;
+      else state.x = Math.min(0, Math.max(SIZE - dw, state.x));
+      if (dh <= SIZE) state.y = (SIZE - dh) / 2;
+      else state.y = Math.min(0, Math.max(SIZE - dh, state.y));
+    }
+
+    function draw() {
+      checker(sctx, SIZE, SIZE, 40);
+      if (!state.img) {
+        sctx.fillStyle = '#94a3b8';
+        sctx.textAlign = 'center';
+        sctx.font = '24px Arial';
+        sctx.fillText('Bild laden', SIZE/2, SIZE/2 - 6);
+        sctx.font = '16px Arial';
+        sctx.fillText('Danach verschieben und zoomen', SIZE/2, SIZE/2 + 22);
+        checker(pctx512, 512, 512, 32);
+        checker(pctx256, 256, 256, 24);
+        checker(pctx92, 92, 92, 16);
+        checker(pctx40, 40, 40, 10);
+        return;
+      }
+      const img = state.img;
+      const dw = img.width * scaleNow();
+      const dh = img.height * scaleNow();
+      sctx.drawImage(img, state.x, state.y, dw, dh);
+      pctx512.clearRect(0,0,512,512);
+      pctx256.clearRect(0,0,256,256);
+      pctx92.clearRect(0,0,92,92);
+      pctx40.clearRect(0,0,40,40);
+      pctx512.drawImage(stage, 0, 0, SIZE, SIZE, 0, 0, 512, 512);
+      pctx256.drawImage(stage, 0, 0, SIZE, SIZE, 0, 0, 256, 256);
+      pctx92.drawImage(stage, 0, 0, SIZE, SIZE, 0, 0, 92, 92);
+      pctx40.drawImage(stage, 0, 0, SIZE, SIZE, 0, 0, 40, 40);
+    }
+
+    function loadFile(file) {
+      const img = new Image();
+      img.onload = () => {
+        state.img = img;
+        resetBtn.disabled = false;
+        exportBtn.disabled = false;
+        zoomInput.disabled = false;
+        const base = (file.name || 'fahrerbild').replace(/\.[^.]+$/, '');
+        if (!nameInput.value || nameInput.value === 'fahrerbild') nameInput.value = base;
+        fitImage();
+      };
+      img.src = URL.createObjectURL(file);
+    }
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files && e.target.files[0];
+      if (file) loadFile(file);
+    });
+
+    resetBtn.addEventListener('click', fitImage);
+
+    function zoomAt(nextZoom, px = SIZE/2, py = SIZE/2) {
+      if (!state.img) return;
+      const oldScale = scaleNow();
+      const imgX = (px - state.x) / oldScale;
+      const imgY = (py - state.y) / oldScale;
+      state.zoom = Math.max(0.2, Math.min(5, nextZoom));
+      zoomInput.value = String(state.zoom);
+      const newScale = scaleNow();
+      state.x = px - imgX * newScale;
+      state.y = py - imgY * newScale;
+      clampPos();
+      draw();
+    }
+
+    zoomInput.addEventListener('input', () => zoomAt(parseFloat(zoomInput.value)));
+
+    stage.addEventListener('wheel', e => {
+      if (!state.img) return;
+      e.preventDefault();
+      const rect = stage.getBoundingClientRect();
+      const px = (e.clientX - rect.left) * (SIZE / rect.width);
+      const py = (e.clientY - rect.top) * (SIZE / rect.height);
+      const delta = e.deltaY < 0 ? 1.08 : 0.92;
+      zoomAt(state.zoom * delta, px, py);
+    }, { passive:false });
+
+    stage.addEventListener('pointerdown', e => {
+      if (!state.img) return;
+      state.dragging = true;
+      stage.classList.add('dragging');
+      state.dragStartX = e.clientX;
+      state.dragStartY = e.clientY;
+      state.startX = state.x;
+      state.startY = state.y;
+      stage.setPointerCapture(e.pointerId);
+    });
+
+    stage.addEventListener('pointermove', e => {
+      if (!state.dragging) return;
+      const rect = stage.getBoundingClientRect();
+      const factor = SIZE / rect.width;
+      state.x = state.startX + (e.clientX - state.dragStartX) * factor;
+      state.y = state.startY + (e.clientY - state.dragStartY) * factor;
+      clampPos();
+      draw();
+    });
+
+    function stopDrag(e) {
+      state.dragging = false;
+      stage.classList.remove('dragging');
+      try { stage.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    stage.addEventListener('pointerup', stopDrag);
+    stage.addEventListener('pointercancel', stopDrag);
+
+    exportBtn.addEventListener('click', () => {
+      if (!state.img) return;
+      const out = document.createElement('canvas');
+      out.width = OUT; out.height = OUT;
+      out.getContext('2d').drawImage(stage, 0,0,SIZE,SIZE, 0,0,OUT,OUT);
+      const a = document.createElement('a');
+      const safe = (nameInput.value || 'fahrerbild').replace(/[\\/:*?"<>|]+/g, '_');
+      a.download = safe + '.png';
+      a.href = out.toDataURL('image/png');
+      a.click();
+    });
+
+    draw();
+  </script>
+</body>
+</html>
