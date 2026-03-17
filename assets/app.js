@@ -8717,12 +8717,11 @@ function renderRenntag(){
           </div>
         </div>
 
-      <div class="grid2 settings-grid">
+      <div class="settings-grid">
         <div class="settings-stack">
           <div class="settings-sectionlabel">Betrieb</div>
           <div class="settings-mini-grid">
-          <div class="settings-mini-grid">
-          <div class="card settings-card" style="margin-bottom:12px">
+            <div class="card settings-card" style="margin-bottom:12px">
             <div class="card-h"><h2>Allgemein</h2></div>
             <div class="card-b">
               <div class="settings-form-row">
@@ -8743,7 +8742,7 @@ function renderRenntag(){
             </div>
           </div>
 
-          <div class="card settings-card" style="margin-bottom:12px">
+            <div class="card settings-card" style="margin-bottom:12px">
             <div class="card-h"><h2>Zeitmessung</h2></div>
             <div class="card-b">
               <div class="settings-tag">Timing</div>
@@ -8755,7 +8754,7 @@ function renderRenntag(){
             </div>
           </div>
 
-          <div class="card settings-card" style="margin-bottom:12px">
+            <div class="card settings-card" style="margin-bottom:12px">
             <div class="card-h"><h2>Maßstab</h2></div>
             <div class="card-b">
               <div class="field">
