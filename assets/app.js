@@ -8818,6 +8818,7 @@ function renderRenntag(){
               <div class="settings-discord-grid">
                 <div class="settings-subcard settings-discord-card">
                   <div class="settings-tag">Session</div>
+                  <h3>Session-Webhook</h3>
               <div class="field">
                 <label>Session Webhook</label>
                 <input class="input" id="webhook" value="${esc(state.settings.discordWebhook)}" placeholder="https://..."/>
@@ -8841,9 +8842,13 @@ function renderRenntag(){
                 <input class="input" id="discordThreadName" value="${esc(state.settings.discordThreadName || '{track}, {date} {time}') }" placeholder="{track}, {date} {time}"/>
                 <div class="muted">Platzhalter: {track}, {mode}, {session}, {type}, {season}, {renntag}, {date}, {time}</div>
               </div>
+              <div class="settings-actions">
+                <button class="btn" id="btnDiscordTest" type="button">Session-Test senden</button>
+              </div>
                 </div>
                 <div class="settings-subcard settings-discord-card">
                   <div class="settings-tag">Renntag</div>
+                  <h3>Renntag-Webhook</h3>
               <div class="field">
                 <label>Renntag Webhook</label>
                 <input class="input" id="raceDayWebhook" value="${esc(state.settings.discordRaceDayWebhook || '')}" placeholder="https://..."/>
@@ -8860,9 +8865,13 @@ function renderRenntag(){
                 <input class="input" id="discordRaceDayThreadName" value="${esc(state.settings.discordRaceDayThreadName || '{type} • {date}') }" placeholder="{type} • {date}"/>
                 <div class="muted">Platzhalter: {track}, {type}, {renntag}, {date}, {time}</div>
               </div>
+              <div class="settings-actions">
+                <button class="btn" id="btnRaceDayWebhookTest" type="button">Renntag-Test senden</button>
+              </div>
                 </div>
                 <div class="settings-subcard settings-discord-card">
                   <div class="settings-tag">Saison</div>
+                  <h3>Saison-Webhook</h3>
               <div class="field">
                 <label>Saison Webhook</label>
                 <input class="input" id="seasonWebhook" value="${esc(state.settings.discordSeasonWebhook || '')}" placeholder="https://..."/>
@@ -8879,12 +8888,10 @@ function renderRenntag(){
                 <input class="input" id="discordSeasonThreadName" value="${esc(state.settings.discordSeasonThreadName || '{type} • {season}') }" placeholder="{type} • {season}"/>
                 <div class="muted">Platzhalter: {type}, {season}, {date}, {time}</div>
               </div>
-                </div>
-              </div>
               <div class="settings-actions">
-                <button class="btn" id="btnDiscordTest" type="button">Session-Test senden</button>
-                <button class="btn" id="btnRaceDayWebhookTest" type="button">Renntag-Test senden</button>
                 <button class="btn" id="btnSeasonWebhookTest" type="button">Saison-Test senden</button>
+              </div>
+                </div>
               </div>
             </div>
           </div>
