@@ -195,6 +195,11 @@ body{
   color:var(--muted);
   font-size:12px;
 }
+.badge[data-state="AMPEL"]{
+  color:#fde68a;
+  border-color:rgba(245,158,11,.34);
+  background:rgba(120,53,15,.24);
+}
 
 .page{display:none}
 .page.active{display:block}
@@ -443,6 +448,13 @@ select.pill{cursor:pointer; outline:none;}
 
 /* Startampel */
 .ampel-wrap{width:100%; display:flex; flex-direction:column; gap:10px}
+.ampel-wrap.is-running{
+  padding:12px;
+  border:1px solid rgba(245,158,11,.26);
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(120,53,15,.16), rgba(15,23,42,.14));
+}
+.ampel-wrap.is-running .ampel-title{color:#fde68a}
 .ampel-head{display:flex; align-items:center; justify-content:space-between; gap:10px}
 .ampel-title{font-weight:900; font-size:13px; letter-spacing:.2px}
 .ampel{display:flex; gap:12px; align-items:center; justify-content:center}

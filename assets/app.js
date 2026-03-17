@@ -2974,6 +2974,7 @@ function singleTick(){
     state.ui.ampel = state.ui.ampel || {visible:false, step:0, go:false, text:'—'};
     state.ui.ampel.visible = !!show;
     saveState();
+    try{ renderSessionControl(); }catch{}
 
     const ov = document.getElementById('ampelOverlay');
     if(!ov) return;
@@ -3023,6 +3024,7 @@ function singleTick(){
     if(ampelRunning) return false;
     ampelRunning = true;
     showAmpelOverlay(true);
+    let startAccepted = true;
     try{
       const mrcPatterns = ['1000000','1100000','1110000','1111000','1111100'];
       // reset
@@ -3051,7 +3053,15 @@ function singleTick(){
       try{ await mrcCountdownSet('0000010'); }catch{}
       setLampState(5,true);
       setAmpelText('START');
-      try{ if(typeof onGreen==='function') onGreen(getCurrentMrcClock()); }catch(e){ logLine('Ampel onGreen Fehler: '+String(e?.message||e)); }
+      try{
+        if(typeof onGreen==='function'){
+          const onGreenResult = onGreen(getCurrentMrcClock());
+          if(onGreenResult === false) startAccepted = false;
+        }
+      }catch(e){
+        startAccepted = false;
+        logLine('Ampel onGreen Fehler: '+String(e?.message||e));
+      }
       await queueSpeak('Start');
 
       await sleep(250);
@@ -3059,10 +3069,11 @@ function singleTick(){
       setAmpelText('—');
       setLampState(0,false);
       try{ await mrcCountdownSet('0000000'); }catch{}
-      return true;
+      return startAccepted;
     } finally {
       showAmpelOverlay(false);
       ampelRunning = false;
+      try{ renderSessionControl(); }catch{}
     }
   }
 
@@ -3074,16 +3085,23 @@ function singleTick(){
     const freeDrivingToggle = !!state.ui.freeDrivingEnabled;
     saveState();
 
+    if(state.session.state!=='IDLE') return false;
+
     if(!freeDrivingToggle && !state.modes.activeMode){
       toast('Session', 'Kein Rennmodus aktiv gesetzt.', 'warn');
-      return;
+      return false;
     }
-    if(state.session.state==='RUNNING') return;
 
     if(freeDrivingToggle){
       try{ await requestMrcSync('session-start'); }catch{}
-      sessionStartImmediate(getCurrentMrcClock());
-      return;
+      const started = sessionStartImmediate(getCurrentMrcClock());
+      if(started===false){
+        state.ui.freeDrivingEnabled = false;
+        saveState();
+        renderSessionControl();
+        try{ sendPresenterSnapshot(true); }catch{}
+      }
+      return started;
     }
 
     // In Dauerschleife the start light is handled before the RACE phase, not at session start.
@@ -3093,22 +3111,19 @@ function singleTick(){
       if(!Number.isFinite(Number(startMrc)) || Number(startMrc) <= 0){
         toast('Session', 'MRC-Zeit nicht bereit. Bitte Reader verbinden/synchronisieren.', 'err');
         logLine('Session Start blockiert: keine gültige MRC-Zeitbasis');
-        return;
+        return false;
       }
-      sessionStartImmediate(startMrc);
-      return;
+      return sessionStartImmediate(startMrc);
     }
 
-    const useAmpelChk = document.getElementById('scUseAmpel');
-    const useAmpel = (useAmpelChk ? useAmpelChk.checked : true) && !!state.settings.useAmpel;
+    const useAmpel = !!state.settings.useAmpel;
 
     if(useAmpel){
-      await runAmpelSequence((greenMrcMs)=>sessionStartImmediate(greenMrcMs));
-      return;
+      return await runAmpelSequence((greenMrcMs)=>sessionStartImmediate(greenMrcMs));
     }
 
     try{ await requestMrcSync('session-start'); }catch{}
-    sessionStartImmediate(getCurrentMrcClock());
+    return sessionStartImmediate(getCurrentMrcClock());
   }
 
   function sessionStartImmediate(startMrcMs=null){
@@ -3177,6 +3192,7 @@ function singleTick(){
     renderSessionControl();
     try{ renderDashboard(); }catch{}
     try{ sendPresenterSnapshot(true); }catch{}
+    return true;
   
   }
 
@@ -4064,6 +4080,9 @@ let bleTxChar = null;
 let bleRxChar = null;
 let bleNotifyHandler = null;
 let bleLineBuffer = '';
+let bleReconnectTimer = null;
+let bleReconnectAttempt = 0;
+let bleReconnectSuppressedUntil = 0;
 
 function pushBleLogLine(line){
   state.ble.lastLines.unshift(line);
@@ -4138,6 +4157,48 @@ function setBleUi(connected){
       else badge.textContent = 'BT: ' + (state.ble.available ? 'bereit' : 'aus');
     }
   }catch{}
+}
+
+function bleSupportsSilentReconnect(){
+  return !!(('bluetooth' in navigator) && typeof navigator.bluetooth?.getDevices === 'function');
+}
+
+function bleHasKnownDevice(){
+  return !!(state.ble?.knownDeviceId || state.ble?.knownDeviceName);
+}
+
+function bleReconnectDelayMs(n){
+  return [1000, 2000, 5000, 10000, 15000, 20000][Math.min(n,5)] || 20000;
+}
+
+function clearBleReconnectTimer(){
+  if(bleReconnectTimer){
+    clearTimeout(bleReconnectTimer);
+    bleReconnectTimer = null;
+  }
+}
+
+function scheduleBleReconnect(reason){
+  if(state.ble.connected || bleDevice?.gatt?.connected) return;
+  if(!state.ble?.autoReconnect || !bleHasKnownDevice()) return;
+  if(!bleSupportsSilentReconnect()) return;
+  if(Date.now() < bleReconnectSuppressedUntil) return;
+  if(bleReconnectAttempt >= 6) return;
+  if(bleReconnectTimer) return;
+  const delay = bleReconnectDelayMs(bleReconnectAttempt);
+  bleReconnectAttempt++;
+  bleReconnectTimer = setTimeout(async ()=>{
+    bleReconnectTimer = null;
+    const ok = await bleConnect({ preferKnown:true, silent:true, autoReconnect:true, allowPrompt:false });
+    if(ok){
+      logLine('BT Auto-Reconnect erfolgreich');
+      toast('Bluetooth','Letztes Gerät wieder verbunden.','ok');
+    } else {
+      logLine('BT Auto-Reconnect fehlgeschlagen');
+      scheduleBleReconnect('retry');
+    }
+  }, delay);
+  logLine('BT Auto-Reconnect geplant in ' + Math.round(delay/1000) + 's' + (reason ? (' (' + reason + ')') : ''));
 }
 
 async function mrcWriteLine(line){
@@ -4250,6 +4311,7 @@ async function bleStartNotify(){
 async function bleConnect(opts){
   const options = opts || {};
   const silent = !!options.silent;
+  const allowPrompt = options.allowPrompt !== false;
   if(!('bluetooth' in navigator)){
     if(!silent) toast('Bluetooth', 'Web Bluetooth nur in Chrome/Edge und sicherem Kontext verfügbar.', 'err');
     logLine('BT Fehler: Web Bluetooth nicht verfügbar');
@@ -4268,6 +4330,12 @@ async function bleConnect(opts){
         || null;
     }
     if(!device){
+      if(!allowPrompt){
+        state.ble.lastError = 'Kein autorisiertes Bluetooth-Gerät verfügbar.';
+        saveState();
+        setBleUi(false);
+        return false;
+      }
       device = await navigator.bluetooth.requestDevice({
         filters:[{ namePrefix:'MRC' }],
         optionalServices:[0x1800, 0x1801, BLE_NUS_SERVICE_UUID, BLE_MRC_WRITE_SERVICE_UUID]
@@ -4281,6 +4349,9 @@ async function bleConnect(opts){
     state.ble.connected = true;
     state.ble.info = bleDevice.name || state.ble.knownDeviceName || 'BLE';
     state.ble.lastError = '';
+    clearBleReconnectTimer();
+    bleReconnectAttempt = 0;
+    bleReconnectSuppressedUntil = 0;
     saveState();
     setBleUi(true);
     logLine('BT verbunden ' + (state.ble.info?('('+state.ble.info+')'):''));
@@ -4290,6 +4361,7 @@ async function bleConnect(opts){
     try{ await requestMrcSync('bt-connect'); }catch{}
     return true;
   }catch(e){
+    bleServer = null;
     state.ble.connected = false;
     state.ble.notify = false;
     state.ble.lastError = String(e?.message||e);
@@ -4305,8 +4377,8 @@ async function bleAutoReconnectOnLoad(){
   try{
     if(!('bluetooth' in navigator)) return false;
     if(!state.ble?.autoReconnect) return false;
-    if(!state.ble?.knownDeviceId && !state.ble?.knownDeviceName) return false;
-    if(typeof navigator.bluetooth.getDevices !== 'function'){
+    if(!bleHasKnownDevice()) return false;
+    if(!bleSupportsSilentReconnect()){
       state.ble.connected = false;
       state.ble.notify = false;
       saveState();
@@ -4317,7 +4389,7 @@ async function bleAutoReconnectOnLoad(){
       return false;
     }
     logLine('BT Auto-Reconnect: versuche letztes Gerät wieder zu verbinden');
-    const ok = await bleConnect({ preferKnown:true, silent:true });
+    const ok = await bleConnect({ preferKnown:true, silent:true, autoReconnect:true, allowPrompt:false });
     if(ok){
       logLine('BT Auto-Reconnect erfolgreich');
       toast('Bluetooth','Letztes Gerät wieder verbunden.','ok');
@@ -4331,7 +4403,15 @@ async function bleAutoReconnectOnLoad(){
   }
 }
 
-async function bleDisconnect(silent){
+async function bleDisconnect(silent, opts){
+  const options = opts || {};
+  const manual = options.manual !== false;
+  const allowReconnect = options.scheduleReconnect !== false;
+  if(manual){
+    bleReconnectSuppressedUntil = Date.now() + 4000;
+    clearBleReconnectTimer();
+    bleReconnectAttempt = 0;
+  }
   try{
     if(bleTxChar && bleNotifyHandler){
       try{ bleTxChar.removeEventListener('characteristicvaluechanged', bleNotifyHandler); }catch{}
@@ -4354,6 +4434,7 @@ async function bleDisconnect(silent){
       logLine('BT getrennt');
       toast('Bluetooth','Getrennt.','warn');
     }
+    if(!manual && allowReconnect) scheduleBleReconnect('disconnect');
   }
 }
 
@@ -4362,7 +4443,7 @@ function onBleDisconnected(){
     logLine('BT Gerät getrennt');
     toast('Bluetooth','Gerät getrennt.','warn');
   }
-  bleDisconnect(true);
+  bleDisconnect(true, { manual:false, scheduleReconnect:true });
 }
 
 // --------------------- USB (WebSerial) ---------------------
@@ -4805,7 +4886,13 @@ if(!stopRead){
   }
 
 function renderSessionControl(){
-    document.getElementById('badgeSessionState').textContent = state.session.state;
+    const ampelActive = !!ampelRunning || !!state.ui?.ampel?.visible;
+    const sessionStateLabel = ampelActive ? 'AMPEL' : state.session.state;
+    const badgeSessionState = document.getElementById('badgeSessionState');
+    if(badgeSessionState){
+      badgeSessionState.textContent = sessionStateLabel;
+      badgeSessionState.dataset.state = sessionStateLabel;
+    }
     document.getElementById('scMode').textContent = getModeLabel();
     const track = getActiveTrack();
     document.getElementById('scTrack').textContent = formatTrackDisplayName(track);
@@ -4828,7 +4915,7 @@ function renderSessionControl(){
       dName.textContent = dayRec?.ms!=null ? `${(dayRec.driverId ? (getDriver(dayRec.driverId)?.name||dayRec.driverName) : dayRec.driverName)||'Unbekannt'} • ${dayRec.carName||''}` : '—';
     }
 
-    document.getElementById('btnStart').disabled = (state.session.state==='RUNNING');
+    document.getElementById('btnStart').disabled = (state.session.state!=='IDLE') || ampelActive;
     document.getElementById('btnPause').disabled = (state.session.state!=='RUNNING');
     document.getElementById('btnResume').disabled = (state.session.state!=='PAUSED');
     document.getElementById('btnStop').disabled = (state.session.state==='IDLE');
@@ -4838,12 +4925,19 @@ function renderSessionControl(){
     const freeDrivingState = document.getElementById('scFreeDrivingState');
     const useAmpelChk = document.getElementById('scUseAmpel');
     const ampelWrap = document.getElementById('scAmpelWrap');
-    const freeDrivingActive = !!state.session.isFreeDriving || (!!state.ui.freeDrivingEnabled && state.session.state!=='IDLE');
+    const freeDrivingPending = !!state.ui.freeDrivingEnabled && !state.session.isFreeDriving;
+    const freeDrivingActive = !!state.session.isFreeDriving || !!state.ui.freeDrivingEnabled;
     if(btnFreeDrivingOn) btnFreeDrivingOn.disabled = freeDrivingActive || state.session.state!=='IDLE';
     if(btnFreeDrivingOff) btnFreeDrivingOff.disabled = !freeDrivingActive;
-    if(freeDrivingState) freeDrivingState.textContent = freeDrivingActive ? 'an' : 'aus';
-    if(useAmpelChk) useAmpelChk.disabled = freeDrivingActive || state.session.state!=='IDLE';
-    if(ampelWrap) ampelWrap.style.opacity = freeDrivingActive ? '0.55' : '1';
+    if(freeDrivingState) freeDrivingState.textContent = state.session.isFreeDriving ? 'an' : (freeDrivingPending ? 'wartet auf Start' : 'aus');
+    if(useAmpelChk){
+      useAmpelChk.checked = !!state.settings.useAmpel;
+      useAmpelChk.disabled = freeDrivingActive || state.session.state!=='IDLE' || ampelActive;
+    }
+    if(ampelWrap){
+      ampelWrap.style.opacity = freeDrivingActive ? '0.55' : '1';
+      ampelWrap.classList.toggle('is-running', ampelActive);
+    }
 
     document.getElementById('badgeSeason').textContent = 'Saison: ' + (getActiveSeason()?.name || '—');
     document.getElementById('badgeRaceDay').textContent = 'Renntag: ' + (getActiveRaceDay()?.name || '—');
