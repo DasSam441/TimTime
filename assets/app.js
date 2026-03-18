@@ -2555,6 +2555,158 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     return await new Promise(resolve=>canvas.toBlob(resolve, 'image/png'));
   }
 
+  async function renderSeasonWebhookBlob(seasonId){
+    const season = (state.season?.seasons||[]).find(x=>x.id===seasonId) || null;
+    if(!season) throw new Error('Saison nicht gefunden');
+    const champ = getChampionshipData(seasonId, getChampionshipSettings());
+    const stats = getSeasonStatisticsData(seasonId);
+    const createdAt = season.createdAt || Date.now();
+    const width = 1800;
+    const margins = { left:36, right:36, top:30, bottom:30 };
+    const titleH = 126;
+    const sectionGap = 24;
+    const cardGap = 18;
+    const cardCols = 4;
+    const cardW = Math.floor((width - margins.left - margins.right - (cardGap * (cardCols - 1))) / cardCols);
+    const cardH = 124;
+    const tableTopRows = (champ.rows||[]).slice(0, 10);
+    const statTopRows = (stats.rows||[]).slice(0, 10);
+    const champCols = [70, 360, 150, 150, 120, 120, 120];
+    const statCols = [70, 360, 110, 110, 110, 120, 180];
+    const tableHeaderH = 42;
+    const tableRowH = 34;
+    const tableTitleH = 64;
+    const champTableH = tableTitleH + tableHeaderH + Math.max(1, tableTopRows.length) * tableRowH;
+    const statTableH = tableTitleH + tableHeaderH + Math.max(1, statTopRows.length) * tableRowH;
+    const height = margins.top + titleH + sectionGap + cardH + sectionGap + champTableH + sectionGap + statTableH + margins.bottom;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const bg = '#0f1218';
+    const panel = '#181c24';
+    const panel2 = '#1d222c';
+    const text = '#eff3f8';
+    const muted = '#a5afbe';
+    const border = '#2a3342';
+    const header = '#202633';
+    const accent = '#7d5cff';
+    const accent2 = '#4ea1ff';
+    const positive = '#2ed17d';
+    const totalDiscardedRacePoints = (champ.rows||[]).reduce((sum, row)=>sum + (Number(row.discardedRacePoints)||0), 0);
+    const totalDiscardedBonusPoints = (champ.rows||[]).reduce((sum, row)=>sum + (Number(row.discardedBonusPoints)||0), 0);
+    const champLeader = champ.rows?.[0] || null;
+    const winsLeader = (stats.rows||[]).slice().sort((a,b)=>(b.wins-a.wins)||(b.podiums-a.podiums))[0] || null;
+    const podiumLeader = (stats.rows||[]).slice().sort((a,b)=>(b.podiums-a.podiums)||(b.wins-a.wins))[0] || null;
+    const fastestLeader = (stats.rows||[]).slice().sort((a,b)=>(b.fastestLapCount-a.fastestLapCount)||(b.wins-a.wins))[0] || null;
+    const rr = (x,y,w,h,r,fill,stroke='')=>{
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.arcTo(x+w,y,x+w,y+h,r);
+      ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);
+      ctx.closePath();
+      if(fill){ ctx.fillStyle = fill; ctx.fill(); }
+      if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+    };
+    const txt = (str,x,y,font,color,align='left')=>{
+      ctx.font = font;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = 'top';
+      ctx.fillText(String(str||''), x, y);
+    };
+    const fitText = (str,maxWidth,startPx,weight='700')=>{
+      let px = startPx;
+      for(; px>=12; px-=1){
+        ctx.font = `${weight} ${px}px sans-serif`;
+        if(ctx.measureText(String(str||'')).width <= maxWidth) break;
+      }
+      return `${weight} ${px}px sans-serif`;
+    };
+    const drawMetricCard = (x, y, label, value, sub, accentColor)=>{
+      rr(x, y, cardW, cardH, 22, panel, border);
+      txt(label, x + 18, y + 16, '600 16px sans-serif', muted);
+      txt(value, x + 18, y + 48, fitText(value, cardW - 36, 30, '700'), text);
+      txt(sub, x + 18, y + 88, '500 15px sans-serif', accentColor || accent);
+    };
+    const drawTable = (y, title, subtitle, cols, headers, rows, rowRenderer)=>{
+      const panelX = margins.left;
+      const panelW = width - margins.left - margins.right;
+      const tableH = tableTitleH + tableHeaderH + Math.max(1, rows.length) * tableRowH;
+      rr(panelX, y, panelW, tableH, 24, panel, border);
+      txt(title, panelX + 22, y + 18, '700 28px sans-serif', text);
+      txt(subtitle, panelX + panelW - 22, y + 22, '400 16px sans-serif', muted, 'right');
+      let x = panelX;
+      const headY = y + tableTitleH;
+      cols.forEach((w, idx)=>{
+        rr(x, headY, w, tableHeaderH, idx===0?16:10, header, border);
+        txt(headers[idx] || '', x + (idx===1 ? 14 : w/2), headY + 10, fitText(headers[idx] || '', w - 18, 18, '700'), text, idx===1 ? 'left' : 'center');
+        x += w;
+      });
+      let rowY = headY + tableHeaderH;
+      rows.forEach((row, rowIdx)=>{
+        rowRenderer({ row, rowIdx, y:rowY, panelX, cols });
+        rowY += tableRowH;
+      });
+      if(!rows.length) txt('Keine Daten', panelX + 20, headY + 54, '500 18px sans-serif', muted);
+      return tableH;
+    };
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+    for(let i=0;i<width;i+=92){
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.beginPath();
+      ctx.moveTo(i,0);
+      ctx.lineTo(i-220,height);
+      ctx.stroke();
+    }
+    rr(margins.left, margins.top, width - margins.left - margins.right, titleH, 26, panel, border);
+    txt('TimTime Saison-Auswertung', margins.left + 28, margins.top + 24, '700 42px sans-serif', text);
+    txt(season.name || 'Saison', margins.left + 28, margins.top + 76, '500 22px sans-serif', muted);
+    txt(`${new Date(createdAt).toLocaleDateString('de-DE')} - ${getRaceDaysForSeason(seasonId).length} Renntage - ${stats.races.length} Rennen - ${stats.rows.length} Fahrer`, width - margins.right - 28, margins.top + 30, '500 20px sans-serif', muted, 'right');
+    txt(`Wertung: ${champ.settings.countedRaces || 'alle'} Rennen - ${champ.settings.countedFastestLaps || 'alle'} SR - Faktor ${champ.settings.factor} - ${champ.settings.fastestLapPoints} SR-Pkt.`, width - margins.right - 28, margins.top + 76, '400 16px sans-serif', accent2, 'right');
+
+    const cardsY = margins.top + titleH + sectionGap;
+    drawMetricCard(margins.left, cardsY, 'Meisterschaft', champLeader ? champLeader.driver.name : '-', champLeader ? `${champLeader.totalPoints} Punkte` : 'Keine Daten', accent);
+    drawMetricCard(margins.left + (cardW + cardGap), cardsY, 'Meiste Siege', winsLeader ? winsLeader.driver.name : '-', winsLeader ? `${winsLeader.wins} Siege` : 'Keine Daten', accent2);
+    drawMetricCard(margins.left + ((cardW + cardGap) * 2), cardsY, 'Meiste Podien', podiumLeader ? podiumLeader.driver.name : '-', podiumLeader ? `${podiumLeader.podiums} Podien` : 'Keine Daten', positive);
+    drawMetricCard(margins.left + ((cardW + cardGap) * 3), cardsY, 'Meiste SR', fastestLeader ? fastestLeader.driver.name : '-', fastestLeader ? `${fastestLeader.fastestLapCount} schnellste Runden` : 'Keine Daten', '#f59e0b');
+
+    let curY = cardsY + cardH + sectionGap;
+    curY += drawTable(curY, 'Gesamtwertung', `Gestrichen: Rennen ${totalDiscardedRacePoints} - Bonus ${totalDiscardedBonusPoints}`, champCols, ['#', 'Fahrer', 'Gesamt', 'Rennen', 'Bonus', 'Siege', 'Podien'], tableTopRows, ({row,rowIdx,y,panelX,cols})=>{
+      let x = panelX;
+      const band = rowIdx % 2 ? panel2 : '#151922';
+      cols.forEach((w, idx)=>{ rr(x, y, w, tableRowH, idx===0?12:8, band, border); x += w; });
+      x = panelX;
+      txt(rowIdx + 1, x + cols[0]/2, y + 8, '700 16px sans-serif', text, 'center'); x += cols[0];
+      txt(row.driver?.name || '-', x + 14, y + 8, fitText(row.driver?.name || '-', cols[1] - 20, 18), text); x += cols[1];
+      txt(row.totalPoints || 0, x + cols[2]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[2];
+      txt(row.countedRacePoints || 0, x + cols[3]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[3];
+      txt(row.countedBonusPoints || 0, x + cols[4]/2, y + 8, '700 16px monospace', accent2, 'center'); x += cols[4];
+      txt(row.wins || 0, x + cols[5]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[5];
+      txt(row.podiums || 0, x + cols[6]/2, y + 8, '700 16px monospace', text, 'center');
+    });
+    curY += sectionGap;
+    drawTable(curY, 'Saison Statistik', 'Starts, Siege, Podien, schnellste Runden und Durchschnittsplatz', statCols, ['#', 'Fahrer', 'Starts', 'Siege', 'Podien', 'SR', 'Ø Platz'], statTopRows, ({row,rowIdx,y,panelX,cols})=>{
+      let x = panelX;
+      const band = rowIdx % 2 ? panel2 : '#151922';
+      cols.forEach((w, idx)=>{ rr(x, y, w, tableRowH, idx===0?12:8, band, border); x += w; });
+      x = panelX;
+      txt(rowIdx + 1, x + cols[0]/2, y + 8, '700 16px sans-serif', text, 'center'); x += cols[0];
+      txt(row.driver?.name || '-', x + 14, y + 8, fitText(row.driver?.name || '-', cols[1] - 20, 18), text); x += cols[1];
+      txt(row.races || 0, x + cols[2]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[2];
+      txt(row.wins || 0, x + cols[3]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[3];
+      txt(row.podiums || 0, x + cols[4]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[4];
+      txt(row.fastestLapCount || 0, x + cols[5]/2, y + 8, '700 16px monospace', accent2, 'center'); x += cols[5];
+      const avgPos = row.avgPos!=null ? String(row.avgPos.toFixed(2)).replace('.', ',') : '-';
+      txt(avgPos, x + cols[6]/2, y + 8, '700 16px monospace', row.avgPos!=null ? text : muted, 'center');
+    });
+    return await new Promise(resolve=>canvas.toBlob(resolve, 'image/png'));
+  }
+
   function buildRaceDayWebhookMessage(raceDayId){
     const data = getRaceDayWebhookTableData(raceDayId);
     const { rd, tracks, createdAt, table1Rows } = data;
@@ -2625,11 +2777,162 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
         { name:'Punkte-Regel', value: trimDiscordFieldValue(`Gewertete Rennen: ${champ.settings.countedRaces || 'alle'}\nGewertete SR: ${champ.settings.countedFastestLaps || 'alle'}\nFaktor: ${champ.settings.factor}\nSR-Punkte: ${champ.settings.fastestLapPoints}`), inline:true }
       ],
       footer: { text:'TimTime Saison Webhook' },
-      timestamp: new Date(createdAt).toISOString()
+      timestamp: new Date(createdAt).toISOString(),
+      image: { url:'attachment://saison_auswertung.png' }
     }];
     const standingFields = chunkDiscordFieldLines(standingsLines, 'Gesamtwertung', 1024);
     const awardFields = chunkDiscordFieldLines(awards, 'Awards', 1024);
     for(const field of [...standingFields, ...awardFields]){
+      if(embeds[embeds.length-1].fields.length >= 24){
+        embeds.push({ title:'Saison-Auswertung (Fortsetzung)', color:0x7d5cff, fields:[], footer:{ text:'TimTime Saison Webhook' }, timestamp:new Date(createdAt).toISOString() });
+      }
+      embeds[embeds.length-1].fields.push(field);
+    }
+    const payload = {
+      username: state.settings?.appName || 'TimTime',
+      content: '',
+      embeds
+    };
+    const forumText = textLines.join('\n').trim();
+    const threadName = buildDiscordThreadName(season.name || 'Saison', {
+      type: 'Saison-Auswertung', season: season.name || 'Saison', createdAt
+    }, state.settings?.discordSeasonThreadName || '');
+    return { payload, forumText, threadName, season, champ, stats };
+  }
+
+  function buildSeasonWebhookMessage(seasonId){
+    const season = (state.season?.seasons||[]).find(x=>x.id===seasonId) || null;
+    if(!season) throw new Error('Saison nicht gefunden');
+    const champ = getChampionshipData(seasonId, getChampionshipSettings());
+    const stats = getSeasonStatisticsData(seasonId);
+    const createdAt = season.createdAt || Date.now();
+    const topRows = champ.rows.slice(0,20);
+    const statRows = stats.rows || [];
+    const champRows = champ.rows || [];
+    const champLeader = champRows[0] || null;
+    const winsLeader = statRows.slice().sort((a,b)=>(b.wins-a.wins)||(b.podiums-a.podiums))[0] || null;
+    const podiumLeader = statRows.slice().sort((a,b)=>(b.podiums-a.podiums)||(b.wins-a.wins))[0] || null;
+    const fastestLeader = statRows.slice().sort((a,b)=>(b.fastestLapCount-a.fastestLapCount)||(b.wins-a.wins))[0] || null;
+    const consistencyLeader = statRows.filter(x=>x.races>1).slice().sort((a,b)=>(a.consistencyScore??9e15)-(b.consistencyScore??9e15))[0] || statRows[0] || null;
+    const startsLeader = statRows.slice().sort((a,b)=>(b.races-a.races)||(b.wins-a.wins))[0] || null;
+    const avgLapLeader = statRows.filter(x=>x.avgMs!=null).slice().sort((a,b)=>(a.avgMs??9e15)-(b.avgMs??9e15)||(b.wins-a.wins))[0] || null;
+    const champRaceLeader = champRows.slice().sort((a,b)=>(b.countedRacePoints-a.countedRacePoints)||(b.wins-a.wins))[0] || null;
+    const champBonusLeader = champRows.slice().sort((a,b)=>(b.countedBonusPoints-a.countedBonusPoints)||(b.fastestLapCount-a.fastestLapCount))[0] || null;
+    const totalDiscardedRacePoints = champRows.reduce((sum, row)=>sum + (Number(row.discardedRacePoints)||0), 0);
+    const totalDiscardedBonusPoints = champRows.reduce((sum, row)=>sum + (Number(row.discardedBonusPoints)||0), 0);
+    const awards = [];
+    if(statRows.length){
+      if(winsLeader) awards.push(`Meiste Siege: ${winsLeader.driver.name} (${winsLeader.wins})`);
+      if(podiumLeader) awards.push(`Meiste Podien: ${podiumLeader.driver.name} (${podiumLeader.podiums})`);
+      if(fastestLeader) awards.push(`Meiste schnellste Runden: ${fastestLeader.driver.name} (${fastestLeader.fastestLapCount})`);
+      if(consistencyLeader && consistencyLeader.avgPos!=null) awards.push(`Konstantester Fahrer: ${consistencyLeader.driver.name} (Ø Platz ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})`);
+      if(startsLeader) awards.push(`Meiste Starts: ${startsLeader.driver.name} (${startsLeader.races})`);
+      if(avgLapLeader && avgLapLeader.avgMs!=null) awards.push(`Beste Ø Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})`);
+    }
+    const trackBestMap = new Map();
+    for(const row of statRows){
+      for(const [trackId, bestMs] of Object.entries(row.bestByTrack||{})){
+        const ms = Number(bestMs||0);
+        if(!(ms>0)) continue;
+        const cur = trackBestMap.get(trackId);
+        if(!cur || ms < cur.ms){
+          trackBestMap.set(trackId, { trackId, ms, driverName: row.driver?.name || '—' });
+        }
+      }
+    }
+    const trackBestLines = Array.from(trackBestMap.values()).sort((a,b)=>{
+      const ta = getTrackById(a.trackId)?.name || a.trackId;
+      const tb = getTrackById(b.trackId)?.name || b.trackId;
+      return ta.localeCompare(tb, 'de');
+    }).map(entry=>{
+      const track = getTrackById(entry.trackId);
+      return `${getTrackPlainName(track)}: ${entry.driverName} (${msToTime(entry.ms,3)})`;
+    });
+    const seasonRaces = getSeasonScoringRaces(seasonId);
+    const recentRaceLines = seasonRaces.slice(-5).map((race, idx, arr)=>{
+      const laps = getRelevantRaceLaps(race.id, state.session.laps || []);
+      const standings = computeDriverStandingsGlobal(laps);
+      const winner = standings[0]?.name || '—';
+      const fastestDid = getFastestDriverIdFromLaps(laps);
+      const fastestDriver = fastestDid ? (getDriver(fastestDid)?.name || fastestDid) : '';
+      const fastestLap = laps.filter(l=>{
+        const did = String(l?.driverId || (l?.carId ? (getCar(l.carId)?.driverId||'') : '') || '').trim();
+        return did && did===fastestDid && Number(l?.lapMs||0)>0;
+      }).reduce((best, lap)=>{
+        if(!best || Number(lap.lapMs||0) < Number(best.lapMs||0)) return lap;
+        return best;
+      }, null);
+      const parts = [`${seasonRaces.length - arr.length + idx + 1}. ${race.name || 'Rennen'}`, `Sieg: ${winner}`];
+      if(fastestDriver && fastestLap?.lapMs) parts.push(`SR: ${fastestDriver} (${msToTime(fastestLap.lapMs,3)})`);
+      return parts.join(' • ');
+    });
+    const standingsLines = topRows.map((row, idx)=>{
+      const pieces = [
+        `${idx+1}. ${row.driver.name}`,
+        `${row.totalPoints} Pkt.`,
+        `${row.races || 0}/${row.countedRaceResults || 0} gew. Rennen`,
+        `${row.fastestLapCount || 0}/${row.countedFastestResults || 0} gew. SR`,
+        `${row.countedRacePoints || 0} Rennen`,
+        `${row.countedBonusPoints || 0} Bonus`,
+        `${(row.discardedRacePoints||0) + (row.discardedBonusPoints||0)} gestrichen`,
+        `${row.wins} Siege`,
+        `${row.podiums} Podien`,
+        `${row.fastestLapCount} SR`
+      ];
+      return pieces.join(' • ');
+    });
+    const highlightLines = [
+      winsLeader ? `Meiste Siege: ${winsLeader.driver.name} (${winsLeader.wins})` : '',
+      podiumLeader ? `Meiste Podien: ${podiumLeader.driver.name} (${podiumLeader.podiums})` : '',
+      fastestLeader ? `Meiste SR: ${fastestLeader.driver.name} (${fastestLeader.fastestLapCount})` : '',
+      consistencyLeader && consistencyLeader.avgPos!=null ? `Konstantester Fahrer: ${consistencyLeader.driver.name} (Ø ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})` : '',
+      startsLeader ? `Meiste Starts: ${startsLeader.driver.name} (${startsLeader.races})` : '',
+      avgLapLeader && avgLapLeader.avgMs!=null ? `Beste Ø Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})` : '',
+      champRaceLeader ? `Meiste Rennpunkte: ${champRaceLeader.driver.name} (${champRaceLeader.countedRacePoints || 0})` : '',
+      champBonusLeader ? `Meiste Bonuspunkte: ${champBonusLeader.driver.name} (${champBonusLeader.countedBonusPoints || 0})` : ''
+    ].filter(Boolean);
+    const textLines = [
+      `🏆 **Saison-Auswertung**`,
+      `**Saison:** ${season.name || '—'}`,
+      `**Renntage:** ${getRaceDaysForSeason(seasonId).length}`,
+      `**Rennen:** ${stats.races.length}`,
+      `**Fahrer:** ${statRows.length}`,
+      `**Gewertete Rennen:** ${champ.settings.countedRaces || 'alle'} pro Fahrer`,
+      `**Gewertete SR:** ${champ.settings.countedFastestLaps || 'alle'} pro Fahrer`,
+      `**Gestrichene Punkte:** Rennen ${totalDiscardedRacePoints} • Bonus ${totalDiscardedBonusPoints}`,
+      `**Meisterschaft:** ${champLeader ? `${champLeader.driver.name} mit ${champLeader.totalPoints} Punkten` : '—'}`,
+      '',
+      '**Gesamtwertung**',
+      ...(standingsLines.length ? standingsLines : ['— Keine gewerteten Rennen']),
+      '',
+      '**Highlights**',
+      ...(highlightLines.length ? highlightLines : ['— Keine Daten']),
+      '',
+      '**Streckenbestzeiten**',
+      ...(trackBestLines.length ? trackBestLines : ['— Keine Daten']),
+      '',
+      '**Letzte Rennen**',
+      ...(recentRaceLines.length ? recentRaceLines : ['— Keine Daten'])
+    ];
+    const embeds = [{
+      title: 'Saison-Auswertung',
+      description: trimDiscordFieldValue(`${season.name || '—'}\nKomplette Saisonstatistik und Meisterschaftsübersicht`, 4096),
+      color: 0x7d5cff,
+      fields: [
+        { name:'Überblick', value: trimDiscordFieldValue(`Renntage: ${getRaceDaysForSeason(seasonId).length}\nRennen: ${stats.races.length}\nFahrer: ${statRows.length}\nGewertete Rennen gesamt: ${champ.races.length}`), inline:true },
+        { name:'Punkte-Regel', value: trimDiscordFieldValue(`Gewertete Rennen: ${champ.settings.countedRaces || 'alle'} pro Fahrer\nGewertete SR: ${champ.settings.countedFastestLaps || 'alle'} pro Fahrer\nFaktor: ${champ.settings.factor}\nSR-Punkte: ${champ.settings.fastestLapPoints}`), inline:true },
+        { name:'Streichresultate', value: trimDiscordFieldValue(`Gestrichene Rennpunkte: ${totalDiscardedRacePoints}\nGestrichene Bonuspunkte: ${totalDiscardedBonusPoints}`), inline:true },
+        { name:'Meisterschaftsführer', value: trimDiscordFieldValue(champLeader ? `${champLeader.driver.name}\n${champLeader.totalPoints} Punkte\n${champLeader.wins} Siege • ${champLeader.podiums} Podien` : '—'), inline:true }
+      ],
+      footer: { text:'TimTime Saison Webhook' },
+      timestamp: new Date(createdAt).toISOString()
+    }];
+    const highlightFields = chunkDiscordFieldLines(highlightLines, 'Highlights', 1024);
+    const standingFields = chunkDiscordFieldLines(standingsLines, 'Gesamtwertung', 1024);
+    const awardFields = chunkDiscordFieldLines(awards, 'Awards', 1024);
+    const trackFields = chunkDiscordFieldLines(trackBestLines, 'Streckenbestzeiten', 1024);
+    const recentRaceFields = chunkDiscordFieldLines(recentRaceLines, 'Letzte Rennen', 1024);
+    for(const field of [...highlightFields, ...standingFields, ...awardFields, ...trackFields, ...recentRaceFields]){
       if(embeds[embeds.length-1].fields.length >= 24){
         embeds.push({ title:'Saison-Auswertung (Fortsetzung)', color:0x7d5cff, fields:[], footer:{ text:'TimTime Saison Webhook' }, timestamp:new Date(createdAt).toISOString() });
       }
@@ -2662,7 +2965,8 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     if(!webhookUrl) throw new Error('Saison Webhook fehlt');
     const msg = buildSeasonWebhookMessage(seasonId);
     const extra = state.settings?.discordSeasonUseThread ? { thread_name: msg.threadName } : {};
-    await postDiscordWebhook(webhookUrl, msg.payload, extra);
+    const blob = await renderSeasonWebhookBlob(seasonId);
+    await postDiscordWebhookWithImage(webhookUrl, msg.payload, blob, 'saison_auswertung.png', extra);
     return msg;
   }
 
@@ -2683,6 +2987,50 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     ta.remove();
     if(!ok) throw new Error('Clipboard nicht verfügbar');
     return true;
+  }
+
+  function setDiscordPreviewText(root, selector, text){
+    const node = root?.querySelector(selector);
+    if(node) node.textContent = String(text || '').trim() || 'Keine Daten';
+  }
+
+  function formatDiscordPayloadPreview(payload){
+    const lines = [];
+    const embeds = Array.isArray(payload?.embeds) ? payload.embeds : [];
+    const content = String(payload?.content || '').trim();
+    if(content) lines.push(content);
+    embeds.forEach((embed, idx)=>{
+      if(idx) lines.push('', '-----');
+      if(embed?.title) lines.push(String(embed.title));
+      if(embed?.description) lines.push(String(embed.description));
+      for(const field of (embed?.fields || [])){
+        if(field?.name) lines.push('', `[${field.name}]`);
+        if(field?.value) lines.push(String(field.value));
+      }
+      if(embed?.footer?.text) lines.push('', `Footer: ${embed.footer.text}`);
+      if(embed?.image?.url) lines.push(`Bild: ${embed.image.url}`);
+    });
+    return lines.join('\n').trim();
+  }
+
+  function setDiscordPreviewImage(root, selector, blob, alt){
+    const node = root?.querySelector(selector);
+    if(!node) return;
+    const prevUrl = node.getAttribute('data-preview-url');
+    if(prevUrl) URL.revokeObjectURL(prevUrl);
+    node.removeAttribute('data-preview-url');
+    node.innerHTML = '';
+    if(!(blob instanceof Blob)){
+      node.innerHTML = `<div class="muted small">${esc(alt || 'Kein Bild verfuegbar')}</div>`;
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    node.setAttribute('data-preview-url', url);
+    node.innerHTML = `<img src="${url}" alt="${esc(alt || 'Discord Vorschau')}" />`;
+    const img = node.querySelector('img');
+    if(img){
+      img.onload = ()=>setTimeout(()=>URL.revokeObjectURL(url), 1200);
+    }
   }
 
   async function sendDiscordSummaryForRace(raceId, opts={}){
@@ -2719,6 +3067,33 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     race.discordSendError = '';
     saveState();
     return true;
+  }
+
+  async function buildSessionDiscordPreview(raceId){
+    const summary = buildRaceSummaryData(raceId);
+    if(!summary) throw new Error('Session nicht gefunden');
+    const race = summary.race;
+    const blob = await renderRaceWebhookCompositeBlob(summary);
+    const standings = summary.standings || [];
+    const top = standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name||'â€”'} (${s.bestMs!=null ? msToTime(s.bestMs,3) : 'â€”'})`).join('\n') || 'â€”';
+    const bestText = summary.bestLap ? `${driverNameByIdGlobal(driverKeyForLapGlobal(summary.bestLap))} â€¢ ${msToTime(summary.bestLap.lapMs,3)}` : 'â€”';
+    const payload = {
+      username: state.settings?.appName || 'TimTime',
+      embeds: [{
+        title: summary.freeDriving ? 'Freies Fahren beendet' : 'Rennen beendet',
+        description: summary.subtitle,
+        color: summary.freeDriving ? 5814783 : 5153791,
+        fields: [
+          { name: summary.freeDriving ? 'Top Bestzeiten' : 'Podium', value: top || 'â€”', inline: false },
+          { name:'Schnellste Runde', value: bestText, inline:true },
+          { name:'Beendet', value: formatDiscordDateTime(race.endedAt), inline:true }
+        ],
+        image: { url:'attachment://session_summary.png' },
+        footer: { text:'TimTime Discord Webhook' },
+        timestamp: new Date(race.endedAt || Date.now()).toISOString()
+      }]
+    };
+    return { summary, race, payload, blob };
   }
 
   async function maybeAutoSendDiscordForRace(raceId){
@@ -7524,9 +7899,27 @@ function renderRenntagAuswertung(){
             <span class="badge">Sessions: ${races.length}</span>
             <span class="badge">Fahrer: ${stats.length}</span>
           </div>
-          <div class="row wrap" style="gap:10px; margin-top:12px">
-            <button class="btn" id="btnRaceDayWebhook" type="button">Renntag an Discord senden</button>
-            <button class="btn" id="btnRaceDayForumCopy" type="button">Forum-Text kopieren</button>
+          <div class="row wrap discord-preview-wrap" style="gap:10px; margin-top:12px">
+            <div class="card" style="width:100%">
+              <div class="card-h"><h3>Discord Vorschau</h3></div>
+              <div class="card-b">
+                <div class="discord-preview-grid">
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Text</div>
+                    <pre class="discord-preview-text" id="raceDayDiscordPreviewText">Lade Vorschau...</pre>
+                  </div>
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Bild</div>
+                    <div class="discord-preview-imagebox" id="raceDayDiscordPreviewImage"><div class="muted small">Lade Bild...</div></div>
+                  </div>
+                </div>
+                <div class="row wrap" style="gap:10px; margin-top:12px">
+                  <button class="btn" id="btnRaceDayForumCopy" type="button">Forum-Text kopieren</button>
+                  <button class="btn" id="btnRaceDayWebhook" type="button">Renntag an Discord senden</button>
+                </div>
+                <div class="muted small" style="margin-top:8px">Vorschau von Text und Bild, die an Discord gesendet werden. FÃ¼r Forum-KanÃ¤le kann optional ein Thread/Post erstellt werden.</div>
+              </div>
+            </div>
           </div>
           <div class="muted small" style="margin-top:8px">Sendet pro Strecke alle Fahrer mit ihrer besten Runde dieses Renntags. Für Forum-Kanäle kann optional ein Thread/Post erstellt werden.</div>
           <div class="hr"></div>
@@ -7585,6 +7978,20 @@ function renderRenntagAuswertung(){
     if(sel) sel.onchange = (e)=>{ state.ui.analysisRaceId = e.target.value; state.ui.analysisSessionDriverId = ''; saveState(); renderRenntagAuswertung(); };
     const dsel = el.querySelector('#analysisSessionDriverSel');
     if(dsel) dsel.onchange = (e)=>{ state.ui.analysisSessionDriverId = e.target.value; saveState(); renderRenntagAuswertung(); };
+    const previewRoot = el;
+    Promise.resolve().then(async ()=>{
+      try{
+        const msg = buildRaceDayWebhookMessage(rd.id);
+        const blob = await renderRaceDayWebhookBlob(rd.id);
+        if(previewRoot !== document.getElementById('pageRenntagAuswertung')) return;
+        setDiscordPreviewText(previewRoot, '#raceDayDiscordPreviewText', formatDiscordPayloadPreview(msg.payload));
+        setDiscordPreviewImage(previewRoot, '#raceDayDiscordPreviewImage', blob, 'Renntag Discord Vorschau');
+      }catch(err){
+        setDiscordPreviewText(previewRoot, '#raceDayDiscordPreviewText', 'Vorschau konnte nicht geladen werden.');
+        setDiscordPreviewImage(previewRoot, '#raceDayDiscordPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+        logLine('Renntag Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    });
     el.querySelectorAll('[data-del-lap-analysis]').forEach(btn=>{
       btn.onclick = ()=>{
         deleteLapById(btn.getAttribute('data-del-lap-analysis'));
@@ -7927,9 +8334,27 @@ function renderRenntagAuswertung(){
             <span class="badge">Rennen dieser Saison: ${stats.races.length}</span>
             <span class="badge">Fahrer: ${statRows.length}</span>
           </div>
-          <div class="row wrap" style="gap:10px; margin-bottom:12px">
-            <button class="btn" id="btnSeasonWebhook" type="button">Saison an Discord senden</button>
-            <button class="btn" id="btnSeasonForumCopy" type="button">Forum-Text kopieren</button>
+          <div class="row wrap discord-preview-wrap" style="gap:10px; margin-bottom:12px">
+            <div class="card" style="width:100%">
+              <div class="card-h"><h3>Discord Vorschau</h3></div>
+              <div class="card-b">
+                <div class="discord-preview-grid">
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Text</div>
+                    <pre class="discord-preview-text" id="seasonDiscordPreviewText">Lade Vorschau...</pre>
+                  </div>
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Bild</div>
+                    <div class="discord-preview-imagebox" id="seasonDiscordPreviewImage"><div class="muted small">Lade Bild...</div></div>
+                  </div>
+                </div>
+                <div class="row wrap" style="gap:10px; margin-top:12px">
+                  <button class="btn" id="btnSeasonForumCopy" type="button">Forum-Text kopieren</button>
+                  <button class="btn" id="btnSeasonWebhook" type="button">Saison an Discord senden</button>
+                </div>
+                <div class="muted small" style="margin-top:8px">Vorschau von Text und Bild, die an Discord gesendet werden. Fuer Forum-Kanaele kann optional direkt ein Thread/Post erstellt werden.</div>
+              </div>
+            </div>
           </div>
           <div class="muted small" style="margin-bottom:14px">Sendet Gesamtwertung und Awards an Discord. Für Forum-Kanäle kann optional direkt ein Thread/Post erstellt werden.</div>
 
@@ -8028,6 +8453,52 @@ function renderRenntagAuswertung(){
       </div>
     `;
 
+    const seasonPreviewRoot = el;
+    Promise.resolve().then(async ()=>{
+      try{
+        const msg = buildSeasonWebhookMessage(active.id);
+        const blob = await renderSeasonWebhookBlob(active.id);
+        if(seasonPreviewRoot !== document.getElementById('pageSaisonAuswertung')) return;
+        setDiscordPreviewText(seasonPreviewRoot, '#seasonDiscordPreviewText', formatDiscordPayloadPreview(msg.payload));
+        setDiscordPreviewImage(seasonPreviewRoot, '#seasonDiscordPreviewImage', blob, 'Saison Discord Vorschau');
+      }catch(err){
+        setDiscordPreviewText(seasonPreviewRoot, '#seasonDiscordPreviewText', 'Vorschau konnte nicht geladen werden.');
+        setDiscordPreviewImage(seasonPreviewRoot, '#seasonDiscordPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+        logLine('Saison Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    });
+    const btnSeasonWebhook = el.querySelector('#btnSeasonWebhook');
+    if(btnSeasonWebhook){
+      btnSeasonWebhook.onclick = async ()=>{
+        btnSeasonWebhook.disabled = true;
+        const prev = btnSeasonWebhook.textContent;
+        btnSeasonWebhook.textContent = 'Sende...';
+        try{
+          await sendSeasonWebhook(active.id);
+          toast('Discord','Saison gesendet.','ok');
+          logLine('Saison Webhook gesendet: ' + (active.name||active.id));
+        }catch(err){
+          toast('Discord','Saison-Webhook fehlgeschlagen.','err');
+          logLine('Saison Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }finally{
+          btnSeasonWebhook.disabled = false;
+          btnSeasonWebhook.textContent = prev;
+        }
+      };
+    }
+    const btnSeasonForumCopy = el.querySelector('#btnSeasonForumCopy');
+    if(btnSeasonForumCopy){
+      btnSeasonForumCopy.onclick = async ()=>{
+        try{
+          const msg = buildSeasonWebhookMessage(active.id);
+          await copyTextToClipboard(msg.forumText);
+          toast('Forum','Saison-Text kopiert.','ok');
+        }catch(err){
+          toast('Forum','Kopieren fehlgeschlagen.','err');
+          logLine('Saison Forum-Text Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      };
+    }
     const bindNum = (id, key)=>{
       const inp = el.querySelector('#'+id);
       if(!inp) return;
@@ -8098,6 +8569,45 @@ function renderRenntag(){
             <span class="badge">Fahrer: ${driverIds.length}</span>
             <span class="badge">Autos: ${carsIds.length}</span>
           </div>
+          <div class="hr"></div>
+          <div class="card">
+            <div class="card-h"><h3>Renntag Discord Vorschau</h3></div>
+            <div class="card-b">
+              <div class="discord-preview-grid">
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">Text</div>
+                  <pre class="discord-preview-text" id="raceDayMainPreviewText">Lade Vorschau...</pre>
+                </div>
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">Bild</div>
+                  <div class="discord-preview-imagebox" id="raceDayMainPreviewImage"><div class="muted small">Lade Bild...</div></div>
+                </div>
+              </div>
+              <div class="row wrap" style="gap:10px; margin-top:12px">
+                <button class="btn" id="btnRaceDayMainForumCopy" type="button">Forum-Text kopieren</button>
+                <button class="btn" id="btnRaceDayMainWebhook" type="button">Renntag an Discord senden</button>
+              </div>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="card">
+            <div class="card-h"><h3>Session Discord Vorschau</h3></div>
+            <div class="card-b">
+              <div class="discord-preview-grid">
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">Text</div>
+                  <pre class="discord-preview-text" id="sessionMainPreviewText">${race ? 'Lade Vorschau...' : 'Keine Session ausgewaehlt.'}</pre>
+                </div>
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">Bild</div>
+                  <div class="discord-preview-imagebox" id="sessionMainPreviewImage"><div class="muted small">${race ? 'Lade Bild...' : 'Keine Session ausgewaehlt.'}</div></div>
+                </div>
+              </div>
+              <div class="row wrap" style="gap:10px; margin-top:12px">
+                <button class="btn" id="btnSessionMainWebhook" type="button" ${race?'':'disabled'}>Session an Discord senden</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -8119,6 +8629,86 @@ function renderRenntag(){
     };
 
     el.querySelector('#raceSel').onchange=(e)=>{ state.ui.selectedRaceId=e.target.value; state.ui.selectedRaceDriverId=''; saveState(); renderRenntag(); };
+    const renntagPreviewRoot = el;
+    Promise.resolve().then(async ()=>{
+      try{
+        const msg = buildRaceDayWebhookMessage(rd.id);
+        const blob = await renderRaceDayWebhookBlob(rd.id);
+        if(renntagPreviewRoot !== document.getElementById('pageRenntag')) return;
+        setDiscordPreviewText(renntagPreviewRoot, '#raceDayMainPreviewText', formatDiscordPayloadPreview(msg.payload));
+        setDiscordPreviewImage(renntagPreviewRoot, '#raceDayMainPreviewImage', blob, 'Renntag Discord Vorschau');
+      }catch(err){
+        setDiscordPreviewText(renntagPreviewRoot, '#raceDayMainPreviewText', 'Vorschau konnte nicht geladen werden.');
+        setDiscordPreviewImage(renntagPreviewRoot, '#raceDayMainPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+        logLine('Renntag Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    });
+    if(race){
+      Promise.resolve().then(async ()=>{
+        try{
+          const preview = await buildSessionDiscordPreview(race.id);
+          if(renntagPreviewRoot !== document.getElementById('pageRenntag')) return;
+          setDiscordPreviewText(renntagPreviewRoot, '#sessionMainPreviewText', formatDiscordPayloadPreview(preview.payload));
+          setDiscordPreviewImage(renntagPreviewRoot, '#sessionMainPreviewImage', preview.blob, 'Session Discord Vorschau');
+        }catch(err){
+          setDiscordPreviewText(renntagPreviewRoot, '#sessionMainPreviewText', 'Vorschau konnte nicht geladen werden.');
+          setDiscordPreviewImage(renntagPreviewRoot, '#sessionMainPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+          logLine('Session Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      });
+    }
+    const btnRaceDayMainWebhook = el.querySelector('#btnRaceDayMainWebhook');
+    if(btnRaceDayMainWebhook){
+      btnRaceDayMainWebhook.onclick = async ()=>{
+        btnRaceDayMainWebhook.disabled = true;
+        const prev = btnRaceDayMainWebhook.textContent;
+        btnRaceDayMainWebhook.textContent = 'Sende...';
+        try{
+          await sendRaceDayWebhook(rd.id);
+          toast('Discord','Renntag gesendet.','ok');
+          logLine('Renntag Webhook gesendet: ' + (rd.name||rd.id));
+        }catch(err){
+          toast('Discord','Renntag-Webhook fehlgeschlagen.','err');
+          logLine('Renntag Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }finally{
+          btnRaceDayMainWebhook.disabled = false;
+          btnRaceDayMainWebhook.textContent = prev;
+        }
+      };
+    }
+    const btnRaceDayMainForumCopy = el.querySelector('#btnRaceDayMainForumCopy');
+    if(btnRaceDayMainForumCopy){
+      btnRaceDayMainForumCopy.onclick = async ()=>{
+        try{
+          const msg = buildRaceDayWebhookMessage(rd.id);
+          await copyTextToClipboard(msg.forumText);
+          toast('Forum','Renntag-Text kopiert.','ok');
+        }catch(err){
+          toast('Forum','Kopieren fehlgeschlagen.','err');
+          logLine('Renntag Forum-Text Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      };
+    }
+    const btnSessionMainWebhook = el.querySelector('#btnSessionMainWebhook');
+    if(btnSessionMainWebhook){
+      btnSessionMainWebhook.onclick = async ()=>{
+        if(!race) return;
+        btnSessionMainWebhook.disabled = true;
+        const prev = btnSessionMainWebhook.textContent;
+        btnSessionMainWebhook.textContent = 'Sende...';
+        try{
+          await sendDiscordSummaryForRace(race.id, { force:true });
+          toast('Discord','Session gesendet.','ok');
+          logLine('Session Webhook gesendet: ' + (race.name||race.id));
+        }catch(err){
+          toast('Discord','Session-Webhook fehlgeschlagen.','err');
+          logLine('Session Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }finally{
+          btnSessionMainWebhook.disabled = false;
+          btnSessionMainWebhook.textContent = prev;
+        }
+      };
+    }
   }
 
   // -------- Saison --------
@@ -8151,7 +8741,42 @@ function renderRenntag(){
           </div>
         </div>
       </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-h"><h2>Saison Discord Vorschau</h2></div>
+        <div class="card-b">
+          <div class="discord-preview-grid">
+            <div class="discord-preview-pane">
+              <div class="muted small" style="margin-bottom:8px">Text</div>
+              <pre class="discord-preview-text" id="seasonMainPreviewText">${active ? 'Lade Vorschau...' : 'Keine Saison aktiv.'}</pre>
+            </div>
+            <div class="discord-preview-pane">
+              <div class="muted small" style="margin-bottom:8px">Bild</div>
+              <div class="discord-preview-imagebox" id="seasonMainPreviewImage"><div class="muted small">${active ? 'Lade Bild...' : 'Keine Saison aktiv.'}</div></div>
+            </div>
+          </div>
+          <div class="row wrap" style="gap:10px; margin-top:12px">
+            <button class="btn" id="btnSeasonMainForumCopy" type="button" ${active?'':'disabled'}>Forum-Text kopieren</button>
+            <button class="btn" id="btnSeasonMainWebhook" type="button" ${active?'':'disabled'}>Saison an Discord senden</button>
+          </div>
+        </div>
+      </div>
     `;
+    const saisonPreviewRoot = el;
+    if(active){
+      Promise.resolve().then(async ()=>{
+        try{
+          const msg = buildSeasonWebhookMessage(active.id);
+          const blob = await renderSeasonWebhookBlob(active.id);
+          if(saisonPreviewRoot !== document.getElementById('pageSaison')) return;
+          setDiscordPreviewText(saisonPreviewRoot, '#seasonMainPreviewText', formatDiscordPayloadPreview(msg.payload));
+          setDiscordPreviewImage(saisonPreviewRoot, '#seasonMainPreviewImage', blob, 'Saison Discord Vorschau');
+        }catch(err){
+          setDiscordPreviewText(saisonPreviewRoot, '#seasonMainPreviewText', 'Vorschau konnte nicht geladen werden.');
+          setDiscordPreviewImage(saisonPreviewRoot, '#seasonMainPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+          logLine('Saison Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      });
+    }
     el.querySelector('#seasonSel').onchange=(e)=>{ state.season.activeSeasonId=e.target.value; saveState(); renderAll(); };
     el.querySelector('#seasonSave').onclick=()=>{
       const s=getActiveSeason(); if(!s) return;
@@ -8181,6 +8806,42 @@ function renderRenntag(){
       }
       saveState(); toast('Saison','Neue Saison erstellt.','ok'); renderAll();
     };
+    const btnSeasonMainWebhook = el.querySelector('#btnSeasonMainWebhook');
+    if(btnSeasonMainWebhook){
+      btnSeasonMainWebhook.onclick = async ()=>{
+        const s = getActiveSeason();
+        if(!s) return;
+        btnSeasonMainWebhook.disabled = true;
+        const prev = btnSeasonMainWebhook.textContent;
+        btnSeasonMainWebhook.textContent = 'Sende...';
+        try{
+          await sendSeasonWebhook(s.id);
+          toast('Discord','Saison gesendet.','ok');
+          logLine('Saison Webhook gesendet: ' + (s.name||s.id));
+        }catch(err){
+          toast('Discord','Saison-Webhook fehlgeschlagen.','err');
+          logLine('Saison Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }finally{
+          btnSeasonMainWebhook.disabled = false;
+          btnSeasonMainWebhook.textContent = prev;
+        }
+      };
+    }
+    const btnSeasonMainForumCopy = el.querySelector('#btnSeasonMainForumCopy');
+    if(btnSeasonMainForumCopy){
+      btnSeasonMainForumCopy.onclick = async ()=>{
+        const s = getActiveSeason();
+        if(!s) return;
+        try{
+          const msg = buildSeasonWebhookMessage(s.id);
+          await copyTextToClipboard(msg.forumText);
+          toast('Forum','Saison-Text kopiert.','ok');
+        }catch(err){
+          toast('Forum','Kopieren fehlgeschlagen.','err');
+          logLine('Saison Forum-Text Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      };
+    }
   }
 
 
@@ -9152,9 +9813,6 @@ function renderRenntag(){
                 <input class="input" id="discordThreadName" value="${esc(state.settings.discordThreadName || '{track}, {date} {time}') }" placeholder="{track}, {date} {time}"/>
                 <div class="muted">Platzhalter: {track}, {mode}, {session}, {type}, {season}, {renntag}, {date}, {time}</div>
               </div>
-              <div class="settings-actions">
-                <button class="btn" id="btnDiscordTest" type="button">Session-Test senden</button>
-              </div>
                 </div>
                 <div class="settings-subcard settings-discord-card">
                   <div class="settings-tag">Renntag</div>
@@ -9311,29 +9969,6 @@ function renderRenntag(){
       saveSettingsFromForm({ notify:true, log:true });
     };
 
-    const btnDiscordTest = el.querySelector('#btnDiscordTest');
-    if(btnDiscordTest){
-      btnDiscordTest.onclick = async ()=>{
-        const draft = readSettingsForm();
-        const webhookUrl = draft.discordWebhook;
-        if(!webhookUrl){ toast('Discord','Bitte zuerst eine Webhook-URL eintragen.','err'); return; }
-        commitSettingsDraft(draft);
-        btnDiscordTest.disabled = true;
-        const prev = btnDiscordTest.textContent;
-        btnDiscordTest.textContent = 'Sende Test...';
-        try{
-          await sendDiscordTestWebhook();
-          toast('Discord','Test erfolgreich gesendet.','ok');
-          logLine('Discord Test erfolgreich gesendet');
-        }catch(err){
-          toast('Discord','Test fehlgeschlagen.','err');
-          logLine('Discord Test Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
-        }finally{
-          btnDiscordTest.disabled = false;
-          btnDiscordTest.textContent = prev;
-        }
-      };
-    }
     const btnRaceDayWebhookTest = el.querySelector('#btnRaceDayWebhookTest');
     if(btnRaceDayWebhookTest){
       btnRaceDayWebhookTest.onclick = async ()=>{

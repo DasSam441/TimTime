@@ -855,3 +855,58 @@ select.pill{cursor:pointer; outline:none;}
 .renntag-highlights-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; align-items:stretch}
 @media (max-width:1200px){ .renntag-highlights-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
 @media (max-width:700px){ .renntag-highlights-grid{grid-template-columns:1fr;} }
+
+.discord-preview-grid{
+  display:grid;
+  grid-template-columns:minmax(320px,1fr) minmax(320px,1.15fr);
+  gap:14px;
+  align-items:start;
+}
+.discord-preview-pane{
+  min-width:0;
+}
+.discord-preview-wrap > .card{width:100%}
+.discord-preview-wrap > .card .card-b > .muted.small:last-child{display:none}
+.discord-preview-wrap + .muted.small{display:none}
+#pageRenntagAuswertung .discord-preview-wrap,
+#pageSaisonAuswertung .discord-preview-wrap{display:none}
+.discord-preview-text{
+  margin:0;
+  min-height:320px;
+  max-height:560px;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  padding:14px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(15,23,42,.38);
+  color:var(--text);
+  font:500 13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+.discord-preview-imagebox{
+  min-height:320px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.18);
+  background:
+    radial-gradient(circle at top left, rgba(125,92,255,.12), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(78,161,255,.12), transparent 38%),
+    rgba(15,23,42,.38);
+  overflow:hidden;
+}
+.discord-preview-imagebox img{
+  display:block;
+  width:100%;
+  height:auto;
+  border-radius:12px;
+  box-shadow:0 18px 48px rgba(0,0,0,.28);
+}
+@media (max-width:1100px){
+  .discord-preview-grid{grid-template-columns:1fr;}
+  .discord-preview-text,
+  .discord-preview-imagebox{min-height:260px;}
+}
