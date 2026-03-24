@@ -1418,6 +1418,7 @@ return merged;
   let _appDataDbPromise = null;
   let _appDataPersistTimer = null;
   let _appDataPersistInFlight = null;
+  let _appDataHydrated = false;
 
   function idbRequestToPromise(req){
     return new Promise((resolve, reject)=>{
@@ -1729,6 +1730,7 @@ return merged;
     state.session.laps = Array.isArray(externalSnapshot.laps) ? externalSnapshot.laps : [];
     state.session.idleLaps = Array.isArray(externalSnapshot.idleLaps) ? externalSnapshot.idleLaps : [];
     ensureAutoEntities(state);
+    _appDataHydrated = true;
     saveState();
   }
 
@@ -1738,7 +1740,7 @@ return merged;
     }catch(err){
       logLine('State Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
     }
-    scheduleExternalAppDataPersist();
+    if(_appDataHydrated) scheduleExternalAppDataPersist();
   }
 
   
@@ -2441,6 +2443,13 @@ function openPresenterWindow(){
     try{ presenterBc?.postMessage({type:'snapshot', payload}); }catch{}
     try{ presenterWin?.postMessage({type:'snapshot', payload}, targetOrigin); }catch{}
   }
+
+  window.addEventListener('message', (e)=>{
+    try{
+      if(e?.data?.type !== 'presenter-ready') return;
+      sendPresenterSnapshot(true);
+    }catch{}
+  });
 
 
   function logLine(msg){
@@ -11615,24 +11624,32 @@ sendPresenterSnapshot();
   // --------------------- Render all ---------------------
   function renderAll(){
     ensureAutoEntities(state);
-    renderHeader();
-    renderTopMenu();
-    showActivePage();
-    renderSessionControl();
+    const safeRender = (name, fn)=>{
+      try{
+        fn();
+      }catch(err){
+        logLine('Render Fehler [' + name + ']: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        try{ console.error('Render Fehler [' + name + ']', err); }catch{}
+      }
+    };
+    safeRender('Header', renderHeader);
+    safeRender('TopMenu', renderTopMenu);
+    safeRender('ActivePage', showActivePage);
+    safeRender('SessionControl', renderSessionControl);
     try{ sendPresenterSnapshot(true); }catch{}
-    renderDashboard();
-    renderEinzellaeufe();
-    renderTeamrennen();
-    renderDauerschleife();
-    renderLangstrecke();
-    renderStammdaten();
-    renderStrecken();
-    renderRenntag();
-    renderRenntagAuswertung();
-    renderSaison();
-    renderSaisonAuswertung();
-    renderAudio();
-    renderEinstellungen();
+    safeRender('Dashboard', renderDashboard);
+    safeRender('Einzellaeufe', renderEinzellaeufe);
+    safeRender('Teamrennen', renderTeamrennen);
+    safeRender('Dauerschleife', renderDauerschleife);
+    safeRender('Langstrecke', renderLangstrecke);
+    safeRender('Stammdaten', renderStammdaten);
+    safeRender('Strecken', renderStrecken);
+    safeRender('Renntag', renderRenntag);
+    safeRender('RenntagAuswertung', renderRenntagAuswertung);
+    safeRender('Saison', renderSaison);
+    safeRender('SaisonAuswertung', renderSaisonAuswertung);
+    safeRender('Audio', renderAudio);
+    safeRender('Einstellungen', renderEinstellungen);
 
     const logEl=document.getElementById('runLog');
     if(logEl) logEl.textContent = [...(state.ble.lastLines||[]), ...(state.usb.lastLines||[])].slice(0,500).join('\n');

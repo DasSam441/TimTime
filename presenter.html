@@ -394,6 +394,13 @@ function buildEnduranceHtml(erows){
     if(raw) render(JSON.parse(raw));
   }catch{}
 
+  try{
+    const targetOrigin = (window.location && window.location.origin && window.location.origin !== 'null') ? window.location.origin : '*';
+    if(window.opener && !window.opener.closed){
+      window.opener.postMessage({ type:'presenter-ready' }, targetOrigin);
+    }
+  }catch{}
+
   // Fallback polling (some browsers/file:// don't fire storage/BC reliably)
   setInterval(()=>{
     try{
