@@ -150,20 +150,49 @@ body{
 }
 
 .card{
+  position:relative;
   border:1px solid var(--border);
   border-radius:var(--radius);
-  background:var(--panel);
-  box-shadow: var(--shadow);
+  background:
+    radial-gradient(circle at top right, rgba(96,165,250,.10), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(34,197,94,.05), transparent 28%),
+    linear-gradient(180deg, rgba(17,24,39,.84), rgba(15,23,42,.74));
+  box-shadow:
+    0 18px 40px rgba(2,6,23,.16),
+    0 1px 0 rgba(255,255,255,.03) inset;
   overflow:hidden;
+}
+.card:before{
+  content:"";
+  position:absolute;
+  inset:0 auto auto 0;
+  width:100%;
+  height:1px;
+  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(125,211,252,.36), rgba(255,255,255,0));
+  opacity:.5;
+  pointer-events:none;
+}
+.card:after{
+  content:"";
+  position:absolute;
+  inset:auto -14% -44% auto;
+  width:220px;
+  height:220px;
+  border-radius:999px;
+  background:radial-gradient(circle, rgba(96,165,250,.10), transparent 68%);
+  pointer-events:none;
 }
 .card-h{
   padding:12px 14px;
   border-bottom:1px solid var(--border);
   display:flex; align-items:center; justify-content:space-between;
   gap:10px;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+  position:relative;
+  z-index:1;
 }
 .card-h h2{margin:0; font-size:14px; letter-spacing:.2px}
-.card-b{padding:14px}
+.card-b{padding:14px; position:relative; z-index:1}
 .hr{height:1px; background:var(--border); margin:12px 0}
 
 
@@ -855,3 +884,58 @@ select.pill{cursor:pointer; outline:none;}
 .renntag-highlights-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; align-items:stretch}
 @media (max-width:1200px){ .renntag-highlights-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
 @media (max-width:700px){ .renntag-highlights-grid{grid-template-columns:1fr;} }
+
+.discord-preview-grid{
+  display:grid;
+  grid-template-columns:minmax(320px,1fr) minmax(320px,1.15fr);
+  gap:14px;
+  align-items:start;
+}
+.discord-preview-pane{
+  min-width:0;
+}
+.discord-preview-wrap > .card{width:100%}
+.discord-preview-wrap > .card .card-b > .muted.small:last-child{display:none}
+.discord-preview-wrap + .muted.small{display:none}
+#pageRenntagAuswertung .discord-preview-wrap,
+#pageSaisonAuswertung .discord-preview-wrap{display:none}
+.discord-preview-text{
+  margin:0;
+  min-height:320px;
+  max-height:560px;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  padding:14px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(15,23,42,.38);
+  color:var(--text);
+  font:500 13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+.discord-preview-imagebox{
+  min-height:320px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(148,163,184,.18);
+  background:
+    radial-gradient(circle at top left, rgba(125,92,255,.12), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(78,161,255,.12), transparent 38%),
+    rgba(15,23,42,.38);
+  overflow:hidden;
+}
+.discord-preview-imagebox img{
+  display:block;
+  width:100%;
+  height:auto;
+  border-radius:12px;
+  box-shadow:0 18px 48px rgba(0,0,0,.28);
+}
+@media (max-width:1100px){
+  .discord-preview-grid{grid-template-columns:1fr;}
+  .discord-preview-text,
+  .discord-preview-imagebox{min-height:260px;}
+}

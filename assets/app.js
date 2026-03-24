@@ -1,4 +1,4 @@
-(() => {
+(async () => {
   'use strict';
 
   const BUILD = 'v17.5';
@@ -8,6 +8,14 @@
   const LS_UI  = 'zeitnahme2_ui_v3';
   const AUDIO_ASSET_DB_NAME = 'zeitnahme2_audio_assets_v1';
   const AUDIO_ASSET_STORE = 'assets';
+  const APP_DATA_DB_VERSION = 2;
+  const APP_DATA_DB_NAME = 'zeitnahme2_app_data_v1';
+  const APP_DATA_AVATAR_STORE = 'driverAvatars';
+  const APP_DATA_SESSION_LAPS_STORE = 'sessionLaps';
+  const APP_DATA_IDLE_LAPS_STORE = 'idleLaps';
+  const APP_DATA_STATE_CHUNK_STORE = 'stateChunks';
+  const APP_DATA_DISCORD_QUEUE_STORE = 'discordQueue';
+  const PRES_SNAPSHOT_KEY = 'ZN_PRES_SNAPSHOT';
   const BUILTIN_DEFAULT_SOUND_ID = 'audio_builtin_defaultsound_v1';
   const BUILTIN_DEFAULT_SOUND_NAME = 'Standard Bing';
   const BUILTIN_DEFAULT_SOUND_DATA_URL = "data:audio/mpeg;base64,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mHMSYBvDiZxuiGlhJkBmSgcQmTOSkTU4TuFuSpKiFMY3RNTh//vUZCAP+Np1sD9h4AAAAA0g4AABACQCAASAACAAADSAAAAEO4HMcKKQpvLaTlGroI8LidKGoay6tBiE9FtFxSp/EGQpEkJSYNkMFKDeBzHEdo9LGJKJisD6EOLEdomqrG6OFkJUJscR2iatJbS4vC3D1IUiSCrSdUMBPGkqjtCOlynwxJ5XRstpfhbiFKpEk5QlFFyPYC8Dedn6TlCUUTpgG8OJbJSLicJ3D1Mg3iFM5KRcThRQ9TgW4uSjDhAyjFJkDmPElRLmMbompwooW46abeq1WxbMR+ltNHWLbzXL17qE+jQXuWFl0+V0aCy3YWXT5XRoKt29e6fPo2XtgtVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//vUZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
@@ -28,6 +36,491 @@
     { key:'Einstellungen', page:'pageEinstellungen' },
   ];
 
+  const I18N = {
+    de: {
+      'tab.pageDashboard':'Dashboard',
+      'tab.pageEinzellaeufe':'Einzelläufe',
+      'tab.pageDauerschleife':'Dauerschleife',
+      'tab.pageTeamrennen':'Teamrennen',
+      'tab.pageLangstrecke':'Langstrecke',
+      'tab.pageStammdaten':'Stammdaten',
+      'tab.pageStrecken':'Strecken',
+      'tab.pageRenntag':'Renntag',
+      'tab.pageRenntagAuswertung':'Renntag Auswertung',
+      'tab.pageSaison':'Saison',
+      'tab.pageSaisonAuswertung':'Saison Auswertung',
+      'tab.pageAudio':'Audio',
+      'tab.pageEinstellungen':'Einstellungen',
+      'header.subtitle':'offline • HTML/JS/CSS • build {build}',
+      'settings.saved':'Gespeichert.',
+      'settings.saved_log':'Einstellungen gespeichert',
+      'settings.language':'Sprache',
+      'settings.language_de':'Deutsch',
+      'settings.language_en':'Englisch',
+      'settings.general':'Allgemein',
+      'settings.header_name':'Name im Header',
+      'settings.save':'Speichern',
+      'session.title':'Session Control',
+      'session.quick_status':'Quick Status',
+      'session.timer':'Timer',
+      'session.current_mode':'Aktueller Modus',
+      'session.track':'Strecke',
+      'session.minimum_time':'Mindestzeit',
+      'session.track_record':'Streckenrekord',
+      'session.day_record':'Tagesrekord',
+      'session.start':'Start',
+      'session.pause':'Pause',
+      'session.resume':'Weiter',
+      'session.stop':'Stopp',
+      'session.free_driving':'Freies Fahren',
+      'session.on':'an',
+      'session.off':'aus',
+      'session.waiting_for_start':'wartet auf Start',
+      'session.free_driving_desc':'Startet sofort ohne Ampel, aber mit normaler Session und Ansagen.',
+      'session.start_light':'Startampel',
+      'session.start_light_before':'Ampel vor Start',
+      'session.start_light_sequence':'Ablauf: 5,4,3,2,1 (warten) Start',
+      'session.control_hint':'Start/Stop/Pause/Weiter steuert den aktuell aktiv gesetzten Rennmodus (inkl. Dauerschleife).',
+      'badge.season':'Saison: {name}',
+      'badge.raceday':'Renntag: {name}',
+      'mode.free_driving':'Freies Fahren',
+      'mode.none':'—',
+      'mode.single':'Einzelläufe: {submode}',
+      'mode.team':'Teamrennen',
+      'mode.loop':'Dauerschleife • {phase}',
+      'mode.endurance':'Langstrecke',
+      'submode.training':'Training',
+      'submode.qualifying':'Qualifying',
+      'submode.race':'Rennen',
+      'submode.setup':'Aufstellphase',
+      'submode.ampel':'Ampel',
+      'submode.podium':'Podium',
+      'renntag.title':'Renntag',
+      'renntag.none':'Kein Renntag.',
+      'renntag.intro':'Renntag und Session auswählen.',
+      'renntag.select_day':'Renntag auswählen',
+      'renntag.new_day':'+ Neuer Renntag',
+      'renntag.select_session':'Rennen/Session',
+      'renntag.no_sessions':'(keine Sessions)',
+      'renntag.delete_session':'Lauf/Session löschen',
+      'renntag.delete_all_sessions':'Alle Sessions dieses Renntags löschen',
+      'renntag.badge_laps':'Runden: {count}',
+      'renntag.badge_drivers':'Fahrer: {count}',
+      'renntag.badge_cars':'Autos: {count}',
+      'renntag.preview_title':'Renntag Discord Vorschau',
+      'renntag.copy_forum':'Forum-Text kopieren',
+      'renntag.send':'Renntag an Discord senden',
+      'session.preview_title':'Session Discord Vorschau',
+      'session.send':'Session an Discord senden',
+      'preview.text':'Text',
+      'preview.image':'Bild',
+      'preview.loading':'Lade Vorschau...',
+      'preview.loading_image':'Lade Bild...',
+      'preview.failed':'Vorschau konnte nicht geladen werden.',
+      'preview.no_session':'Keine Session ausgewaehlt.',
+      'renntag.created':'Neuer Renntag erstellt.',
+      'renntag.sent':'Renntag gesendet.',
+      'renntag.send_failed':'Renntag-Webhook fehlgeschlagen.',
+      'renntag.copied':'Renntag-Text kopiert.',
+      'session.sent':'Session gesendet.',
+      'session.send_failed':'Session-Webhook fehlgeschlagen.',
+      'season.title':'Saison',
+      'season.intro':'Automatisch angelegt, umbenennbar, beendbar.',
+      'season.active':'Aktive Saison',
+      'season.name':'Name',
+      'season.save':'Speichern',
+      'season.end':'Saison beenden',
+      'season.new':'+ Neue Saison',
+      'season.preview_title':'Saison Discord Vorschau',
+      'season.copy_forum':'Forum-Text kopieren',
+      'season.send':'Saison an Discord senden',
+      'season.no_active':'Keine Saison aktiv.',
+      'season.status_active':'aktiv',
+      'season.status_closed':'beendet',
+      'season.new_name':'Saison {year} (neu)',
+      'season.saved':'Gespeichert.',
+      'season.ended':'Saison beendet. Neue Saison erstellt.',
+      'season.created':'Neue Saison erstellt.',
+      'season.sent':'Saison gesendet.',
+      'season.send_failed':'Saison-Webhook fehlgeschlagen.',
+      'season.copied':'Saison-Text kopiert.',
+      'renntag.select_day':'Renntag auswählen',
+      'renntag.select_session':'Rennen/Session',
+      'renntag.delete_session':'Lauf/Session löschen',
+      'renntag.delete_all_sessions':'Alle Sessions dieses Renntags löschen',
+      'copy.failed':'Kopieren fehlgeschlagen.',
+      'button.sending':'Sende...',
+      'dashboard.free_driving':'Dashboard • Freies Fahren',
+      'dashboard.race_result':'Dashboard • Rennergebnis',
+      'dashboard.placement':'Dashboard • Platzierung',
+      'dashboard.drivers':'Dashboard • Fahrerübersicht',
+      'dashboard.teams':'Dashboard • Teams',
+      'dashboard.live_laps':'Dashboard • Aktuelle Rundenzeiten',
+      'dashboard.view_auto':'Auto',
+      'dashboard.view_race':'Rennen',
+      'dashboard.view_drivers':'Fahrer',
+      'dashboard.view_live':'Live',
+      'dashboard.view_teams':'Teams',
+      'dashboard.sort_best':'Bestzeit',
+      'dashboard.sort_last':'Letzte Runde',
+      'dashboard.sort_name':'Name',
+      'dashboard.live_intro':'Live-Ansicht der letzten gemessenen Runden.',
+      'dashboard.no_laps':'Noch keine Runden.',
+      'dashboard.no_teams':'Keine Teams angelegt.',
+      'dashboard.team_intro':'Teamwertung: Runden (primaer), Gesamtzeit als Tie-Breaker.',
+      'dashboard.team_intro_endurance':'Regelverstoesse geben Strafsekunden; ab Schwellwert werden nach Rennende Runden abgezogen.',
+      'dashboard.team_intro_regular':'Best-/Letzte Runde und Durchschnittsgeschwindigkeit je Team.',
+      'dashboard.no_team_laps':'Noch keine Runden.',
+      'dashboard.driver_intro_race':'Rangliste (aktuelles Rennen) • Letzte Runde + Schnellste Runde + MRC Δ + Durchschnittsgeschwindigkeit + Gesamtzeit.',
+      'dashboard.driver_intro_idle':'Fahrerübersicht (Letzte Runde + Schnellste Runde + MRC Δ + Durchschnittsgeschwindigkeit).',
+      'dashboard.no_driver_data':'Noch keine Daten.',
+      'dashboard.race_intro':'Rangliste (aktuelles Rennen) • sortiert nach Platzierung.',
+      'dashboard.no_race_laps':'Noch keine Runden im Rennen.',
+      'dashboard.live_hint':'Tipp: Du kannst rechts oben auf „Live“ umschalten, wenn du die letzten Runden sehen willst.',
+      'dashboard.unknown':'Unbekannt',
+      'dashboard.driver':'Fahrer',
+      'dashboard.team':'Team',
+      'dashboard.car':'Auto',
+      'dashboard.lap':'Runde',
+      'dashboard.phase':'Phase',
+      'dashboard.laps':'Runden',
+      'dashboard.total_time':'Gesamtzeit',
+      'dashboard.best':'Best',
+      'dashboard.last':'Letzte',
+      'dashboard.mrc_delta':'MRC Î”',
+      'dashboard.average_kmh':'Ã˜ km/h',
+      'dashboard.sort_title':'Sortierung',
+      'dashboard.sort_prefix':'Sort: {label}',
+      'common.active':'AKTIV',
+      'common.inactive':'inaktiv',
+      'common.team':'Team',
+      'common.teams':'Teams',
+      'common.no_data':'Keine Daten.',
+      'common.no_free_drivers':'Keine freien Fahrer.',
+      'common.search_name_placeholder':'Name...',
+      'common.saved':'Gespeichert.',
+      'single.title':'Einzellaeufe',
+      'single.hint':'"Aktiv setzen" -> Session Control links steuert Start/Stop/Pause/Weiter.',
+      'single.submode':'Submodus',
+      'single.finish_after':'Lauf endet nach',
+      'single.limit_none':'Kein Limit',
+      'single.limit_time':'Zeit',
+      'single.limit_laps':'Runden',
+      'single.time_minutes':'Zeit (Minuten)',
+      'single.laps':'Runden',
+      'single.activate':'Aktiv setzen',
+      'single.info':'Info',
+      'single.info_body':'Start/Stop laeuft links.',
+      'single.activated':'Einzellaeufe aktiv.',
+      'single.log_activated':'Modus aktiv: Einzellaeufe ({submode})',
+      'team.title':'Teamrennen',
+      'team.search_driver':'Fahrer suchen',
+      'team.finish':'Ziel / Ende',
+      'team.finish_manual':'Manuell',
+      'team.time_limit_min':'Zeitlimit (Min.)',
+      'team.lap_limit':'Rundenlimit',
+      'team.points_scheme':'Punkte je Platz',
+      'team.points_placeholder':'z.B. 10,8,6,5,4,3,2,1',
+      'team.points_hint':'Platz 1 bis n, Rest erhaelt 0 Punkte.',
+      'team.drag_hint':'Ziehe Fahrer in ein Team. Zugewiesene Fahrer verschwinden hier automatisch.',
+      'team.add':'+ Team',
+      'team.activate':'Aktiv setzen',
+      'team.deactivate':'Deaktivieren',
+      'team.points_title':'Teamwertung ueber Punkte',
+      'team.points_intro':'Fahrer werden nach Platzierung bepunktet, Teams nach Punktesumme gewertet.',
+      'team.members':'Mitglieder',
+      'team.driver':'Fahrer',
+      'team.points':'Punkte',
+      'team.time':'Zeit',
+      'team.drop_remove':'Hierhin ziehen, um Fahrer aus Team zu entfernen',
+      'team.delete_title':'Team loeschen',
+      'team.drop_here':'Fahrer hier ablegen...',
+      'team.added':'Team hinzugefuegt',
+      'team.activated':'Teamrennen aktiv',
+      'team.deactivated':'Teamrennen deaktiviert',
+      'team.name_saved':'Teamname gespeichert',
+      'team.deleted':'Team geloescht',
+      'team.not_empty':'Team ist nicht leer',
+      'team.default_name':'Team {n}',
+      'endurance.title':'Langstrecke',
+      'endurance.duration_min':'Rennlaenge (Minuten)',
+      'endurance.min_stint':'Mindestrunden pro Stint',
+      'endurance.max_stint':'Maximalrunden pro Stint (0 = aus)',
+      'endurance.penalty_seconds':'Strafzeit pro Regelverstoss (Sekunden)',
+      'endurance.penalty_threshold':'Rundenabzug ab Strafzeit gesamt (Sekunden, 0 = aus)',
+      'endurance.penalty_laps':'Abzuziehende Runden pro Schwellwert',
+      'endurance.intro':'Langstrecke wird immer als Zeitrennen gewertet. Jeder Stint muss mindestens diese Rundenzahl erreichen. Optional kann auch eine maximale Rundenzahl pro Stint geprueft werden. Bei Regelverstoessen werden Strafsekunden addiert; ab dem gesetzten Schwellwert werden nach Rennende Runden abgezogen.',
+      'endurance.search_driver':'Fahrer suchen',
+      'endurance.drag_hint':'Ziehe Fahrer in ein Team. (Langstrecke: Teams fahren nacheinander.)',
+      'endurance.add':'+ Team',
+      'endurance.activate':'Aktiv setzen',
+      'endurance.deactivate':'Deaktivieren',
+      'endurance.note_status':'Mindeststint und aktive Fahrer/Stints findest du im Session Control, Dashboard und Presenter.',
+      'endurance.status_title':'Langstrecke - Aktive Fahrer / Stints',
+      'endurance.active_driver':'Aktiver Fahrer',
+      'endurance.stint':'Stint',
+      'endurance.status':'Status',
+      'endurance.car':'Auto',
+      'endurance.status_ok':'OK',
+      'endurance.rule_violation':'Regelverstoss',
+      'endurance.min_label':'min',
+      'endurance.max_label':'max',
+      'endurance.drop_remove':'Hierhin ziehen, um Fahrer aus Team zu entfernen',
+      'endurance.delete_title':'Team loeschen',
+      'endurance.drop_here':'Fahrer hier ablegen...',
+      'endurance.added':'Team hinzugefuegt',
+      'endurance.activated':'Langstrecke aktiv',
+      'endurance.activate_failed':'Aktivieren fehlgeschlagen',
+      'endurance.deactivated':'Langstrecke deaktiviert',
+      'endurance.name_saved':'Teamname gespeichert',
+      'endurance.deleted':'Team geloescht',
+      'endurance.not_empty':'Team ist nicht leer',
+      'endurance.default_name':'Team {n}',
+      'endurance.log_activated':'Langstrecke aktiviert: {duration} Min, Mindeststint {minStint}, Max-Stint {maxStint}, Strafe {penalty}s, Rundenabzug ab {threshold}s: {laps}'
+    },
+    en: {
+      'tab.pageDashboard':'Dashboard',
+      'tab.pageEinzellaeufe':'Single Runs',
+      'tab.pageDauerschleife':'Loop Mode',
+      'tab.pageTeamrennen':'Team Race',
+      'tab.pageLangstrecke':'Endurance',
+      'tab.pageStammdaten':'Master Data',
+      'tab.pageStrecken':'Tracks',
+      'tab.pageRenntag':'Race Day',
+      'tab.pageRenntagAuswertung':'Race Day Analysis',
+      'tab.pageSaison':'Season',
+      'tab.pageSaisonAuswertung':'Season Analysis',
+      'tab.pageAudio':'Audio',
+      'tab.pageEinstellungen':'Settings',
+      'header.subtitle':'offline • HTML/JS/CSS • build {build}',
+      'settings.saved':'Saved.',
+      'settings.saved_log':'Settings saved',
+      'settings.language':'Language',
+      'settings.language_de':'German',
+      'settings.language_en':'English',
+      'settings.general':'General',
+      'settings.header_name':'Header name',
+      'settings.save':'Save',
+      'session.title':'Session Control',
+      'session.quick_status':'Quick Status',
+      'session.timer':'Timer',
+      'session.current_mode':'Current mode',
+      'session.track':'Track',
+      'session.minimum_time':'Minimum time',
+      'session.track_record':'Track record',
+      'session.day_record':'Day record',
+      'session.start':'Start',
+      'session.pause':'Pause',
+      'session.resume':'Resume',
+      'session.stop':'Stop',
+      'session.free_driving':'Free driving',
+      'session.on':'on',
+      'session.off':'off',
+      'session.waiting_for_start':'waiting for start',
+      'session.free_driving_desc':'Starts immediately without lights, but with a normal session and announcements.',
+      'session.start_light':'Start lights',
+      'session.start_light_before':'Lights before start',
+      'session.start_light_sequence':'Sequence: 5,4,3,2,1 (wait) Start',
+      'session.control_hint':'Start/Stop/Pause/Resume controls the currently active race mode (including loop mode).',
+      'badge.season':'Season: {name}',
+      'badge.raceday':'Race day: {name}',
+      'mode.free_driving':'Free driving',
+      'mode.none':'—',
+      'mode.single':'Single Runs: {submode}',
+      'mode.team':'Team Race',
+      'mode.loop':'Loop Mode • {phase}',
+      'mode.endurance':'Endurance',
+      'submode.training':'Training',
+      'submode.qualifying':'Qualifying',
+      'submode.race':'Race',
+      'submode.setup':'Grid phase',
+      'submode.ampel':'Lights',
+      'submode.podium':'Podium',
+      'renntag.title':'Race Day',
+      'renntag.none':'No race day.',
+      'renntag.intro':'Select race day and session.',
+      'renntag.select_day':'Select race day',
+      'renntag.new_day':'+ New race day',
+      'renntag.select_session':'Race/Session',
+      'renntag.no_sessions':'(no sessions)',
+      'renntag.delete_session':'Delete run/session',
+      'renntag.delete_all_sessions':'Delete all sessions of this race day',
+      'renntag.badge_laps':'Laps: {count}',
+      'renntag.badge_drivers':'Drivers: {count}',
+      'renntag.badge_cars':'Cars: {count}',
+      'renntag.preview_title':'Race Day Discord Preview',
+      'renntag.copy_forum':'Copy forum text',
+      'renntag.send':'Send race day to Discord',
+      'session.preview_title':'Session Discord Preview',
+      'session.send':'Send session to Discord',
+      'preview.text':'Text',
+      'preview.image':'Image',
+      'preview.loading':'Loading preview...',
+      'preview.loading_image':'Loading image...',
+      'preview.failed':'Preview could not be loaded.',
+      'preview.no_session':'No session selected.',
+      'renntag.created':'New race day created.',
+      'renntag.sent':'Race day sent.',
+      'renntag.send_failed':'Race day webhook failed.',
+      'renntag.copied':'Race day text copied.',
+      'session.sent':'Session sent.',
+      'session.send_failed':'Session webhook failed.',
+      'season.title':'Season',
+      'season.intro':'Created automatically, can be renamed and closed.',
+      'season.active':'Active season',
+      'season.name':'Name',
+      'season.save':'Save',
+      'season.end':'End season',
+      'season.new':'+ New season',
+      'season.preview_title':'Season Discord Preview',
+      'season.copy_forum':'Copy forum text',
+      'season.send':'Send season to Discord',
+      'season.no_active':'No active season.',
+      'season.status_active':'active',
+      'season.status_closed':'closed',
+      'season.new_name':'Season {year} (new)',
+      'season.saved':'Saved.',
+      'season.ended':'Season ended. New season created.',
+      'season.created':'New season created.',
+      'season.sent':'Season sent.',
+      'season.send_failed':'Season webhook failed.',
+      'season.copied':'Season text copied.',
+      'renntag.select_day':'Select race day',
+      'renntag.select_session':'Race/Session',
+      'renntag.delete_session':'Delete run/session',
+      'renntag.delete_all_sessions':'Delete all sessions of this race day',
+      'copy.failed':'Copy failed.',
+      'button.sending':'Sending...',
+      'dashboard.free_driving':'Dashboard • Free Driving',
+      'dashboard.race_result':'Dashboard • Race Result',
+      'dashboard.placement':'Dashboard • Standings',
+      'dashboard.drivers':'Dashboard • Driver Overview',
+      'dashboard.teams':'Dashboard • Teams',
+      'dashboard.live_laps':'Dashboard • Latest Laps',
+      'dashboard.view_auto':'Auto',
+      'dashboard.view_race':'Race',
+      'dashboard.view_drivers':'Drivers',
+      'dashboard.view_live':'Live',
+      'dashboard.view_teams':'Teams',
+      'dashboard.sort_best':'Best lap',
+      'dashboard.sort_last':'Last lap',
+      'dashboard.sort_name':'Name',
+      'dashboard.live_intro':'Live view of the most recently measured laps.',
+      'dashboard.no_laps':'No laps yet.',
+      'dashboard.no_teams':'No teams created.',
+      'dashboard.team_intro':'Team standings: laps first, total time as tie-breaker.',
+      'dashboard.team_intro_endurance':'Rule violations add penalty seconds; after the threshold, laps are deducted after the race.',
+      'dashboard.team_intro_regular':'Best/last lap and average speed per team.',
+      'dashboard.no_team_laps':'No laps yet.',
+      'dashboard.driver_intro_race':'Standings (current race) • Last lap + fastest lap + MRC delta + average speed + total time.',
+      'dashboard.driver_intro_idle':'Driver overview (last lap + fastest lap + MRC delta + average speed).',
+      'dashboard.no_driver_data':'No data yet.',
+      'dashboard.race_intro':'Standings (current race) • sorted by position.',
+      'dashboard.no_race_laps':'No race laps yet.',
+      'dashboard.live_hint':'Tip: You can switch to “Live” at the top right to see the latest laps.',
+      'dashboard.unknown':'Unknown',
+      'dashboard.driver':'Driver',
+      'dashboard.team':'Team',
+      'dashboard.car':'Car',
+      'dashboard.lap':'Lap',
+      'dashboard.phase':'Phase',
+      'dashboard.laps':'Laps',
+      'dashboard.total_time':'Total time',
+      'dashboard.best':'Best',
+      'dashboard.last':'Last',
+      'dashboard.mrc_delta':'MRC delta',
+      'dashboard.average_kmh':'Avg km/h',
+      'dashboard.sort_title':'Sorting',
+      'dashboard.sort_prefix':'Sort: {label}',
+      'common.active':'ACTIVE',
+      'common.inactive':'inactive',
+      'common.team':'Team',
+      'common.teams':'Teams',
+      'common.no_data':'No data.',
+      'common.no_free_drivers':'No free drivers.',
+      'common.search_name_placeholder':'Name...',
+      'common.saved':'Saved.',
+      'single.title':'Single Runs',
+      'single.hint':'"Set active" -> Session Control on the left handles start/stop/pause/resume.',
+      'single.submode':'Submode',
+      'single.finish_after':'Run ends after',
+      'single.limit_none':'No limit',
+      'single.limit_time':'Time',
+      'single.limit_laps':'Laps',
+      'single.time_minutes':'Time (minutes)',
+      'single.laps':'Laps',
+      'single.activate':'Set active',
+      'single.info':'Info',
+      'single.info_body':'Start/stop is handled on the left.',
+      'single.activated':'Single runs active.',
+      'single.log_activated':'Mode active: Single Runs ({submode})',
+      'team.title':'Team Race',
+      'team.search_driver':'Search driver',
+      'team.finish':'Finish / End',
+      'team.finish_manual':'Manual',
+      'team.time_limit_min':'Time limit (min)',
+      'team.lap_limit':'Lap limit',
+      'team.points_scheme':'Points per place',
+      'team.points_placeholder':'e.g. 10,8,6,5,4,3,2,1',
+      'team.points_hint':'Places 1 to n, the rest receive 0 points.',
+      'team.drag_hint':'Drag drivers into a team. Assigned drivers disappear here automatically.',
+      'team.add':'+ Team',
+      'team.activate':'Set active',
+      'team.deactivate':'Deactivate',
+      'team.points_title':'Team scoring by points',
+      'team.points_intro':'Drivers score by finishing position, teams rank by total points.',
+      'team.members':'Members',
+      'team.driver':'Driver',
+      'team.points':'Points',
+      'team.time':'Time',
+      'team.drop_remove':'Drop here to remove drivers from a team',
+      'team.delete_title':'Delete team',
+      'team.drop_here':'Drop drivers here...',
+      'team.added':'Team added',
+      'team.activated':'Team race active',
+      'team.deactivated':'Team race deactivated',
+      'team.name_saved':'Team name saved',
+      'team.deleted':'Team deleted',
+      'team.not_empty':'Team is not empty',
+      'team.default_name':'Team {n}',
+      'endurance.title':'Endurance',
+      'endurance.duration_min':'Race length (minutes)',
+      'endurance.min_stint':'Minimum laps per stint',
+      'endurance.max_stint':'Maximum laps per stint (0 = off)',
+      'endurance.penalty_seconds':'Penalty time per rule violation (seconds)',
+      'endurance.penalty_threshold':'Lap deduction from total penalty time (seconds, 0 = off)',
+      'endurance.penalty_laps':'Laps deducted per threshold',
+      'endurance.intro':'Endurance is always scored as a timed race. Each stint must reach at least this many laps. Optionally a maximum lap count per stint can also be checked. Rule violations add penalty seconds; once the threshold is reached, laps are deducted after the race.',
+      'endurance.search_driver':'Search driver',
+      'endurance.drag_hint':'Drag drivers into a team. (Endurance: teams drive one after another.)',
+      'endurance.add':'+ Team',
+      'endurance.activate':'Set active',
+      'endurance.deactivate':'Deactivate',
+      'endurance.note_status':'You can find minimum stint and active drivers/stints in Session Control, Dashboard and Presenter.',
+      'endurance.status_title':'Endurance - Active Drivers / Stints',
+      'endurance.active_driver':'Active driver',
+      'endurance.stint':'Stint',
+      'endurance.status':'Status',
+      'endurance.car':'Car',
+      'endurance.status_ok':'OK',
+      'endurance.rule_violation':'Rule violation',
+      'endurance.min_label':'min',
+      'endurance.max_label':'max',
+      'endurance.drop_remove':'Drop here to remove drivers from a team',
+      'endurance.delete_title':'Delete team',
+      'endurance.drop_here':'Drop drivers here...',
+      'endurance.added':'Team added',
+      'endurance.activated':'Endurance active',
+      'endurance.activate_failed':'Activation failed',
+      'endurance.deactivated':'Endurance deactivated',
+      'endurance.name_saved':'Team name saved',
+      'endurance.deleted':'Team deleted',
+      'endurance.not_empty':'Team is not empty',
+      'endurance.default_name':'Team {n}',
+      'endurance.log_activated':'Endurance activated: {duration} min, minimum stint {minStint}, max stint {maxStint}, penalty {penalty}s, lap deduction from {threshold}s: {laps}'
+    }
+  };
+
   function now(){ return Date.now(); }
   function uid(p){ return p + '_' + Math.random().toString(16).slice(2,10); }
   function clamp(n,a,b){ n=Number(n); return Math.max(a, Math.min(b,n)); }
@@ -37,6 +530,24 @@
     return Math.max(minV, Math.min(maxV, n));
   }
   function esc(s){ return String(s??'').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function getUiLanguage(){
+    return state?.settings?.language === 'en' ? 'en' : 'de';
+  }
+  function getUiLocale(){
+    return getUiLanguage() === 'en' ? 'en-US' : 'de-DE';
+  }
+  function t(key, vars=null, fallback=''){
+    let out = I18N[getUiLanguage()]?.[key];
+    if(out == null) out = I18N.de?.[key];
+    if(out == null) out = fallback || key;
+    out = String(out);
+    if(vars && typeof vars === 'object'){
+      for(const [name, value] of Object.entries(vars)){
+        out = out.replaceAll(`{${name}}`, String(value ?? ''));
+      }
+    }
+    return out;
+  }
 
   function msToTime(ms, decimals=3){
     if(ms==null) return '—';
@@ -232,7 +743,7 @@ function pickTextColorForBg(hex){
     if(!raceId) return [];
     const rd = getActiveRaceDay();
     const race = rd?.races?.find(r=>r.id===raceId) || null;
-    if(!race || race.mode!=='single') return [];
+    if(!race || !['single','loop'].includes(String(race.mode||''))) return [];
     const laps = getRelevantRaceLaps(raceId, state.session.laps);
     return computeDriverStandingsGlobal(laps);
   }
@@ -251,11 +762,13 @@ function pickTextColorForBg(hex){
   function maybeAnnounceOvertakeAndLapping(lastCar){
     try{
       if(!state.audio?.enabled) return;
-      if(state.modes.activeMode!=='single') return;
       if(state.session.state!=='RUNNING') return;
       if(isFreeDrivingMode()) return;
       const raceId = state.session.currentRaceId || '';
       if(!raceId) return;
+      const race = getRaceById(raceId);
+      if(!race || !['single','loop'].includes(String(race.mode||''))) return;
+      if(race.mode==='loop' && currentPhase()!=='race') return;
       ensureRaceAnnounceRuntime();
       const rows = getCurrentSingleRaceStandings();
       if(!rows.length) return;
@@ -527,8 +1040,12 @@ function getFinishNameForCarId(carId){
   }
 
   function getEnduranceRuleStateForTeam(teamId, raceId){
-    const minStint = Math.max(0, parseInt(state.modes.endurance?.minStintLaps||0,10) || 0);
-    const maxStint = Math.max(0, parseInt(state.modes.endurance?.maxStintLaps||0,10) || 0);
+    const race = raceId ? getRaceById(raceId) : null;
+    const minStint = Math.max(0, parseInt((race?.enduranceMinStintLaps ?? state.modes.endurance?.minStintLaps ?? 0),10) || 0);
+    const maxStint = Math.max(0, parseInt((race?.enduranceMaxStintLaps ?? state.modes.endurance?.maxStintLaps ?? 0),10) || 0);
+    const penaltySecondsPerViolation = Math.max(0, parseInt((race?.endurancePenaltySecondsPerViolation ?? state.modes.endurance?.penaltySecondsPerViolation ?? 0),10) || 0);
+    const penaltyLapThresholdSeconds = Math.max(0, parseInt((race?.endurancePenaltyLapThresholdSeconds ?? state.modes.endurance?.penaltyLapThresholdSeconds ?? 0),10) || 0);
+    const penaltyLapsPerThreshold = Math.max(0, parseInt((race?.endurancePenaltyLapsPerThreshold ?? state.modes.endurance?.penaltyLapsPerThreshold ?? 1),10) || 0);
     let stints = getEnduranceStintsForRaceTeam(raceId, teamId).slice();
     const ai = getEnduranceActiveInfo(teamId);
     if(ai && raceId && raceId === (state.session.currentRaceId||'')){
@@ -544,13 +1061,33 @@ function getFinishNameForCarId(carId){
     const tooShort = minStint>0 ? stints.filter(st => Number(st.lapCount||0) < minStint) : [];
     const tooLong = maxStint>0 ? stints.filter(st => Number(st.lapCount||0) > maxStint) : [];
     const violations = [...tooShort, ...tooLong];
+    const penaltySecondsTotal = violations.length * penaltySecondsPerViolation;
+    const projectedDeductedLaps = (penaltyLapThresholdSeconds>0 && penaltyLapsPerThreshold>0)
+      ? (Math.floor(penaltySecondsTotal / penaltyLapThresholdSeconds) * penaltyLapsPerThreshold)
+      : 0;
+    const deductedLaps = race?.endedAt ? projectedDeductedLaps : 0;
     let statusText = 'OK';
-    if(tooShort.length && tooLong.length) statusText = `AW • Stint außerhalb ${minStint}-${maxStint} Runden`;
-    else if(tooShort.length) statusText = 'AW • Stint < ' + minStint + ' Runden';
-    else if(tooLong.length) statusText = 'AW • Stint > ' + maxStint + ' Runden';
+    if(false && tooShort.length && tooLong.length) statusText = `AW • Stint außerhalb ${minStint}-${maxStint} Runden`;
+    else if(false && tooShort.length) statusText = 'AW • Stint < ' + minStint + ' Runden';
+    else if(false && tooLong.length) statusText = 'AW • Stint > ' + maxStint + ' Runden';
+    if(violations.length){
+      const reasons = [];
+      if(tooShort.length) reasons.push((tooShort.length===1 ? 'Stint' : (tooShort.length+'x Stint')) + ' < ' + minStint + ' Runden');
+      if(tooLong.length) reasons.push((tooLong.length===1 ? 'Stint' : (tooLong.length+'x Stint')) + ' > ' + maxStint + ' Runden');
+      const penalties = [];
+      if(penaltySecondsTotal>0) penalties.push('+' + penaltySecondsTotal + 's');
+      if(projectedDeductedLaps>0) penalties.push((race?.endedAt ? '-' : 'nach Rennen -') + projectedDeductedLaps + ' Runde' + (projectedDeductedLaps===1 ? '' : 'n'));
+      statusText = 'Regelverstoss - ' + reasons.join(' - ') + (penalties.length ? ' - ' + penalties.join(' - ') : '');
+    }
     return {
       minStint,
       maxStint,
+      penaltySecondsPerViolation,
+      penaltySecondsTotal,
+      penaltyLapThresholdSeconds,
+      penaltyLapsPerThreshold,
+      projectedDeductedLaps,
+      deductedLaps,
       stints,
       tooShort,
       tooLong,
@@ -657,7 +1194,7 @@ function getTeamsForMode(mode){
         audioFilterCategory:'',
         audioSearch:''
       },
-      settings:{ appName:'Zeitnahme 2.0', baudRate:19200, discordWebhook:'', discordAutoSend:false, discordUseThread:false, discordThreadName:'', discordRaceDayWebhook:'', discordSeasonWebhook:'', discordRaceDayUseThread:false, discordSeasonUseThread:false, discordRaceDayThreadName:'{type} • {date}', discordSeasonThreadName:'{type} • {season}', dbPlaceholder:'', useAmpel:true, scaleDenominator:50, ampelWaitMs:1200, ampelStepMs:700, allowIdleReads:false, lapTimeSource:'mrc' },
+      settings:{ appName:'Zeitnahme 2.0', language:'de', baudRate:19200, discordWebhook:'', discordAutoSend:false, discordUseThread:false, discordThreadName:'', discordRaceDayWebhook:'', discordSeasonWebhook:'', discordRaceDayUseThread:false, discordSeasonUseThread:false, discordRaceDayThreadName:'{type} • {date}', discordSeasonThreadName:'{type} • {season}', dbPlaceholder:'', useAmpel:true, scaleDenominator:50, ampelWaitMs:1200, ampelStepMs:700, allowIdleReads:false, lapTimeSource:'mrc' },
       media:{ driverAvatars:{} },
       personalRecords:{ bySeason:{}, byRaceDay:{} },
       usb:{ connected:false, available:false, info:'', lastError:'', lastLines:[] },
@@ -672,7 +1209,7 @@ function getTeamsForMode(mode){
         single:{ finishMode:'time', timeLimitSec:180, lapLimit:20 },
         team:{ finishMode:'time', timeLimitSec:180, lapLimit:20, pointsScheme:'10,8,6,5,4,3,2,1', selectedDriverIds:[], teams:[{id:uid(), name:'Team 1', driverIds:[]},{id:uid(), name:'Team 2', driverIds:[]}] },
         loop:{ trainingSec:60, raceSec:120 },
-        endurance:{ durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, activeByTeamId:{}, stintHistoryByRace:{}, teams:[{id:uid(), name:'Team 1', driverIds:[]},{id:uid(), name:'Team 2', driverIds:[]}] }
+        endurance:{ durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, penaltySecondsPerViolation:0, penaltyLapThresholdSeconds:0, penaltyLapsPerThreshold:1, activeByTeamId:{}, stintHistoryByRace:{}, teams:[{id:uid(), name:'Team 1', driverIds:[]},{id:uid(), name:'Team 2', driverIds:[]}] }
       },
       session:{
         state:'IDLE', startedAt:null, startedAtMrc:null, pausedAt:null, pausedAtMrc:null, pauseAccumMs:0, pauseAccumMrcMs:0,
@@ -791,9 +1328,12 @@ function getTeamsForMode(mode){
       if(!Number.isFinite(Number(merged.modes.team.timeLimitSec))) merged.modes.team.timeLimitSec = 180;
       if(!Number.isFinite(Number(merged.modes.team.lapLimit))) merged.modes.team.lapLimit = 20;
       if(!merged.modes.team.pointsScheme) merged.modes.team.pointsScheme = '10,8,6,5,4,3,2,1';
-      if(!merged.modes.endurance) merged.modes.endurance = { durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, activeByTeamId:{}, stintHistoryByRace:{}, teams:[] };
+      if(!merged.modes.endurance) merged.modes.endurance = { durationMin:30, lapsLimit:0, minStintLaps:5, maxStintLaps:0, penaltySecondsPerViolation:0, penaltyLapThresholdSeconds:0, penaltyLapsPerThreshold:1, activeByTeamId:{}, stintHistoryByRace:{}, teams:[] };
       if(!Number.isFinite(Number(merged.modes.endurance.maxStintLaps))) merged.modes.endurance.maxStintLaps = 0;
       if(!Number.isFinite(Number(merged.modes.endurance.minStintLaps))) merged.modes.endurance.minStintLaps = 5;
+      if(!Number.isFinite(Number(merged.modes.endurance.penaltySecondsPerViolation))) merged.modes.endurance.penaltySecondsPerViolation = 0;
+      if(!Number.isFinite(Number(merged.modes.endurance.penaltyLapThresholdSeconds))) merged.modes.endurance.penaltyLapThresholdSeconds = 0;
+      if(!Number.isFinite(Number(merged.modes.endurance.penaltyLapsPerThreshold))) merged.modes.endurance.penaltyLapsPerThreshold = 1;
       if(!merged.modes.endurance.activeByTeamId || typeof merged.modes.endurance.activeByTeamId!=='object') merged.modes.endurance.activeByTeamId = {};
       if(!merged.modes.endurance.stintHistoryByRace || typeof merged.modes.endurance.stintHistoryByRace!=='object') merged.modes.endurance.stintHistoryByRace = {};
       if(typeof merged.audio.sayPersonalBestSeason!=='boolean') merged.audio.sayPersonalBestSeason = true;
@@ -806,6 +1346,7 @@ function getTeamsForMode(mode){
       if(typeof merged.ui.audioFilterCategory!=='string') merged.ui.audioFilterCategory = '';
       if(typeof merged.ui.audioSearch!=='string') merged.ui.audioSearch = '';
       if(typeof merged.settings?.discordAutoSend!=='boolean') merged.settings.discordAutoSend = false;
+      if(typeof merged.settings?.language!=='string') merged.settings.language = 'de';
       if(typeof merged.settings?.discordUseThread!=='boolean') merged.settings.discordUseThread = false;
       if(typeof merged.settings?.discordThreadName!=='string') merged.settings.discordThreadName = '';
       if(typeof merged.settings?.discordRaceDayWebhook!=='string') merged.settings.discordRaceDayWebhook = '';
@@ -874,7 +1415,331 @@ return merged;
   let state = loadState();
   ensureAutoEntities(state);
 
-  function saveState(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  let _appDataDbPromise = null;
+  let _appDataPersistTimer = null;
+  let _appDataPersistInFlight = null;
+
+  function idbRequestToPromise(req){
+    return new Promise((resolve, reject)=>{
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error || new Error('IndexedDB request failed'));
+    });
+  }
+
+  function getAppDataDb(){
+    if(_appDataDbPromise) return _appDataDbPromise;
+    _appDataDbPromise = new Promise((resolve, reject)=>{
+      try{
+        const req = indexedDB.open(APP_DATA_DB_NAME, APP_DATA_DB_VERSION);
+        req.onupgradeneeded = ()=>{
+          const db = req.result;
+          if(!db.objectStoreNames.contains(APP_DATA_AVATAR_STORE)) db.createObjectStore(APP_DATA_AVATAR_STORE, { keyPath:'driverId' });
+          if(!db.objectStoreNames.contains(APP_DATA_SESSION_LAPS_STORE)) db.createObjectStore(APP_DATA_SESSION_LAPS_STORE, { keyPath:'id' });
+          if(!db.objectStoreNames.contains(APP_DATA_IDLE_LAPS_STORE)) db.createObjectStore(APP_DATA_IDLE_LAPS_STORE, { keyPath:'id' });
+          if(!db.objectStoreNames.contains(APP_DATA_STATE_CHUNK_STORE)) db.createObjectStore(APP_DATA_STATE_CHUNK_STORE, { keyPath:'chunkKey' });
+          if(!db.objectStoreNames.contains(APP_DATA_DISCORD_QUEUE_STORE)) db.createObjectStore(APP_DATA_DISCORD_QUEUE_STORE, { keyPath:'id' });
+        };
+        req.onsuccess = ()=>resolve(req.result);
+        req.onerror = ()=>reject(req.error || new Error('IndexedDB open failed'));
+      }catch(err){
+        reject(err);
+      }
+    });
+    return _appDataDbPromise;
+  }
+
+  function buildExternalAppDataSnapshot(srcState=state){
+    return {
+      driverAvatars: { ...((srcState.media && srcState.media.driverAvatars) || {}) },
+      laps: Array.isArray(srcState.session?.laps) ? srcState.session.laps.map(l=>({ ...l })) : [],
+      idleLaps: Array.isArray(srcState.session?.idleLaps) ? srcState.session.idleLaps.map(l=>({ ...l })) : []
+    };
+  }
+
+  function buildExternalStateChunkSnapshot(srcState=state){
+    return {
+      masterData: JSON.parse(JSON.stringify(srcState.masterData || { drivers:[], cars:[] })),
+      raceDay: JSON.parse(JSON.stringify(srcState.raceDay || { raceDays:[], activeRaceDayId:'' })),
+      season: JSON.parse(JSON.stringify(srcState.season || { seasons:[], activeSeasonId:'' })),
+      tracks: JSON.parse(JSON.stringify(srcState.tracks || { tracks:[], activeTrackId:'' })),
+      personalRecords: JSON.parse(JSON.stringify(srcState.personalRecords || { bySeason:{}, byRaceDay:{} })),
+      enduranceStints: JSON.parse(JSON.stringify(srcState.modes?.endurance?.stintHistoryByRace || {}))
+    };
+  }
+
+  function isStateChunkEmpty(chunkKey, value){
+    switch(String(chunkKey || '')){
+      case 'masterData':
+        return !Array.isArray(value?.drivers) || value.drivers.length===0
+          ? (!Array.isArray(value?.cars) || value.cars.length===0)
+          : false;
+      case 'raceDay':
+        return !Array.isArray(value?.raceDays) || value.raceDays.length===0;
+      case 'season':
+        return !Array.isArray(value?.seasons) || value.seasons.length===0;
+      case 'tracks':
+        return !Array.isArray(value?.tracks) || value.tracks.length===0;
+      case 'personalRecords':
+        return !Object.keys(value?.bySeason || {}).length && !Object.keys(value?.byRaceDay || {}).length;
+      case 'enduranceStints':
+        return !Object.keys(value || {}).length;
+      default:
+        return value == null;
+    }
+  }
+
+  function buildSlimPersistedState(){
+    return {
+      ...state,
+      masterData: {
+        drivers: [],
+        cars: []
+      },
+      media: {
+        ...(state.media || {}),
+        driverAvatars: {}
+      },
+      personalRecords: {
+        bySeason: {},
+        byRaceDay: {}
+      },
+      season: {
+        ...(state.season || {}),
+        seasons: []
+      },
+      tracks: {
+        ...(state.tracks || {}),
+        tracks: []
+      },
+      raceDay: {
+        ...(state.raceDay || {}),
+        raceDays: []
+      },
+      modes: {
+        ...(state.modes || {}),
+        endurance: {
+          ...((state.modes && state.modes.endurance) || {}),
+          stintHistoryByRace: {}
+        }
+      },
+      session: {
+        ...(state.session || {}),
+        laps: [],
+        idleLaps: []
+      }
+    };
+  }
+
+  function replaceObjectStoreData(tx, storeName, rows){
+    const store = tx.objectStore(storeName);
+    store.clear();
+    for(const row of (rows || [])){
+      if(row) store.put(row);
+    }
+  }
+
+  async function persistExternalAppDataSnapshot(snapshot){
+    const db = await getAppDataDb();
+    await new Promise((resolve, reject)=>{
+      const tx = db.transaction([APP_DATA_AVATAR_STORE, APP_DATA_SESSION_LAPS_STORE, APP_DATA_IDLE_LAPS_STORE], 'readwrite');
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error || new Error('IndexedDB write failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('IndexedDB write aborted'));
+      replaceObjectStoreData(tx, APP_DATA_AVATAR_STORE, Object.entries(snapshot.driverAvatars || {}).map(([driverId, dataUrl])=>({ driverId, dataUrl })));
+      replaceObjectStoreData(tx, APP_DATA_SESSION_LAPS_STORE, snapshot.laps || []);
+      replaceObjectStoreData(tx, APP_DATA_IDLE_LAPS_STORE, snapshot.idleLaps || []);
+    });
+  }
+
+  async function persistExternalStateChunkSnapshot(snapshot){
+    const db = await getAppDataDb();
+    await new Promise((resolve, reject)=>{
+      const tx = db.transaction([APP_DATA_STATE_CHUNK_STORE], 'readwrite');
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error || new Error('IndexedDB chunk write failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('IndexedDB chunk write aborted'));
+      replaceObjectStoreData(tx, APP_DATA_STATE_CHUNK_STORE, Object.entries(snapshot || {}).map(([chunkKey, value])=>({ chunkKey, value })));
+    });
+  }
+
+  async function readAllFromObjectStore(tx, storeName){
+    const store = tx.objectStore(storeName);
+    return await idbRequestToPromise(store.getAll());
+  }
+
+  async function loadExternalAppDataSnapshot(){
+    const db = await getAppDataDb();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction([APP_DATA_AVATAR_STORE, APP_DATA_SESSION_LAPS_STORE, APP_DATA_IDLE_LAPS_STORE], 'readonly');
+      const out = { driverAvatars:{}, laps:[], idleLaps:[] };
+      Promise.all([
+        readAllFromObjectStore(tx, APP_DATA_AVATAR_STORE),
+        readAllFromObjectStore(tx, APP_DATA_SESSION_LAPS_STORE),
+        readAllFromObjectStore(tx, APP_DATA_IDLE_LAPS_STORE)
+      ]).then(([avatars, laps, idleLaps])=>{
+        for(const row of avatars || []){
+          if(row?.driverId && row?.dataUrl) out.driverAvatars[row.driverId] = row.dataUrl;
+        }
+        out.laps = Array.isArray(laps) ? laps : [];
+        out.idleLaps = Array.isArray(idleLaps) ? idleLaps : [];
+      }).catch(reject);
+      tx.oncomplete = ()=>resolve(out);
+      tx.onerror = ()=>reject(tx.error || new Error('IndexedDB read failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('IndexedDB read aborted'));
+    });
+  }
+
+  async function loadExternalStateChunkSnapshot(){
+    const db = await getAppDataDb();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction([APP_DATA_STATE_CHUNK_STORE], 'readonly');
+      const out = {
+        masterData: { drivers:[], cars:[] },
+        raceDay: { raceDays:[], activeRaceDayId:'' },
+        season: { seasons:[], activeSeasonId:'' },
+        tracks: { tracks:[], activeTrackId:'' },
+        personalRecords: { bySeason:{}, byRaceDay:{} },
+        enduranceStints: {}
+      };
+      readAllFromObjectStore(tx, APP_DATA_STATE_CHUNK_STORE).then((rows)=>{
+        for(const row of rows || []){
+          if(!row?.chunkKey) continue;
+          out[row.chunkKey] = row.value;
+        }
+      }).catch(reject);
+      tx.oncomplete = ()=>resolve(out);
+      tx.onerror = ()=>reject(tx.error || new Error('IndexedDB chunk read failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('IndexedDB chunk read aborted'));
+    });
+  }
+
+  function scheduleExternalAppDataPersist(){
+    if(_appDataPersistTimer) clearTimeout(_appDataPersistTimer);
+    _appDataPersistTimer = setTimeout(()=>{
+      _appDataPersistTimer = null;
+      const snapshot = buildExternalAppDataSnapshot();
+      const chunkSnapshot = buildExternalStateChunkSnapshot();
+      const run = async ()=>{
+        try{
+          await persistExternalAppDataSnapshot(snapshot);
+          await persistExternalStateChunkSnapshot(chunkSnapshot);
+        }catch(err){
+          logLine('AppData Persist Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      };
+      _appDataPersistInFlight = run().finally(()=>{
+        if(_appDataPersistInFlight && typeof _appDataPersistInFlight.finally === 'function'){
+          _appDataPersistInFlight = null;
+        }
+      });
+    }, 350);
+  }
+
+  async function flushExternalAppDataPersist(){
+    if(_appDataPersistTimer){
+      clearTimeout(_appDataPersistTimer);
+      _appDataPersistTimer = null;
+      try{
+        await persistExternalAppDataSnapshot(buildExternalAppDataSnapshot());
+        await persistExternalStateChunkSnapshot(buildExternalStateChunkSnapshot());
+      }catch(err){
+        logLine('AppData Persist Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+      return;
+    }
+    if(_appDataPersistInFlight) await _appDataPersistInFlight;
+  }
+
+  async function clearExternalAppDataStores(){
+    try{
+      if(_appDataPersistTimer){
+        clearTimeout(_appDataPersistTimer);
+        _appDataPersistTimer = null;
+      }
+      _appDataPersistInFlight = null;
+      const db = await getAppDataDb();
+      await new Promise((resolve, reject)=>{
+        const tx = db.transaction([APP_DATA_AVATAR_STORE, APP_DATA_SESSION_LAPS_STORE, APP_DATA_IDLE_LAPS_STORE, APP_DATA_STATE_CHUNK_STORE, APP_DATA_DISCORD_QUEUE_STORE], 'readwrite');
+        tx.oncomplete = ()=>resolve();
+        tx.onerror = ()=>reject(tx.error || new Error('IndexedDB clear failed'));
+        tx.onabort = ()=>reject(tx.error || new Error('IndexedDB clear aborted'));
+        tx.objectStore(APP_DATA_AVATAR_STORE).clear();
+        tx.objectStore(APP_DATA_SESSION_LAPS_STORE).clear();
+        tx.objectStore(APP_DATA_IDLE_LAPS_STORE).clear();
+        tx.objectStore(APP_DATA_STATE_CHUNK_STORE).clear();
+        tx.objectStore(APP_DATA_DISCORD_QUEUE_STORE).clear();
+      });
+    }catch(err){
+      logLine('AppData Clear Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+    }
+  }
+
+  async function hydrateExternalAppData(){
+    const legacyDriverAvatars = { ...((state.media && state.media.driverAvatars) || {}) };
+    for(const driver of (state.masterData?.drivers || [])){
+      const legacyPhoto = String(driver?.photoDataUrl || '').trim();
+      if(legacyPhoto && !legacyDriverAvatars[driver.id]) legacyDriverAvatars[driver.id] = legacyPhoto;
+      if(legacyPhoto) driver.photoDataUrl = '';
+    }
+    const legacySnapshot = {
+      driverAvatars: legacyDriverAvatars,
+      laps: Array.isArray(state.session?.laps) ? state.session.laps.slice() : [],
+      idleLaps: Array.isArray(state.session?.idleLaps) ? state.session.idleLaps.slice() : []
+    };
+    const legacyChunkSnapshot = buildExternalStateChunkSnapshot();
+    const hasLegacy = Object.keys(legacySnapshot.driverAvatars).length || legacySnapshot.laps.length || legacySnapshot.idleLaps.length;
+    const hasLegacyChunks = Object.entries(legacyChunkSnapshot).some(([chunkKey, value])=>!isStateChunkEmpty(chunkKey, value));
+    let externalSnapshot = { driverAvatars:{}, laps:[], idleLaps:[] };
+    let externalChunks = {
+      masterData: state.masterData || { drivers:[], cars:[] },
+      raceDay: state.raceDay || { raceDays:[], activeRaceDayId:'' },
+      season: state.season || { seasons:[], activeSeasonId:'' },
+      tracks: state.tracks || { tracks:[], activeTrackId:'' },
+      personalRecords: state.personalRecords || { bySeason:{}, byRaceDay:{} },
+      enduranceStints: state.modes?.endurance?.stintHistoryByRace || {}
+    };
+    try{
+      externalSnapshot = await loadExternalAppDataSnapshot();
+      externalChunks = await loadExternalStateChunkSnapshot();
+    }catch(err){
+      logLine('AppData Laden Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      return;
+    }
+    const hasExternal = Object.keys(externalSnapshot.driverAvatars).length || externalSnapshot.laps.length || externalSnapshot.idleLaps.length;
+    const hasExternalChunks = Object.entries(externalChunks).some(([chunkKey, value])=>!isStateChunkEmpty(chunkKey, value));
+    if(!hasExternal && hasLegacy){
+      externalSnapshot = legacySnapshot;
+      await persistExternalAppDataSnapshot(externalSnapshot);
+    }
+    if(!hasExternalChunks && hasLegacyChunks){
+      externalChunks = legacyChunkSnapshot;
+      await persistExternalStateChunkSnapshot(externalChunks);
+    }
+    state.media = state.media || {};
+    state.session = state.session || {};
+    state.masterData = externalChunks.masterData || { drivers:[], cars:[] };
+    state.raceDay = externalChunks.raceDay || { raceDays:[], activeRaceDayId:'' };
+    state.season = externalChunks.season || { seasons:[], activeSeasonId:'' };
+    state.tracks = externalChunks.tracks || { tracks:[], activeTrackId:'' };
+    state.personalRecords = externalChunks.personalRecords || { bySeason:{}, byRaceDay:{} };
+    state.modes = state.modes || {};
+    state.modes.endurance = state.modes.endurance || {};
+    state.modes.endurance.stintHistoryByRace = externalChunks.enduranceStints || {};
+    state.media.driverAvatars = externalSnapshot.driverAvatars || {};
+    state.session.laps = Array.isArray(externalSnapshot.laps) ? externalSnapshot.laps : [];
+    state.session.idleLaps = Array.isArray(externalSnapshot.idleLaps) ? externalSnapshot.idleLaps : [];
+    ensureAutoEntities(state);
+    saveState();
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(LS_KEY, JSON.stringify(buildSlimPersistedState()));
+    }catch(err){
+      logLine('State Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+    }
+    scheduleExternalAppDataPersist();
+  }
 
   
   
@@ -1021,22 +1886,94 @@ function downloadJson(filename, obj){
     logLine('Export Stammdaten: '+fn);
   }
 
+  function buildFullExportState(){
+    const external = buildExternalAppDataSnapshot();
+    const chunkSnapshot = buildExternalStateChunkSnapshot();
+    return {
+      ...state,
+      masterData: chunkSnapshot.masterData,
+      media: {
+        ...(state.media || {}),
+        driverAvatars: external.driverAvatars || {}
+      },
+      personalRecords: chunkSnapshot.personalRecords,
+      season: chunkSnapshot.season,
+      tracks: chunkSnapshot.tracks,
+      raceDay: chunkSnapshot.raceDay,
+      modes: {
+        ...(state.modes || {}),
+        endurance: {
+          ...((state.modes && state.modes.endurance) || {}),
+          stintHistoryByRace: chunkSnapshot.enduranceStints || {}
+        }
+      },
+      session: {
+        ...(state.session || {}),
+        laps: Array.isArray(external.laps) ? external.laps : [],
+        idleLaps: Array.isArray(external.idleLaps) ? external.idleLaps : []
+      }
+    };
+  }
+
   function exportAll(){
     const payload = {
       kind:'zeitnahme_full_v1',
       exportedAt: new Date().toISOString(),
-      state
+      state: buildFullExportState()
     };
     const d = new Date();
     const fn = `zeitnahme_backup_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
     downloadJson(fn, payload);
-    toast('Export', 'Backup exportiert.', 'ok');
-    logLine('Export Backup: '+fn);
+    toast('Backup', 'App-Backup exportiert.', 'ok');
+    logLine('Export App-Backup: '+fn);
   }
 
   function normalizeName(s){ return String(s||'').trim().toLowerCase(); }
+  function normalizeChipCode(s){ return String(s||'').trim().toUpperCase(); }
 
-  function importStammdatenFromJson(obj, allowDupNames=false){
+  function isRestoreStateCandidate(obj){
+    if(!obj || typeof obj!=='object' || Array.isArray(obj)) return false;
+    const keys = ['settings','masterData','session','tracks','raceDay','season','modes','ui','audio'];
+    return keys.some(k => Object.prototype.hasOwnProperty.call(obj, k));
+  }
+
+  function extractRestorePayload(parsed){
+    if(parsed && parsed.kind==='zeitnahme_full_v1' && parsed.state && typeof parsed.state==='object'){
+      return parsed.state;
+    }
+    if(parsed && parsed.kind==='zeitnahme_stammdaten_v1'){
+      throw new Error('restore_received_masterdata_export');
+    }
+    if(parsed && parsed.kind==='zeitnahme_audio_db_v1'){
+      throw new Error('restore_received_audio_export');
+    }
+    if(isRestoreStateCandidate(parsed)){
+      return parsed;
+    }
+    throw new Error('restore_invalid_file');
+  }
+
+  async function importStammdatenFile(file, allowDupNames=false){
+    if(!file) throw new Error('import_missing_file');
+    const text = await file.text();
+    const obj = JSON.parse(text);
+    return importStammdatenFromJson(obj, allowDupNames);
+  }
+
+  async function restoreStateFromFile(file){
+    if(!file) throw new Error('restore_missing_file');
+    const parsed = JSON.parse(await file.text());
+    const restorePayload = extractRestorePayload(parsed);
+    state = deepMerge(defaultState(), restorePayload);
+    ensureAutoEntities(state);
+    await clearExternalAppDataStores();
+    saveState();
+    await flushExternalAppDataPersist();
+    renderAll();
+    return true;
+  }
+
+  function importStammdatenFromJsonLegacy1(obj, allowDupNames=false){
     if(!obj || (obj.kind!=='zeitnahme_stammdaten_v1' && !(obj.drivers&&obj.cars))){
       toast('Import', 'Ungültige Datei.', 'err');
       return;
@@ -1088,6 +2025,110 @@ function downloadJson(filename, obj){
     logLine(`Import Stammdaten: Fahrer neu=${addD} skip=${skipD}, Autos neu=${addC} skip=${skipC}`);
   }
 
+  function importStammdatenFromJsonLegacy2(obj, allowDupNames=false){
+    if(!obj || (obj.kind!=='zeitnahme_stammdaten_v1' && !(obj.drivers&&obj.cars))){
+      throw new Error('import_invalid_masterdata_file');
+    }
+    const driversIn = Array.isArray(obj.drivers) ? obj.drivers : [];
+    const carsIn = Array.isArray(obj.cars) ? obj.cars : [];
+
+    if(!state.masterData) state.masterData = {drivers:[], cars:[]};
+    if(!Array.isArray(state.masterData.drivers)) state.masterData.drivers = [];
+    if(!Array.isArray(state.masterData.cars)) state.masterData.cars = [];
+    const drivers = state.masterData.drivers;
+    const cars = state.masterData.cars;
+
+    const driverIdSet = new Set(drivers.map(d=>d.id));
+    const driverNameSet = new Set(drivers.map(d=>normalizeName(d.name)));
+    const carIdSet = new Set(cars.map(c=>c.id));
+    const carChipSet = new Set(cars.map(c=>normalizeChipCode(c.chipCode ?? c.chipId ?? '')).filter(Boolean));
+
+    let addD=0, skipD=0, addC=0, skipC=0;
+
+    for(const d of driversIn){
+      if(!d || !d.id){ skipD++; continue; }
+      const nameKey = normalizeName(d.name);
+      if(driverIdSet.has(d.id)){ skipD++; continue; }
+      if(!allowDupNames && nameKey && driverNameSet.has(nameKey)){ skipD++; continue; }
+      const importedDriver = JSON.parse(JSON.stringify(d));
+      drivers.push(importedDriver);
+      driverIdSet.add(importedDriver.id);
+      if(nameKey) driverNameSet.add(nameKey);
+      addD++;
+    }
+
+    for(const c of carsIn){
+      if(!c || !c.id){ skipC++; continue; }
+      const chip = normalizeChipCode(c.chipCode ?? c.chipId ?? '');
+      if(carIdSet.has(c.id)){ skipC++; continue; }
+      if(chip && carChipSet.has(chip)){ skipC++; continue; }
+      const importedCar = JSON.parse(JSON.stringify(c));
+      if(chip) importedCar.chipCode = chip;
+      cars.push(importedCar);
+      carIdSet.add(importedCar.id);
+      if(chip) carChipSet.add(chip);
+      addC++;
+    }
+
+    saveState();
+    renderAll();
+    toast('Import', `Fahrer neu: ${addD}, Ã¼bersprungen: ${skipD} â€¢ Autos neu: ${addC}, Ã¼bersprungen: ${skipC}`, 'ok');
+    logLine(`Import Stammdaten: Fahrer neu=${addD} skip=${skipD}, Autos neu=${addC} skip=${skipC}`);
+    return { addDrivers:addD, skipDrivers:skipD, addCars:addC, skipCars:skipC };
+  }
+
+  function importStammdatenFromJson(obj, allowDupNames=false){
+    if(!obj || (obj.kind!=='zeitnahme_stammdaten_v1' && !(obj.drivers&&obj.cars))){
+      throw new Error('import_invalid_masterdata_file');
+    }
+    const driversIn = Array.isArray(obj.drivers) ? obj.drivers : [];
+    const carsIn = Array.isArray(obj.cars) ? obj.cars : [];
+
+    if(!state.masterData) state.masterData = {drivers:[], cars:[]};
+    if(!Array.isArray(state.masterData.drivers)) state.masterData.drivers = [];
+    if(!Array.isArray(state.masterData.cars)) state.masterData.cars = [];
+    const drivers = state.masterData.drivers;
+    const cars = state.masterData.cars;
+
+    const driverIdSet = new Set(drivers.map(d=>d.id));
+    const driverNameSet = new Set(drivers.map(d=>normalizeName(d.name)));
+    const carIdSet = new Set(cars.map(c=>c.id));
+    const carChipSet = new Set(cars.map(c=>normalizeChipCode(c.chipCode ?? c.chipId ?? '')).filter(Boolean));
+
+    let addD=0, skipD=0, addC=0, skipC=0;
+
+    for(const d of driversIn){
+      if(!d || !d.id){ skipD++; continue; }
+      const nameKey = normalizeName(d.name);
+      if(driverIdSet.has(d.id)){ skipD++; continue; }
+      if(!allowDupNames && nameKey && driverNameSet.has(nameKey)){ skipD++; continue; }
+      const importedDriver = JSON.parse(JSON.stringify(d));
+      drivers.push(importedDriver);
+      driverIdSet.add(importedDriver.id);
+      if(nameKey) driverNameSet.add(nameKey);
+      addD++;
+    }
+
+    for(const c of carsIn){
+      if(!c || !c.id){ skipC++; continue; }
+      const chip = normalizeChipCode(c.chipCode ?? c.chipId ?? '');
+      if(carIdSet.has(c.id)){ skipC++; continue; }
+      if(chip && carChipSet.has(chip)){ skipC++; continue; }
+      const importedCar = JSON.parse(JSON.stringify(c));
+      if(chip) importedCar.chipCode = chip;
+      cars.push(importedCar);
+      carIdSet.add(importedCar.id);
+      if(chip) carChipSet.add(chip);
+      addC++;
+    }
+
+    saveState();
+    renderAll();
+    toast('Import', `Fahrer neu: ${addD}, uebersprungen: ${skipD} | Autos neu: ${addC}, uebersprungen: ${skipC}`, 'ok');
+    logLine(`Import Stammdaten: Fahrer neu=${addD} skip=${skipD}, Autos neu=${addC} skip=${skipC}`);
+    return { addDrivers:addD, skipDrivers:skipD, addCars:addC, skipCars:skipC };
+  }
+
 
 
   // --------------------- Toast + Log ---------------------
@@ -1131,7 +2172,7 @@ function downloadJson(filename, obj){
 
 function openPresenterWindow(){
     try{
-      presenterWin = window.open('presenter.html', 'zeitnahme_presenter', 'noopener,noreferrer,width=1200,height=800');
+      presenterWin = window.open('presenter.html', 'zeitnahme_presenter', 'width=1200,height=800');
       if(!presenterWin){
         toast('Presenter','Popup blockiert – bitte Popups für diese Seite erlauben.','warn');
       } else {
@@ -1162,6 +2203,7 @@ function openPresenterWindow(){
   }
 
   function buildFinalRaceRowsFromStandings(raceId, laps, track){
+    const race = getRaceById(raceId);
     const standings = computeDriverStandingsGlobal(laps || []);
     const rows = standings.map((x, idx)=>{
       const drv = getDriver(x.id) || null;
@@ -1184,7 +2226,7 @@ function openPresenterWindow(){
         tc
       };
     });
-    rows.sort((a,b)=> (b.laps-a.laps) || ((a.totalMs??9e15)-(b.totalMs??9e15)) || ((a.bestMs??9e15)-(b.bestMs??9e15)) || ((a.lastMs??9e15)-(b.lastMs??9e15)) || (String(a.name).localeCompare(String(b.name),'de')));
+    sortDriverStandingRows(rows, race, { live:false });
     rows.forEach((r,i)=>r.pos=i+1);
     return rows;
   }
@@ -1231,7 +2273,7 @@ function openPresenterWindow(){
         const st = computeTeamStandingsGlobal(relevantLaps, race.mode, (state.session.finish?.pending?state.session.finish:null));
         rows = st.map((x,idx)=>({
           pos: idx+1,
-          name: (race.mode==='endurance' && x.compliant===false) ? ((x.name||'Team') + ' • AW') : x.name,
+          name: x.name,
           laps: x.lapCount,
           totalMs: x.totalMs,
           bestMs: x.bestMs ?? null,
@@ -1277,12 +2319,8 @@ function openPresenterWindow(){
             });
           }
           if(inRace){
-            if(race?.submode==='Qualifying'){
-              rows.sort((a,b)=> ((a.bestMs??9e15)-(b.bestMs??9e15)) || ((b.laps||0)-(a.laps||0)) || (String(a.name).localeCompare(String(b.name),'de')));
-            }else{
-              const liveRaceRows = !!(displayRaceId && displayRaceId===state.session.currentRaceId && state.session.state==='RUNNING' && !(state.session.finish&&state.session.finish.pending));
-              rows.sort((a,b)=>compareDriverStandingRows(a,b,{ live: liveRaceRows }));
-            }
+            const liveRaceRows = !!(displayRaceId && displayRaceId===state.session.currentRaceId && state.session.state==='RUNNING' && !(state.session.finish&&state.session.finish.pending));
+            sortDriverStandingRows(rows, race, { live: liveRaceRows });
           }else{
             rows.sort((a,b)=> ((a.bestMs??9e15)-(b.bestMs??9e15)) || (String(a.name).localeCompare(String(b.name),'de')));
           }
@@ -1395,8 +2433,13 @@ function openPresenterWindow(){
     state.session._lastPresenterTimerKey = timerKey;
     state.session._lastPresenterAmpelKey = ampelKey;
 
-    try{ localStorage.setItem('ZN_PRES_SNAPSHOT', JSON.stringify(payload)); }catch{}
+    const targetOrigin = (window.location && window.location.origin && window.location.origin !== 'null') ? window.location.origin : '*';
+    try{
+      if(presenterWin && presenterWin.closed) presenterWin = null;
+    }catch{}
+    try{ localStorage.setItem(PRES_SNAPSHOT_KEY, JSON.stringify(payload)); }catch{}
     try{ presenterBc?.postMessage({type:'snapshot', payload}); }catch{}
+    try{ presenterWin?.postMessage({type:'snapshot', payload}, targetOrigin); }catch{}
   }
 
 
@@ -1442,7 +2485,26 @@ function openPresenterWindow(){
   function recomputeTrackRecord(trackId, seasonId){
     const track = state.tracks.tracks.find(t=>t.id===trackId);
     if(!track) return;
-    const laps = state.session.laps.filter(l=>l && l.trackId===trackId && l.lapMs!=null);
+    const seasonNeedle = String(seasonId || '').trim();
+    const raceSeasonById = new Map();
+    const laps = state.session.laps.filter(l=>{
+      if(!l || l.trackId!==trackId || l.lapMs==null) return false;
+      if(!seasonNeedle) return true;
+      const raceId = String(l.raceId || '').trim();
+      if(!raceId) return false;
+      if(!raceSeasonById.has(raceId)){
+        let foundSeasonId = '';
+        for(const raceDay of (state.raceDay?.raceDays || [])){
+          const race = (raceDay.races || []).find(r=>r.id===raceId);
+          if(race){
+            foundSeasonId = String(race.seasonId || raceDay.seasonId || '').trim();
+            break;
+          }
+        }
+        raceSeasonById.set(raceId, foundSeasonId);
+      }
+      return raceSeasonById.get(raceId) === seasonNeedle;
+    });
     if(!track.recordsBySeason) track.recordsBySeason = {};
     let best = null;
     let bestLap = null;
@@ -1572,22 +2634,17 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
   function getCarsByDriver(driverId){ return getCarsForDriver(driverId); }
 
   function getModeLabel(){
-    if(state.session?.isFreeDriving || state.ui?.freeDrivingEnabled) return 'Freies Fahren';
-    if(!state.modes.activeMode) return '—';
-          if(state.modes.activeMode==='single') return 'Einzelläufe: ' + state.modes.singleSubmode;
-    if(state.modes.activeMode==='team') return 'Teamrennen';
+    if(state.session?.isFreeDriving || state.ui?.freeDrivingEnabled) return t('mode.free_driving');
+    if(!state.modes.activeMode) return t('mode.none');
+    if(state.modes.activeMode==='single') return t('mode.single', { submode:t('submode.' + String(state.modes.singleSubmode||'').toLowerCase(), null, state.modes.singleSubmode) });
+    if(state.modes.activeMode==='team') return t('mode.team');
     if(state.modes.activeMode==='loop'){
       const ph = state.loopRuntime?.phase || 'training';
-      const label = (ph==='training') ? 'Training'
-        : (ph==='setup') ? 'Aufstellphase'
-        : (ph==='race') ? 'Rennen'
-        : (ph==='ampel') ? 'Ampel'
-        : (ph==='podium') ? 'Podium'
-        : ph;
-      return 'Dauerschleife • ' + label;
+      const label = t('submode.' + String(ph||'').toLowerCase(), null, ph);
+      return t('mode.loop', { phase:label });
     }
-    if(state.modes.activeMode==='endurance') return 'Langstrecke';
-    return '—';
+    if(state.modes.activeMode==='endurance') return t('mode.endurance');
+    return t('mode.none');
   }
 
   function getLapKind(){
@@ -2156,6 +3213,119 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
   }
 
 
+  function sleep(ms){
+    return new Promise(resolve=>setTimeout(resolve, Math.max(0, Number(ms)||0)));
+  }
+
+  function createDiscordHttpError(status, detail=''){
+    const err = new Error(`Webhook ${status}${detail ? ': '+detail : ''}`);
+    err.statusCode = Number(status || 0) || 0;
+    err.retryable = err.statusCode === 408 || err.statusCode === 429 || err.statusCode >= 500;
+    err.permanent = !err.retryable;
+    return err;
+  }
+
+  function markDiscordNetworkError(err){
+    if(!err) return err;
+    err.network = true;
+    err.retryable = true;
+    err.permanent = false;
+    return err;
+  }
+
+  function shouldQueueDiscordError(err){
+    if(!err) return true;
+    if(err.queued) return false;
+    if(err.permanent) return false;
+    return !!(err.retryable || err.network || navigator.onLine === false);
+  }
+
+  function getDiscordImmediateRetryDelayMs(attempt){
+    const tries = Math.max(0, Number(attempt)||0);
+    return [900, 2500, 6000][tries] || 6000;
+  }
+
+  function getDiscordQueueRetryDelayMs(attempts){
+    const n = Math.max(0, Number(attempts)||0);
+    return Math.min(15 * 60 * 1000, 30 * 1000 * Math.pow(2, Math.min(n, 5)));
+  }
+
+  function createQueuedDiscordError(job, cause){
+    const err = new Error('discord_queued');
+    err.queued = true;
+    err.job = job || null;
+    err.cause = cause || null;
+    return err;
+  }
+
+  async function loadDiscordQueueJobs(){
+    const db = await getAppDataDb();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction([APP_DATA_DISCORD_QUEUE_STORE], 'readonly');
+      let rows = [];
+      readAllFromObjectStore(tx, APP_DATA_DISCORD_QUEUE_STORE).then((items)=>{
+        rows = Array.isArray(items) ? items : [];
+      }).catch(reject);
+      tx.oncomplete = ()=>resolve(rows);
+      tx.onerror = ()=>reject(tx.error || new Error('Discord queue read failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('Discord queue read aborted'));
+    });
+  }
+
+  async function putDiscordQueueJob(job){
+    const db = await getAppDataDb();
+    await new Promise((resolve, reject)=>{
+      const tx = db.transaction([APP_DATA_DISCORD_QUEUE_STORE], 'readwrite');
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error || new Error('Discord queue write failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('Discord queue write aborted'));
+      tx.objectStore(APP_DATA_DISCORD_QUEUE_STORE).put(job);
+    });
+  }
+
+  async function deleteDiscordQueueJob(jobId){
+    if(!jobId) return;
+    const db = await getAppDataDb();
+    await new Promise((resolve, reject)=>{
+      const tx = db.transaction([APP_DATA_DISCORD_QUEUE_STORE], 'readwrite');
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error || new Error('Discord queue delete failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('Discord queue delete aborted'));
+      tx.objectStore(APP_DATA_DISCORD_QUEUE_STORE).delete(jobId);
+    });
+  }
+
+  async function enqueueDiscordJob(job){
+    const queueJob = {
+      id: job?.id || uid('dq'),
+      kind: String(job?.kind || '').trim(),
+      targetId: String(job?.targetId || '').trim(),
+      webhookUrl: String(job?.webhookUrl || '').trim(),
+      useThread: !!job?.useThread,
+      threadName: String(job?.threadName || '').trim(),
+      force: !!job?.force,
+      createdAt: Number(job?.createdAt || now()),
+      updatedAt: now(),
+      nextAttemptAt: Number(job?.nextAttemptAt || now()),
+      attempts: Math.max(0, Number(job?.attempts || 0) || 0),
+      lastError: String(job?.lastError || '').trim()
+    };
+    await putDiscordQueueJob(queueJob);
+    return queueJob;
+  }
+
+  let _discordQueueProcessing = false;
+  let _discordQueueTimer = null;
+
+  function scheduleDiscordQueueProcessing(delayMs=1500){
+    if(_discordQueueTimer) clearTimeout(_discordQueueTimer);
+    _discordQueueTimer = setTimeout(()=>{
+      _discordQueueTimer = null;
+      processDiscordQueue(false).catch(()=>{});
+    }, Math.max(0, Number(delayMs)||0));
+  }
+
+
 
 
   function buildDiscordThreadName(baseName, ctx={}, templateOverride=''){
@@ -2217,17 +3387,32 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     const fd = new FormData();
     if(extra && extra.fileBlob){ fd.append('files[0]', extra.fileBlob, sanitizeDiscordFilename(extra.filename||'summary.png')); }
     fd.append('payload_json', JSON.stringify(finalPayload));
-    const res = await fetch(url, { method:'POST', body:fd });
+    let res;
+    try{
+      res = await fetch(url, { method:'POST', body:fd });
+    }catch(err){
+      throw markDiscordNetworkError(err instanceof Error ? err : new Error(String(err || 'Discord fetch failed')));
+    }
     if(!res.ok){
       let detail = '';
       try{ detail = await res.text(); }catch{}
-      throw new Error(`Webhook ${res.status}${detail ? ': '+detail : ''}`);
+      throw createDiscordHttpError(res.status, detail);
     }
     return true;
   }
 
   async function postDiscordWebhookWithImage(webhookUrl, payload, blob, filename, extra={}){
-    return postDiscordWebhook(webhookUrl, payload, { ...(extra||{}), fileBlob: blob, filename });
+    let lastError = null;
+    for(let attempt=0; attempt<3; attempt++){
+      try{
+        return await postDiscordWebhook(webhookUrl, payload, { ...(extra||{}), fileBlob: blob, filename });
+      }catch(err){
+        lastError = err;
+        if(!(err?.retryable || err?.network) || attempt >= 2) throw err;
+        await sleep(getDiscordImmediateRetryDelayMs(attempt));
+      }
+    }
+    throw lastError || new Error('Discord send failed');
   }
 
   function getRaceDayBestLapsByTrack(raceDayId){
@@ -2383,6 +3568,158 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     return await new Promise(resolve=>canvas.toBlob(resolve, 'image/png'));
   }
 
+  async function renderSeasonWebhookBlob(seasonId){
+    const season = (state.season?.seasons||[]).find(x=>x.id===seasonId) || null;
+    if(!season) throw new Error('Saison nicht gefunden');
+    const champ = getChampionshipData(seasonId, getChampionshipSettings());
+    const stats = getSeasonStatisticsData(seasonId);
+    const createdAt = season.createdAt || Date.now();
+    const width = 1800;
+    const margins = { left:36, right:36, top:30, bottom:30 };
+    const titleH = 126;
+    const sectionGap = 24;
+    const cardGap = 18;
+    const cardCols = 4;
+    const cardW = Math.floor((width - margins.left - margins.right - (cardGap * (cardCols - 1))) / cardCols);
+    const cardH = 124;
+    const tableTopRows = (champ.rows||[]).slice(0, 10);
+    const statTopRows = (stats.rows||[]).slice(0, 10);
+    const champCols = [70, 360, 150, 150, 120, 120, 120];
+    const statCols = [70, 360, 110, 110, 110, 120, 180];
+    const tableHeaderH = 42;
+    const tableRowH = 34;
+    const tableTitleH = 64;
+    const champTableH = tableTitleH + tableHeaderH + Math.max(1, tableTopRows.length) * tableRowH;
+    const statTableH = tableTitleH + tableHeaderH + Math.max(1, statTopRows.length) * tableRowH;
+    const height = margins.top + titleH + sectionGap + cardH + sectionGap + champTableH + sectionGap + statTableH + margins.bottom;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const bg = '#0f1218';
+    const panel = '#181c24';
+    const panel2 = '#1d222c';
+    const text = '#eff3f8';
+    const muted = '#a5afbe';
+    const border = '#2a3342';
+    const header = '#202633';
+    const accent = '#7d5cff';
+    const accent2 = '#4ea1ff';
+    const positive = '#2ed17d';
+    const totalDiscardedRacePoints = (champ.rows||[]).reduce((sum, row)=>sum + (Number(row.discardedRacePoints)||0), 0);
+    const totalDiscardedBonusPoints = (champ.rows||[]).reduce((sum, row)=>sum + (Number(row.discardedBonusPoints)||0), 0);
+    const champLeader = champ.rows?.[0] || null;
+    const winsLeader = (stats.rows||[]).slice().sort((a,b)=>(b.wins-a.wins)||(b.podiums-a.podiums))[0] || null;
+    const podiumLeader = (stats.rows||[]).slice().sort((a,b)=>(b.podiums-a.podiums)||(b.wins-a.wins))[0] || null;
+    const fastestLeader = (stats.rows||[]).slice().sort((a,b)=>(b.fastestLapCount-a.fastestLapCount)||(b.wins-a.wins))[0] || null;
+    const rr = (x,y,w,h,r,fill,stroke='')=>{
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.arcTo(x+w,y,x+w,y+h,r);
+      ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);
+      ctx.closePath();
+      if(fill){ ctx.fillStyle = fill; ctx.fill(); }
+      if(stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+    };
+    const txt = (str,x,y,font,color,align='left')=>{
+      ctx.font = font;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = 'top';
+      ctx.fillText(String(str||''), x, y);
+    };
+    const fitText = (str,maxWidth,startPx,weight='700')=>{
+      let px = startPx;
+      for(; px>=12; px-=1){
+        ctx.font = `${weight} ${px}px sans-serif`;
+        if(ctx.measureText(String(str||'')).width <= maxWidth) break;
+      }
+      return `${weight} ${px}px sans-serif`;
+    };
+    const drawMetricCard = (x, y, label, value, sub, accentColor)=>{
+      rr(x, y, cardW, cardH, 22, panel, border);
+      txt(label, x + 18, y + 16, '600 16px sans-serif', muted);
+      txt(value, x + 18, y + 48, fitText(value, cardW - 36, 30, '700'), text);
+      txt(sub, x + 18, y + 88, '500 15px sans-serif', accentColor || accent);
+    };
+    const drawTable = (y, title, subtitle, cols, headers, rows, rowRenderer)=>{
+      const panelX = margins.left;
+      const panelW = width - margins.left - margins.right;
+      const tableH = tableTitleH + tableHeaderH + Math.max(1, rows.length) * tableRowH;
+      rr(panelX, y, panelW, tableH, 24, panel, border);
+      txt(title, panelX + 22, y + 18, '700 28px sans-serif', text);
+      txt(subtitle, panelX + panelW - 22, y + 22, '400 16px sans-serif', muted, 'right');
+      let x = panelX;
+      const headY = y + tableTitleH;
+      cols.forEach((w, idx)=>{
+        rr(x, headY, w, tableHeaderH, idx===0?16:10, header, border);
+        txt(headers[idx] || '', x + (idx===1 ? 14 : w/2), headY + 10, fitText(headers[idx] || '', w - 18, 18, '700'), text, idx===1 ? 'left' : 'center');
+        x += w;
+      });
+      let rowY = headY + tableHeaderH;
+      rows.forEach((row, rowIdx)=>{
+        rowRenderer({ row, rowIdx, y:rowY, panelX, cols });
+        rowY += tableRowH;
+      });
+      if(!rows.length) txt('Keine Daten', panelX + 20, headY + 54, '500 18px sans-serif', muted);
+      return tableH;
+    };
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+    for(let i=0;i<width;i+=92){
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.beginPath();
+      ctx.moveTo(i,0);
+      ctx.lineTo(i-220,height);
+      ctx.stroke();
+    }
+    rr(margins.left, margins.top, width - margins.left - margins.right, titleH, 26, panel, border);
+    txt('TimTime Saison-Auswertung', margins.left + 28, margins.top + 24, '700 42px sans-serif', text);
+    txt(season.name || 'Saison', margins.left + 28, margins.top + 76, '500 22px sans-serif', muted);
+    txt(`${new Date(createdAt).toLocaleDateString('de-DE')} - ${getRaceDaysForSeason(seasonId).length} Renntage - ${stats.races.length} Rennen - ${stats.rows.length} Fahrer`, width - margins.right - 28, margins.top + 30, '500 20px sans-serif', muted, 'right');
+    txt(`Wertung: ${champ.settings.countedRaces || 'alle'} Rennen - ${champ.settings.countedFastestLaps || 'alle'} SR - Faktor ${champ.settings.factor} - ${champ.settings.fastestLapPoints} SR-Pkt.`, width - margins.right - 28, margins.top + 76, '400 16px sans-serif', accent2, 'right');
+
+    const cardsY = margins.top + titleH + sectionGap;
+    drawMetricCard(margins.left, cardsY, 'Meisterschaft', champLeader ? champLeader.driver.name : '-', champLeader ? `${champLeader.totalPoints} Punkte` : 'Keine Daten', accent);
+    drawMetricCard(margins.left + (cardW + cardGap), cardsY, 'Meiste Siege', winsLeader ? winsLeader.driver.name : '-', winsLeader ? `${winsLeader.wins} Siege` : 'Keine Daten', accent2);
+    drawMetricCard(margins.left + ((cardW + cardGap) * 2), cardsY, 'Meiste Podien', podiumLeader ? podiumLeader.driver.name : '-', podiumLeader ? `${podiumLeader.podiums} Podien` : 'Keine Daten', positive);
+    drawMetricCard(margins.left + ((cardW + cardGap) * 3), cardsY, 'Meiste SR', fastestLeader ? fastestLeader.driver.name : '-', fastestLeader ? `${fastestLeader.fastestLapCount} schnellste Runden` : 'Keine Daten', '#f59e0b');
+
+    let curY = cardsY + cardH + sectionGap;
+    curY += drawTable(curY, 'Gesamtwertung', `Gestrichen: Rennen ${totalDiscardedRacePoints} - Bonus ${totalDiscardedBonusPoints}`, champCols, ['#', 'Fahrer', 'Gesamt', 'Rennen', 'Bonus', 'Siege', 'Podien'], tableTopRows, ({row,rowIdx,y,panelX,cols})=>{
+      let x = panelX;
+      const band = rowIdx % 2 ? panel2 : '#151922';
+      cols.forEach((w, idx)=>{ rr(x, y, w, tableRowH, idx===0?12:8, band, border); x += w; });
+      x = panelX;
+      txt(rowIdx + 1, x + cols[0]/2, y + 8, '700 16px sans-serif', text, 'center'); x += cols[0];
+      txt(row.driver?.name || '-', x + 14, y + 8, fitText(row.driver?.name || '-', cols[1] - 20, 18), text); x += cols[1];
+      txt(row.totalPoints || 0, x + cols[2]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[2];
+      txt(row.countedRacePoints || 0, x + cols[3]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[3];
+      txt(row.countedBonusPoints || 0, x + cols[4]/2, y + 8, '700 16px monospace', accent2, 'center'); x += cols[4];
+      txt(row.wins || 0, x + cols[5]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[5];
+      txt(row.podiums || 0, x + cols[6]/2, y + 8, '700 16px monospace', text, 'center');
+    });
+    curY += sectionGap;
+    drawTable(curY, 'Saison Statistik', 'Starts, Siege, Podien, schnellste Runden und Durchschnittsplatz', statCols, ['#', 'Fahrer', 'Starts', 'Siege', 'Podien', 'SR', 'Ø Platz'], statTopRows, ({row,rowIdx,y,panelX,cols})=>{
+      let x = panelX;
+      const band = rowIdx % 2 ? panel2 : '#151922';
+      cols.forEach((w, idx)=>{ rr(x, y, w, tableRowH, idx===0?12:8, band, border); x += w; });
+      x = panelX;
+      txt(rowIdx + 1, x + cols[0]/2, y + 8, '700 16px sans-serif', text, 'center'); x += cols[0];
+      txt(row.driver?.name || '-', x + 14, y + 8, fitText(row.driver?.name || '-', cols[1] - 20, 18), text); x += cols[1];
+      txt(row.races || 0, x + cols[2]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[2];
+      txt(row.wins || 0, x + cols[3]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[3];
+      txt(row.podiums || 0, x + cols[4]/2, y + 8, '700 16px monospace', text, 'center'); x += cols[4];
+      txt(row.fastestLapCount || 0, x + cols[5]/2, y + 8, '700 16px monospace', accent2, 'center'); x += cols[5];
+      const avgPos = row.avgPos!=null ? String(row.avgPos.toFixed(2)).replace('.', ',') : '-';
+      txt(avgPos, x + cols[6]/2, y + 8, '700 16px monospace', row.avgPos!=null ? text : muted, 'center');
+    });
+    return await new Promise(resolve=>canvas.toBlob(resolve, 'image/png'));
+  }
+
   function buildRaceDayWebhookMessage(raceDayId){
     const data = getRaceDayWebhookTableData(raceDayId);
     const { rd, tracks, createdAt, table1Rows } = data;
@@ -2453,7 +3790,8 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
         { name:'Punkte-Regel', value: trimDiscordFieldValue(`Gewertete Rennen: ${champ.settings.countedRaces || 'alle'}\nGewertete SR: ${champ.settings.countedFastestLaps || 'alle'}\nFaktor: ${champ.settings.factor}\nSR-Punkte: ${champ.settings.fastestLapPoints}`), inline:true }
       ],
       footer: { text:'TimTime Saison Webhook' },
-      timestamp: new Date(createdAt).toISOString()
+      timestamp: new Date(createdAt).toISOString(),
+      image: { url:'attachment://saison_auswertung.png' }
     }];
     const standingFields = chunkDiscordFieldLines(standingsLines, 'Gesamtwertung', 1024);
     const awardFields = chunkDiscordFieldLines(awards, 'Awards', 1024);
@@ -2475,23 +3813,210 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     return { payload, forumText, threadName, season, champ, stats };
   }
 
-  async function sendRaceDayWebhook(raceDayId){
-    const webhookUrl = String(state.settings?.discordRaceDayWebhook || '').trim();
-    if(!webhookUrl) throw new Error('Renntag Webhook fehlt');
-    const msg = buildRaceDayWebhookMessage(raceDayId);
-    const extra = state.settings?.discordRaceDayUseThread ? { thread_name: msg.threadName } : {};
-    const blob = await renderRaceDayWebhookBlob(raceDayId);
-    await postDiscordWebhookWithImage(webhookUrl, msg.payload, blob, 'renntag_auswertung.png', extra);
-    return msg;
+  function buildSeasonWebhookMessage(seasonId){
+    const season = (state.season?.seasons||[]).find(x=>x.id===seasonId) || null;
+    if(!season) throw new Error('Saison nicht gefunden');
+    const champ = getChampionshipData(seasonId, getChampionshipSettings());
+    const stats = getSeasonStatisticsData(seasonId);
+    const createdAt = season.createdAt || Date.now();
+    const topRows = champ.rows.slice(0,20);
+    const statRows = stats.rows || [];
+    const champRows = champ.rows || [];
+    const champLeader = champRows[0] || null;
+    const winsLeader = statRows.slice().sort((a,b)=>(b.wins-a.wins)||(b.podiums-a.podiums))[0] || null;
+    const podiumLeader = statRows.slice().sort((a,b)=>(b.podiums-a.podiums)||(b.wins-a.wins))[0] || null;
+    const fastestLeader = statRows.slice().sort((a,b)=>(b.fastestLapCount-a.fastestLapCount)||(b.wins-a.wins))[0] || null;
+    const consistencyLeader = statRows.filter(x=>x.races>1).slice().sort((a,b)=>(a.consistencyScore??9e15)-(b.consistencyScore??9e15))[0] || statRows[0] || null;
+    const startsLeader = statRows.slice().sort((a,b)=>(b.races-a.races)||(b.wins-a.wins))[0] || null;
+    const avgLapLeader = statRows.filter(x=>x.avgMs!=null).slice().sort((a,b)=>(a.avgMs??9e15)-(b.avgMs??9e15)||(b.wins-a.wins))[0] || null;
+    const champRaceLeader = champRows.slice().sort((a,b)=>(b.countedRacePoints-a.countedRacePoints)||(b.wins-a.wins))[0] || null;
+    const champBonusLeader = champRows.slice().sort((a,b)=>(b.countedBonusPoints-a.countedBonusPoints)||(b.fastestLapCount-a.fastestLapCount))[0] || null;
+    const totalDiscardedRacePoints = champRows.reduce((sum, row)=>sum + (Number(row.discardedRacePoints)||0), 0);
+    const totalDiscardedBonusPoints = champRows.reduce((sum, row)=>sum + (Number(row.discardedBonusPoints)||0), 0);
+    const awards = [];
+    if(statRows.length){
+      if(winsLeader) awards.push(`Meiste Siege: ${winsLeader.driver.name} (${winsLeader.wins})`);
+      if(podiumLeader) awards.push(`Meiste Podien: ${podiumLeader.driver.name} (${podiumLeader.podiums})`);
+      if(fastestLeader) awards.push(`Meiste schnellste Runden: ${fastestLeader.driver.name} (${fastestLeader.fastestLapCount})`);
+      if(consistencyLeader && consistencyLeader.avgPos!=null) awards.push(`Konstantester Fahrer: ${consistencyLeader.driver.name} (Ø Platz ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})`);
+      if(startsLeader) awards.push(`Meiste Starts: ${startsLeader.driver.name} (${startsLeader.races})`);
+      if(avgLapLeader && avgLapLeader.avgMs!=null) awards.push(`Beste Ø Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})`);
+    }
+    const trackBestMap = new Map();
+    for(const row of statRows){
+      for(const [trackId, bestMs] of Object.entries(row.bestByTrack||{})){
+        const ms = Number(bestMs||0);
+        if(!(ms>0)) continue;
+        const cur = trackBestMap.get(trackId);
+        if(!cur || ms < cur.ms){
+          trackBestMap.set(trackId, { trackId, ms, driverName: row.driver?.name || '—' });
+        }
+      }
+    }
+    const trackBestLines = Array.from(trackBestMap.values()).sort((a,b)=>{
+      const ta = getTrackById(a.trackId)?.name || a.trackId;
+      const tb = getTrackById(b.trackId)?.name || b.trackId;
+      return ta.localeCompare(tb, 'de');
+    }).map(entry=>{
+      const track = getTrackById(entry.trackId);
+      return `${getTrackPlainName(track)}: ${entry.driverName} (${msToTime(entry.ms,3)})`;
+    });
+    const seasonRaces = getSeasonScoringRaces(seasonId);
+    const recentRaceLines = seasonRaces.slice(-5).map((race, idx, arr)=>{
+      const laps = getRelevantRaceLaps(race.id, state.session.laps || []);
+      const standings = computeDriverStandingsGlobal(laps);
+      const winner = standings[0]?.name || '—';
+      const fastestDid = getFastestDriverIdFromLaps(laps);
+      const fastestDriver = fastestDid ? (getDriver(fastestDid)?.name || fastestDid) : '';
+      const fastestLap = laps.filter(l=>{
+        const did = String(l?.driverId || (l?.carId ? (getCar(l.carId)?.driverId||'') : '') || '').trim();
+        return did && did===fastestDid && Number(l?.lapMs||0)>0;
+      }).reduce((best, lap)=>{
+        if(!best || Number(lap.lapMs||0) < Number(best.lapMs||0)) return lap;
+        return best;
+      }, null);
+      const parts = [`${seasonRaces.length - arr.length + idx + 1}. ${race.name || 'Rennen'}`, `Sieg: ${winner}`];
+      if(fastestDriver && fastestLap?.lapMs) parts.push(`SR: ${fastestDriver} (${msToTime(fastestLap.lapMs,3)})`);
+      return parts.join(' • ');
+    });
+    const standingsLines = topRows.map((row, idx)=>{
+      const pieces = [
+        `${idx+1}. ${row.driver.name}`,
+        `${row.totalPoints} Pkt.`,
+        `${row.races || 0}/${row.countedRaceResults || 0} gew. Rennen`,
+        `${row.fastestLapCount || 0}/${row.countedFastestResults || 0} gew. SR`,
+        `${row.countedRacePoints || 0} Rennen`,
+        `${row.countedBonusPoints || 0} Bonus`,
+        `${(row.discardedRacePoints||0) + (row.discardedBonusPoints||0)} gestrichen`,
+        `${row.wins} Siege`,
+        `${row.podiums} Podien`,
+        `${row.fastestLapCount} SR`
+      ];
+      return pieces.join(' • ');
+    });
+    const highlightLines = [
+      winsLeader ? `Meiste Siege: ${winsLeader.driver.name} (${winsLeader.wins})` : '',
+      podiumLeader ? `Meiste Podien: ${podiumLeader.driver.name} (${podiumLeader.podiums})` : '',
+      fastestLeader ? `Meiste SR: ${fastestLeader.driver.name} (${fastestLeader.fastestLapCount})` : '',
+      consistencyLeader && consistencyLeader.avgPos!=null ? `Konstantester Fahrer: ${consistencyLeader.driver.name} (Ø ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})` : '',
+      startsLeader ? `Meiste Starts: ${startsLeader.driver.name} (${startsLeader.races})` : '',
+      avgLapLeader && avgLapLeader.avgMs!=null ? `Beste Ø Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})` : '',
+      champRaceLeader ? `Meiste Rennpunkte: ${champRaceLeader.driver.name} (${champRaceLeader.countedRacePoints || 0})` : '',
+      champBonusLeader ? `Meiste Bonuspunkte: ${champBonusLeader.driver.name} (${champBonusLeader.countedBonusPoints || 0})` : ''
+    ].filter(Boolean);
+    const textLines = [
+      `🏆 **Saison-Auswertung**`,
+      `**Saison:** ${season.name || '—'}`,
+      `**Renntage:** ${getRaceDaysForSeason(seasonId).length}`,
+      `**Rennen:** ${stats.races.length}`,
+      `**Fahrer:** ${statRows.length}`,
+      `**Gewertete Rennen:** ${champ.settings.countedRaces || 'alle'} pro Fahrer`,
+      `**Gewertete SR:** ${champ.settings.countedFastestLaps || 'alle'} pro Fahrer`,
+      `**Gestrichene Punkte:** Rennen ${totalDiscardedRacePoints} • Bonus ${totalDiscardedBonusPoints}`,
+      `**Meisterschaft:** ${champLeader ? `${champLeader.driver.name} mit ${champLeader.totalPoints} Punkten` : '—'}`,
+      '',
+      '**Gesamtwertung**',
+      ...(standingsLines.length ? standingsLines : ['— Keine gewerteten Rennen']),
+      '',
+      '**Highlights**',
+      ...(highlightLines.length ? highlightLines : ['— Keine Daten']),
+      '',
+      '**Streckenbestzeiten**',
+      ...(trackBestLines.length ? trackBestLines : ['— Keine Daten']),
+      '',
+      '**Letzte Rennen**',
+      ...(recentRaceLines.length ? recentRaceLines : ['— Keine Daten'])
+    ];
+    const embeds = [{
+      title: 'Saison-Auswertung',
+      description: trimDiscordFieldValue(`${season.name || '—'}\nKomplette Saisonstatistik und Meisterschaftsübersicht`, 4096),
+      color: 0x7d5cff,
+      fields: [
+        { name:'Überblick', value: trimDiscordFieldValue(`Renntage: ${getRaceDaysForSeason(seasonId).length}\nRennen: ${stats.races.length}\nFahrer: ${statRows.length}\nGewertete Rennen gesamt: ${champ.races.length}`), inline:true },
+        { name:'Punkte-Regel', value: trimDiscordFieldValue(`Gewertete Rennen: ${champ.settings.countedRaces || 'alle'} pro Fahrer\nGewertete SR: ${champ.settings.countedFastestLaps || 'alle'} pro Fahrer\nFaktor: ${champ.settings.factor}\nSR-Punkte: ${champ.settings.fastestLapPoints}`), inline:true },
+        { name:'Streichresultate', value: trimDiscordFieldValue(`Gestrichene Rennpunkte: ${totalDiscardedRacePoints}\nGestrichene Bonuspunkte: ${totalDiscardedBonusPoints}`), inline:true },
+        { name:'Meisterschaftsführer', value: trimDiscordFieldValue(champLeader ? `${champLeader.driver.name}\n${champLeader.totalPoints} Punkte\n${champLeader.wins} Siege • ${champLeader.podiums} Podien` : '—'), inline:true }
+      ],
+      footer: { text:'TimTime Saison Webhook' },
+      timestamp: new Date(createdAt).toISOString()
+    }];
+    const highlightFields = chunkDiscordFieldLines(highlightLines, 'Highlights', 1024);
+    const standingFields = chunkDiscordFieldLines(standingsLines, 'Gesamtwertung', 1024);
+    const awardFields = chunkDiscordFieldLines(awards, 'Awards', 1024);
+    const trackFields = chunkDiscordFieldLines(trackBestLines, 'Streckenbestzeiten', 1024);
+    const recentRaceFields = chunkDiscordFieldLines(recentRaceLines, 'Letzte Rennen', 1024);
+    for(const field of [...highlightFields, ...standingFields, ...awardFields, ...trackFields, ...recentRaceFields]){
+      if(embeds[embeds.length-1].fields.length >= 24){
+        embeds.push({ title:'Saison-Auswertung (Fortsetzung)', color:0x7d5cff, fields:[], footer:{ text:'TimTime Saison Webhook' }, timestamp:new Date(createdAt).toISOString() });
+      }
+      embeds[embeds.length-1].fields.push(field);
+    }
+    const payload = {
+      username: state.settings?.appName || 'TimTime',
+      content: '',
+      embeds
+    };
+    const forumText = textLines.join('\n').trim();
+    const threadName = buildDiscordThreadName(season.name || 'Saison', {
+      type: 'Saison-Auswertung', season: season.name || 'Saison', createdAt
+    }, state.settings?.discordSeasonThreadName || '');
+    return { payload, forumText, threadName, season, champ, stats };
   }
 
-  async function sendSeasonWebhook(seasonId){
-    const webhookUrl = String(state.settings?.discordSeasonWebhook || '').trim();
+  async function sendRaceDayWebhook(raceDayId, opts={}){
+    const webhookUrl = String((opts.webhookUrl ?? state.settings?.discordRaceDayWebhook) || '').trim();
+    if(!webhookUrl) throw new Error('Renntag Webhook fehlt');
+    const msg = buildRaceDayWebhookMessage(raceDayId);
+    const useThread = opts.useThread ?? state.settings?.discordRaceDayUseThread;
+    const extra = useThread ? { thread_name: (opts.threadName || msg.threadName) } : {};
+    try{
+      const blob = await renderRaceDayWebhookBlob(raceDayId);
+      await postDiscordWebhookWithImage(webhookUrl, msg.payload, blob, 'renntag_auswertung.png', extra);
+      return { queued:false, msg };
+    }catch(err){
+      if(opts.allowQueue !== false && shouldQueueDiscordError(err)){
+        const job = await enqueueDiscordJob({
+          kind:'raceday',
+          targetId: raceDayId,
+          webhookUrl,
+          useThread: !!useThread,
+          threadName: extra.thread_name || '',
+          force: true,
+          lastError: String(err?.message || err || '')
+        });
+        scheduleDiscordQueueProcessing(1500);
+        throw createQueuedDiscordError(job, err);
+      }
+      throw err;
+    }
+  }
+
+  async function sendSeasonWebhook(seasonId, opts={}){
+    const webhookUrl = String((opts.webhookUrl ?? state.settings?.discordSeasonWebhook) || '').trim();
     if(!webhookUrl) throw new Error('Saison Webhook fehlt');
     const msg = buildSeasonWebhookMessage(seasonId);
-    const extra = state.settings?.discordSeasonUseThread ? { thread_name: msg.threadName } : {};
-    await postDiscordWebhook(webhookUrl, msg.payload, extra);
-    return msg;
+    const useThread = opts.useThread ?? state.settings?.discordSeasonUseThread;
+    const extra = useThread ? { thread_name: (opts.threadName || msg.threadName) } : {};
+    try{
+      const blob = await renderSeasonWebhookBlob(seasonId);
+      await postDiscordWebhookWithImage(webhookUrl, msg.payload, blob, 'saison_auswertung.png', extra);
+      return { queued:false, msg };
+    }catch(err){
+      if(opts.allowQueue !== false && shouldQueueDiscordError(err)){
+        const job = await enqueueDiscordJob({
+          kind:'season',
+          targetId: seasonId,
+          webhookUrl,
+          useThread: !!useThread,
+          threadName: extra.thread_name || '',
+          force: true,
+          lastError: String(err?.message || err || '')
+        });
+        scheduleDiscordQueueProcessing(1500);
+        throw createQueuedDiscordError(job, err);
+      }
+      throw err;
+    }
   }
 
   async function copyTextToClipboard(txt){
@@ -2513,14 +4038,57 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     return true;
   }
 
+  function setDiscordPreviewText(root, selector, text){
+    const node = root?.querySelector(selector);
+    if(node) node.textContent = String(text || '').trim() || 'Keine Daten';
+  }
+
+  function formatDiscordPayloadPreview(payload){
+    const lines = [];
+    const embeds = Array.isArray(payload?.embeds) ? payload.embeds : [];
+    const content = String(payload?.content || '').trim();
+    if(content) lines.push(content);
+    embeds.forEach((embed, idx)=>{
+      if(idx) lines.push('', '-----');
+      if(embed?.title) lines.push(String(embed.title));
+      if(embed?.description) lines.push(String(embed.description));
+      for(const field of (embed?.fields || [])){
+        if(field?.name) lines.push('', `[${field.name}]`);
+        if(field?.value) lines.push(String(field.value));
+      }
+      if(embed?.footer?.text) lines.push('', `Footer: ${embed.footer.text}`);
+      if(embed?.image?.url) lines.push(`Bild: ${embed.image.url}`);
+    });
+    return lines.join('\n').trim();
+  }
+
+  function setDiscordPreviewImage(root, selector, blob, alt){
+    const node = root?.querySelector(selector);
+    if(!node) return;
+    const prevUrl = node.getAttribute('data-preview-url');
+    if(prevUrl) URL.revokeObjectURL(prevUrl);
+    node.removeAttribute('data-preview-url');
+    node.innerHTML = '';
+    if(!(blob instanceof Blob)){
+      node.innerHTML = `<div class="muted small">${esc(alt || 'Kein Bild verfuegbar')}</div>`;
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    node.setAttribute('data-preview-url', url);
+    node.innerHTML = `<img src="${url}" alt="${esc(alt || 'Discord Vorschau')}" />`;
+    const img = node.querySelector('img');
+    if(img){
+      img.onload = ()=>setTimeout(()=>URL.revokeObjectURL(url), 1200);
+    }
+  }
+
   async function sendDiscordSummaryForRace(raceId, opts={}){
     const summary = buildRaceSummaryData(raceId);
     if(!summary) throw new Error('Session nicht gefunden');
     const race = summary.race;
     if(race.discordSentAt && !opts.force) return false;
-    const webhookUrl = String(state.settings?.discordWebhook || '').trim();
+    const webhookUrl = String((opts.webhookUrl ?? state.settings?.discordWebhook) || '').trim();
     if(!webhookUrl) throw new Error('Discord Webhook fehlt');
-    const blob = await renderRaceWebhookCompositeBlob(summary);
     const standings = summary.standings || [];
     const top = standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name||'—'} (${s.bestMs!=null ? msToTime(s.bestMs,3) : '—'})`).join('\n') || '—';
     const bestText = summary.bestLap ? `${driverNameByIdGlobal(driverKeyForLapGlobal(summary.bestLap))} • ${msToTime(summary.bestLap.lapMs,3)}` : '—';
@@ -2541,12 +4109,123 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       }]
     };
     const trackName = getTrackPlainName(summary.track);
-    const extra = (state.settings?.discordUseThread) ? { thread_name: buildDiscordThreadName(race.name || 'Rennen', { track:trackName, mode: summary.freeDriving ? 'Freies Fahren' : 'Rennen', sessionName:race.name || 'Rennen', endedAt: race.endedAt }) } : {};
-    await postDiscordWebhookWithImage(webhookUrl, payload, blob, 'session_summary.png', extra);
-    race.discordSentAt = now();
-    race.discordSendError = '';
-    saveState();
-    return true;
+    const useThread = opts.useThread ?? state.settings?.discordUseThread;
+    const threadName = buildDiscordThreadName(race.name || 'Rennen', { track:trackName, mode: summary.freeDriving ? 'Freies Fahren' : 'Rennen', sessionName:race.name || 'Rennen', endedAt: race.endedAt });
+    const extra = useThread ? { thread_name: (opts.threadName || threadName) } : {};
+    try{
+      const blob = await renderRaceWebhookCompositeBlob(summary);
+      await postDiscordWebhookWithImage(webhookUrl, payload, blob, 'session_summary.png', extra);
+      race.discordSentAt = now();
+      race.discordSendError = '';
+      saveState();
+      return { queued:false, sent:true };
+    }catch(err){
+      race.discordSendError = String(err?.message || err || 'Unbekannter Fehler');
+      saveState();
+      if(opts.allowQueue !== false && shouldQueueDiscordError(err)){
+        const job = await enqueueDiscordJob({
+          kind:'session',
+          targetId: raceId,
+          webhookUrl,
+          useThread: !!useThread,
+          threadName: extra.thread_name || '',
+          force: !!opts.force,
+          lastError: race.discordSendError
+        });
+        scheduleDiscordQueueProcessing(1500);
+        throw createQueuedDiscordError(job, err);
+      }
+      throw err;
+    }
+  }
+
+  async function executeDiscordQueueJob(job){
+    const kind = String(job?.kind || '').trim();
+    if(kind==='session'){
+      return await sendDiscordSummaryForRace(job.targetId, {
+        force: !!job.force,
+        webhookUrl: job.webhookUrl,
+        useThread: !!job.useThread,
+        threadName: job.threadName || '',
+        allowQueue: false
+      });
+    }
+    if(kind==='raceday'){
+      return await sendRaceDayWebhook(job.targetId, {
+        webhookUrl: job.webhookUrl,
+        useThread: !!job.useThread,
+        threadName: job.threadName || '',
+        allowQueue: false
+      });
+    }
+    if(kind==='season'){
+      return await sendSeasonWebhook(job.targetId, {
+        webhookUrl: job.webhookUrl,
+        useThread: !!job.useThread,
+        threadName: job.threadName || '',
+        allowQueue: false
+      });
+    }
+    throw new Error('Unbekannter Discord-Queue-Typ');
+  }
+
+  async function processDiscordQueue(force=false){
+    if(_discordQueueProcessing) return;
+    if(!force && navigator.onLine === false) return;
+    _discordQueueProcessing = true;
+    try{
+      const jobs = (await loadDiscordQueueJobs())
+        .filter(job => Number(job?.nextAttemptAt || 0) <= now())
+        .sort((a,b)=>(Number(a?.nextAttemptAt || 0) - Number(b?.nextAttemptAt || 0)) || (Number(a?.createdAt || 0) - Number(b?.createdAt || 0)));
+      for(const job of jobs){
+        try{
+          await executeDiscordQueueJob(job);
+          await deleteDiscordQueueJob(job.id);
+          logLine('Discord Queue gesendet: ' + String(job.kind || 'job') + ' ' + String(job.targetId || ''));
+        }catch(err){
+          if(shouldQueueDiscordError(err)){
+            job.attempts = Math.max(0, Number(job.attempts || 0) || 0) + 1;
+            job.updatedAt = now();
+            job.lastError = String(err?.message || err || 'Unbekannter Fehler');
+            job.nextAttemptAt = now() + getDiscordQueueRetryDelayMs(job.attempts);
+            await putDiscordQueueJob(job);
+            logLine('Discord Queue verschoben: ' + String(job.kind || 'job') + ' in ' + Math.round((job.nextAttemptAt - now())/1000) + 's');
+          }else{
+            await deleteDiscordQueueJob(job.id);
+            logLine('Discord Queue verworfen: ' + String(job.kind || 'job') + ' • ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
+        }
+      }
+    }finally{
+      _discordQueueProcessing = false;
+    }
+  }
+
+  async function buildSessionDiscordPreview(raceId){
+    const summary = buildRaceSummaryData(raceId);
+    if(!summary) throw new Error('Session nicht gefunden');
+    const race = summary.race;
+    const blob = await renderRaceWebhookCompositeBlob(summary);
+    const standings = summary.standings || [];
+    const top = standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name||'â€”'} (${s.bestMs!=null ? msToTime(s.bestMs,3) : 'â€”'})`).join('\n') || 'â€”';
+    const bestText = summary.bestLap ? `${driverNameByIdGlobal(driverKeyForLapGlobal(summary.bestLap))} â€¢ ${msToTime(summary.bestLap.lapMs,3)}` : 'â€”';
+    const payload = {
+      username: state.settings?.appName || 'TimTime',
+      embeds: [{
+        title: summary.freeDriving ? 'Freies Fahren beendet' : 'Rennen beendet',
+        description: summary.subtitle,
+        color: summary.freeDriving ? 5814783 : 5153791,
+        fields: [
+          { name: summary.freeDriving ? 'Top Bestzeiten' : 'Podium', value: top || 'â€”', inline: false },
+          { name:'Schnellste Runde', value: bestText, inline:true },
+          { name:'Beendet', value: formatDiscordDateTime(race.endedAt), inline:true }
+        ],
+        image: { url:'attachment://session_summary.png' },
+        footer: { text:'TimTime Discord Webhook' },
+        timestamp: new Date(race.endedAt || Date.now()).toISOString()
+      }]
+    };
+    return { summary, race, payload, blob };
   }
 
   async function maybeAutoSendDiscordForRace(raceId){
@@ -2559,6 +4238,13 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       toast('Discord','Session automatisch gesendet.','ok');
       logLine(`Discord Webhook gesendet: ${race.name||raceId}`);
     }catch(err){
+      if(err?.queued){
+        race.discordSendError = 'Warteschlange aktiv';
+        saveState();
+        toast('Discord','Session in Warteschlange. Wird automatisch erneut versucht.','warn');
+        logLine('Discord Queue aktiv: Session ' + String(race.name || raceId));
+        return;
+      }
       race.discordSendError = String(err?.message || err || 'Unbekannter Fehler');
       saveState();
       toast('Discord','Webhook fehlgeschlagen.','err');
@@ -2676,6 +4362,9 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       const durNode = document.getElementById('endDur');
       const minNode = document.getElementById('endMinStintLaps');
       const maxNode = document.getElementById('endMaxStintLaps');
+      const penaltyNode = document.getElementById('endPenaltySeconds');
+      const thresholdNode = document.getElementById('endPenaltyLapThresholdSeconds');
+      const lapsNode = document.getElementById('endPenaltyLapsPerThreshold');
       if(durNode){
         const v = Math.max(1, parseInt(durNode.value||0,10) || 0);
         if(Number.isFinite(v) && v > 0) state.modes.endurance.durationMin = v;
@@ -2685,6 +4374,15 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       }
       if(maxNode){
         state.modes.endurance.maxStintLaps = Math.max(0, parseInt(maxNode.value||0,10) || 0);
+      }
+      if(penaltyNode){
+        state.modes.endurance.penaltySecondsPerViolation = Math.max(0, parseInt(penaltyNode.value||0,10) || 0);
+      }
+      if(thresholdNode){
+        state.modes.endurance.penaltyLapThresholdSeconds = Math.max(0, parseInt(thresholdNode.value||0,10) || 0);
+      }
+      if(lapsNode){
+        state.modes.endurance.penaltyLapsPerThreshold = Math.max(0, parseInt(lapsNode.value||0,10) || 0);
       }
     }catch{}
   }
@@ -2705,6 +4403,7 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       id, name,
       mode: raceMode,
       submode: freeDriving ? 'Freies Fahren' : (state.modes.activeMode==='single' ? state.modes.singleSubmode : ''),
+      seasonId: rd.seasonId || state.season.activeSeasonId || '',
       trackId: state.tracks.activeTrackId,
       startedAt: now(),
       startedAtMrc: null,
@@ -2714,6 +4413,9 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
       race.enduranceDurationMin = getNormalizedEnduranceDurationMin();
       race.enduranceMinStintLaps = Math.max(0, parseInt(state.modes.endurance?.minStintLaps||0,10) || 0);
       race.enduranceMaxStintLaps = Math.max(0, parseInt(state.modes.endurance?.maxStintLaps||0,10) || 0);
+      race.endurancePenaltySecondsPerViolation = Math.max(0, parseInt(state.modes.endurance?.penaltySecondsPerViolation||0,10) || 0);
+      race.endurancePenaltyLapThresholdSeconds = Math.max(0, parseInt(state.modes.endurance?.penaltyLapThresholdSeconds||0,10) || 0);
+      race.endurancePenaltyLapsPerThreshold = Math.max(0, parseInt(state.modes.endurance?.penaltyLapsPerThreshold||0,10) || 0);
     }
     rd.races.push(race);
     state.session.currentRaceId = id;
@@ -2870,9 +4572,14 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     resetFinishRuntime();
     state.session.lastPassByCarId = {};
     state.session.lastPassSeenByCarId = {};
-    startNewRace();
+    state.session.raceStartArmedByCarId = {};
+    state.session.mrcCounterByChip = {};
+    const startedRace = startNewRace();
     state.loopRuntime.phase = 'race';
     state.loopRuntime.phaseStartedAt = Number.isFinite(Number(startMrcMs)) ? Math.max(0, Number(startMrcMs)) : getTimelineNowMs();
+    if(startedRace){
+      startedRace.startedAtMrc = state.loopRuntime.phaseStartedAt;
+    }
     state.loopRuntime.phaseTotalSec = Math.ceil(Math.max(0,state.loopRuntime.remainingMs||0)/1000);
     try{ ensureRaceAnnounceRuntime(); state.session.announce.restSaidKeys = {}; }catch{}
     state.loopRuntime.remainingMs = Math.max(0, (Math.max(0.01, Number(state.modes.loop.raceMin||0)) * 60_000));
@@ -3145,7 +4852,13 @@ function singleTick(){
         if(endDurPage) endDurPage.value = String(state.modes.endurance.durationMin);
         if(endMinPage) endMinPage.value = String(state.modes.endurance.minStintLaps);
         if(endMaxPage) endMaxPage.value = String(state.modes.endurance.maxStintLaps);
-        logLine(`Langstrecke Startparameter: ${state.modes.endurance.durationMin} Min, Mindeststint ${state.modes.endurance.minStintLaps}, Max-Stint ${state.modes.endurance.maxStintLaps||0}`);
+        const endPenaltyPage = document.getElementById('endPenaltySeconds');
+        const endPenaltyThresholdPage = document.getElementById('endPenaltyLapThresholdSeconds');
+        const endPenaltyLapsPage = document.getElementById('endPenaltyLapsPerThreshold');
+        if(endPenaltyPage) endPenaltyPage.value = String(state.modes.endurance.penaltySecondsPerViolation||0);
+        if(endPenaltyThresholdPage) endPenaltyThresholdPage.value = String(state.modes.endurance.penaltyLapThresholdSeconds||0);
+        if(endPenaltyLapsPage) endPenaltyLapsPage.value = String(state.modes.endurance.penaltyLapsPerThreshold||0);
+        logLine(`Langstrecke Startparameter: ${state.modes.endurance.durationMin} Min, Mindeststint ${state.modes.endurance.minStintLaps}, Max-Stint ${state.modes.endurance.maxStintLaps||0}, Strafe ${state.modes.endurance.penaltySecondsPerViolation||0}s, Rundenabzug ab ${state.modes.endurance.penaltyLapThresholdSeconds||0}s: ${state.modes.endurance.penaltyLapsPerThreshold||0}`);
       }
     }catch{}
 
@@ -3222,6 +4935,7 @@ function singleTick(){
     logLine('Session STOP');
     saveState();
     renderAll();
+    try{ sendPresenterSnapshot(true); }catch{}
   }
 
   function sessionPause(){
@@ -3443,6 +5157,7 @@ function finishRaceNow(reason){
     toast('Dauerschleife','Podium: 60 Sekunden','ok');
     saveState();
     renderAll();
+    try{ sendPresenterSnapshot(true); }catch{}
     return;
   }
 
@@ -3517,6 +5232,7 @@ function finishRaceNow(reason){
     logLine(`Read ohne Session: ${dn?dn+': ':''}${car.name} → ${msToTime(lapMs, 3)} • MRC`);
     renderDashboard();
     renderSessionControl();
+    try{ sendPresenterSnapshot(true); }catch{}
   }
 
   function handlePass(chip, ts){
@@ -3568,7 +5284,7 @@ function finishRaceNow(reason){
 
     state.session.lastPassSeenByCarId = state.session.lastPassSeenByCarId || {};
     const lastSeenTs = state.session.lastPassSeenByCarId[car.id];
-    const anchorTs = state.session.lastPassByCarId[car.id];
+    let anchorTs = state.session.lastPassByCarId[car.id];
     if(lastSeenTs && (ts - lastSeenTs) < PASS_DEBOUNCE_MS) return;
     state.session.lastPassSeenByCarId[car.id] = ts;
 
@@ -3586,34 +5302,61 @@ function finishRaceNow(reason){
 
     state.session.raceStartArmedByCarId = state.session.raceStartArmedByCarId || {};
 
+    const minLap = track?.minLapMs ?? 0;
     if(!anchorTs){
-      state.session.lastPassByCarId[car.id] = ts;
-      const dn = getDriverNameForCar(car);
-      if(state.modes.activeMode==='endurance'){
-        const did = String(car.driverId||'').trim();
-        const team = did ? getTeamForDriverInMode('endurance', did) : null;
-        const ai = team ? getEnduranceActiveInfo(team.id) : null;
-        if(ai && ai.driverId===did && ai.carId===car.id && ai.pendingStartMarker){
-          ai.pendingStartMarker = false;
-          if(!Number.isFinite(Number(ai.stintLaps))) ai.stintLaps = 0;
-          setEnduranceActiveInfo(team.id, ai);
-          saveState();
+      if(shouldArmRaceOnFirstCrossing){
+        state.session.lastPassByCarId[car.id] = ts;
+        state.session.raceStartArmedByCarId[car.id] = true;
+        const dn = getDriverNameForCar(car);
+        if(state.modes.activeMode==='endurance'){
+          const did = String(car.driverId||'').trim();
+          const team = did ? getTeamForDriverInMode('endurance', did) : null;
+          const ai = team ? getEnduranceActiveInfo(team.id) : null;
+          if(ai && ai.driverId===did && ai.carId===car.id && ai.pendingStartMarker){
+            ai.pendingStartMarker = false;
+            if(!Number.isFinite(Number(ai.stintLaps))) ai.stintLaps = 0;
+            setEnduranceActiveInfo(team.id, ai);
+            saveState();
+          }
         }
+        logLine(`Pass: ${dn?dn+': ':''}${car.name} → Startmarker gesetzt`);
+        try{
+          if(state.audio?.enabled){
+            const nameToSay = getSpeakNameForCar(car);
+            if(nameToSay) queueSpeak(nameToSay);
+          }
+        }catch{}
+        return;
       }
 
-      if(shouldArmRaceOnFirstCrossing){
-        state.session.raceStartArmedByCarId[car.id] = true;
-        logLine(`Pass: ${dn?dn+': ':''}${car.name} → Runde 1 gestartet`);
+      const sessionStartTs = Number.isFinite(raceStartTs) && raceStartTs>0 ? raceStartTs : Number(state.session.startedAtMrc || 0);
+      const canCountFromSessionStart = sessionStartTs > 0 && (!minLap || (ts - sessionStartTs) >= minLap);
+      if(canCountFromSessionStart){
+        anchorTs = sessionStartTs;
       } else {
-        logLine(`Pass: ${car.name} (${chip}) → Startmarker`);
-      }
-      try{
-        if(state.audio?.enabled){
-          const nameToSay = getSpeakNameForCar(car);
-          if(nameToSay) queueSpeak(nameToSay);
+        state.session.lastPassByCarId[car.id] = ts;
+        const dn = getDriverNameForCar(car);
+        if(state.modes.activeMode==='endurance'){
+          const did = String(car.driverId||'').trim();
+          const team = did ? getTeamForDriverInMode('endurance', did) : null;
+          const ai = team ? getEnduranceActiveInfo(team.id) : null;
+          if(ai && ai.driverId===did && ai.carId===car.id && ai.pendingStartMarker){
+            ai.pendingStartMarker = false;
+            if(!Number.isFinite(Number(ai.stintLaps))) ai.stintLaps = 0;
+            setEnduranceActiveInfo(team.id, ai);
+            saveState();
+          }
         }
-      }catch{}
-      return;
+
+        logLine(`Pass: ${car.name} (${chip}) → Startmarker`);
+        try{
+          if(state.audio?.enabled){
+            const nameToSay = getSpeakNameForCar(car);
+            if(nameToSay) queueSpeak(nameToSay);
+          }
+        }catch{}
+        return;
+      }
     }
 
     const rawLapMs = ts - anchorTs;
@@ -3623,7 +5366,6 @@ function finishRaceNow(reason){
       logLine(`Lap ignoriert: ${car.name} – keine gültige MRC-Rundenzeit`);
       return;
     }
-    const minLap = track?.minLapMs ?? 0;
     if(minLap && lapMs < minLap){
       logLine(`Lap ignoriert (zu schnell): ${car.name} ${msToTime(lapMs, 3)} < min ${msToTime(minLap, 3)} [MRC]`);
       return;
@@ -3738,6 +5480,7 @@ const dn = getDriverNameForCar(car);
     logLine(`Lap: ${dn?dn+': ':''}${car.name} → ${msToTime(lapMs, 3)} (${lapPhase} • MRC)`);
     renderDashboard();
     renderSessionControl();
+    try{ sendPresenterSnapshot(true); }catch{}
     
 // finish window: once pending, the next valid lap for each active car counts as "finished"
 if(state.session.finish?.pending){
@@ -4122,13 +5865,15 @@ function getLapTimeSource(){
   return 'mrc';
 }
 
-function resolveLapMsForCar(carId, _legacyHtmlLapMs){
+function resolveLapMsForCar(carId, rawMrcLapMs=null){
   const car = carId ? getCar(carId) : null;
   const mrcMs = car ? getMrcDeltaForCar(car.id) : null;
+  const fallbackMrcMs = Number.isFinite(Number(rawMrcLapMs)) && Number(rawMrcLapMs) > 0 ? Number(rawMrcLapMs) : null;
+  const effectiveMrcMs = (Number.isFinite(mrcMs) && mrcMs > 0) ? mrcMs : fallbackMrcMs;
   return {
-    lapMs: (Number.isFinite(mrcMs) && mrcMs>0) ? mrcMs : null,
+    lapMs: effectiveMrcMs,
     source: 'mrc',
-    mrcMs: (Number.isFinite(mrcMs) && mrcMs>0) ? mrcMs : null,
+    mrcMs: effectiveMrcMs,
     htmlMs: null
   };
 }
@@ -4818,11 +6563,11 @@ if(!stopRead){
   function renderTopMenu(){
     const menu = document.getElementById('topMenu');
     menu.innerHTML='';
-    for(const t of TABS){
+    for(const tab of TABS){
       const b = document.createElement('div');
-      b.className = 'tab' + (state.ui.activeTab===t.key?' active':'');
-      b.textContent = t.key;
-      b.onclick = ()=>{ state.ui.activeTab=t.key; saveState(); renderAll(); };
+      b.className = 'tab' + (state.ui.activeTab===tab.key?' active':'');
+      b.textContent = t('tab.' + tab.page, null, tab.key);
+      b.onclick = ()=>{ state.ui.activeTab=tab.key; saveState(); renderAll(); };
       menu.appendChild(b);
     }
   }
@@ -4835,7 +6580,7 @@ if(!stopRead){
   function renderHeader(){
     document.getElementById('brandTitle').textContent = state.settings.appName || 'Zeitnahme 2.0';
     const sub=document.getElementById('brandSub');
-    if(sub) sub.textContent = 'offline • HTML/JS/CSS • build ' + BUILD;
+if(sub) sub.textContent = t('header.subtitle', { build:BUILD }, 'offline • HTML/JS/CSS • build ' + BUILD);
     setUsbUi(state.usb.connected);
     setBleUi(state.ble.connected);
   }
@@ -4843,8 +6588,6 @@ if(!stopRead){
   function getEnduranceStatusRows(){
     const teams = state.modes.endurance?.teams || [];
     const rid = state.session.currentRaceId || '';
-    const minStint = Math.max(0, parseInt(state.modes.endurance?.minStintLaps||0,10) || 0);
-    const maxStint = Math.max(0, parseInt(state.modes.endurance?.maxStintLaps||0,10) || 0);
     const activeMap = state.modes.endurance?.activeByTeamId || {};
     return teams.map(t=>{
       const ai = activeMap[t.id] || null;
@@ -4858,8 +6601,8 @@ if(!stopRead){
         driverName:d?.name||'—',
         carName:car?.name||'—',
         stint,
-        minStint,
-        maxStint,
+        minStint: rule.minStint || 0,
+        maxStint: rule.maxStint || 0,
         compliant: !!rule.compliant,
         invalidStintCount: rule.invalidStintCount||0,
         statusText: rule.statusText || 'OK'
@@ -4872,12 +6615,12 @@ if(!stopRead){
     if(!rows.length) return '';
     return `
       <div class="card" style="margin-bottom:12px">
-        <div class="card-h"><h2>Langstrecke • Aktive Fahrer / Stints</h2></div>
+        <div class="card-h"><h2>${esc(t('endurance.status_title'))}</h2></div>
         <div class="card-b">
           <table class="table">
-            <thead><tr><th>Team</th><th>Aktiver Fahrer</th><th>Stint</th><th>Status</th><th>Auto</th></tr></thead>
+            <thead><tr><th>${esc(t('common.team'))}</th><th>${esc(t('endurance.active_driver'))}</th><th>${esc(t('endurance.stint'))}</th><th>${esc(t('endurance.status'))}</th><th>${esc(t('endurance.car'))}</th></tr></thead>
             <tbody>
-              ${rows.map(r=>`<tr><td>${esc(r.teamName)}</td><td>${esc(r.driverName)}</td><td>${r.stint} / min ${r.minStint}${r.maxStint>0 ? ' / max '+r.maxStint : ''}</td><td>${r.compliant?'<span class="ok">OK</span>':'<span class="err">'+esc(r.statusText||'AW')+'</span>'}</td><td>${esc(r.carName)}</td></tr>`).join('')}
+            ${rows.map(r=>`<tr><td>${esc(r.teamName)}</td><td>${esc(r.driverName)}</td><td>${r.stint} / ${esc(t('endurance.min_label'))} ${r.minStint}${r.maxStint>0 ? ' / '+esc(t('endurance.max_label'))+' '+r.maxStint : ''}</td><td>${r.compliant?'<span class="ok">'+esc(t('endurance.status_ok'))+'</span>':'<span class="err">'+esc(r.statusText||t('endurance.rule_violation'))+'</span>'}</td><td>${esc(r.carName)}</td></tr>`).join('')}
             </tbody>
           </table>
         </div>
@@ -4888,6 +6631,30 @@ if(!stopRead){
 function renderSessionControl(){
     const ampelActive = !!ampelRunning || !!state.ui?.ampel?.visible;
     const sessionStateLabel = ampelActive ? 'AMPEL' : state.session.state;
+    const setText = (id, value)=>{
+      const node = document.getElementById(id);
+      if(node) node.textContent = value;
+    };
+    setText('scTitle', t('session.title'));
+    setText('quickStatusTitle', t('session.quick_status'));
+    setText('scLabelTimer', t('session.timer'));
+    setText('scLabelMode', t('session.current_mode'));
+    setText('scLabelTrack', t('session.track'));
+    setText('scLabelMinLap', t('session.minimum_time'));
+    setText('scLabelTrackRecord', t('session.track_record'));
+    setText('scLabelDayRecord', t('session.day_record'));
+    setText('scLabelFreeDriving', t('session.free_driving'));
+    setText('scFreeDrivingDesc', t('session.free_driving_desc'));
+    setText('scAmpelTitle', t('session.start_light'));
+    setText('scAmpelBeforeLabel', t('session.start_light_before'));
+    setText('scAmpelSequence', t('session.start_light_sequence'));
+    setText('scControlHint', t('session.control_hint'));
+    setText('btnStart', t('session.start'));
+    setText('btnPause', t('session.pause'));
+    setText('btnResume', t('session.resume'));
+    setText('btnStop', t('session.stop'));
+    setText('btnFreeDrivingOn', t('session.on'));
+    setText('btnFreeDrivingOff', t('session.off'));
     const badgeSessionState = document.getElementById('badgeSessionState');
     if(badgeSessionState){
       badgeSessionState.textContent = sessionStateLabel;
@@ -4929,7 +6696,7 @@ function renderSessionControl(){
     const freeDrivingActive = !!state.session.isFreeDriving || !!state.ui.freeDrivingEnabled;
     if(btnFreeDrivingOn) btnFreeDrivingOn.disabled = freeDrivingActive || state.session.state!=='IDLE';
     if(btnFreeDrivingOff) btnFreeDrivingOff.disabled = !freeDrivingActive;
-    if(freeDrivingState) freeDrivingState.textContent = state.session.isFreeDriving ? 'an' : (freeDrivingPending ? 'wartet auf Start' : 'aus');
+    if(freeDrivingState) freeDrivingState.textContent = state.session.isFreeDriving ? t('session.on') : (freeDrivingPending ? t('session.waiting_for_start') : t('session.off'));
     if(useAmpelChk){
       useAmpelChk.checked = !!state.settings.useAmpel;
       useAmpelChk.disabled = freeDrivingActive || state.session.state!=='IDLE' || ampelActive;
@@ -4939,9 +6706,8 @@ function renderSessionControl(){
       ampelWrap.classList.toggle('is-running', ampelActive);
     }
 
-    document.getElementById('badgeSeason').textContent = 'Saison: ' + (getActiveSeason()?.name || '—');
-    document.getElementById('badgeRaceDay').textContent = 'Renntag: ' + (getActiveRaceDay()?.name || '—');
-
+    document.getElementById('badgeSeason').textContent = t('badge.season', { name:(getActiveSeason()?.name || '—') });
+    document.getElementById('badgeRaceDay').textContent = t('badge.raceday', { name:(getActiveRaceDay()?.name || '—') });
     const isEndurance = (state.modes.activeMode==='endurance') || (state.session.currentRaceId && getActiveRaceDay()?.races?.find(r=>r.id===state.session.currentRaceId)?.mode==='endurance');
     const endBox = document.getElementById('scEnduranceBox');
     const endHr = document.getElementById('scEnduranceHr');
@@ -4956,7 +6722,8 @@ function renderSessionControl(){
       const teamText = rows.length
         ? rows.map(r=>`${esc(r.teamName)}: ${esc(r.driverName)} (${r.stint}/min ${r.minStint}${r.maxStint>0 ? '/max '+r.maxStint : ''})`).join(' • ')
         : 'Keine Teams.';
-      endStatus.innerHTML = `Stint-Regeln: min ${minStint}${maxStint>0 ? ' / max '+maxStint : ''}<br>${teamText}`;
+      const rulesText = esc(`Stint-Regeln: min ${minStint}${maxStint>0 ? ' / max '+maxStint : ''}`);
+      endStatus.innerHTML = `${rulesText}<br>${teamText}`;
     }
 
   }
@@ -5004,9 +6771,9 @@ function renderSessionControl(){
       return did || '__unknown__';
     }
     function driverNameById(id){
-      if(id==='__unknown__') return 'Unbekannt';
+      if(id==='__unknown__') return t('dashboard.unknown');
       const d = getDriver(id);
-      return d?.name || 'Unbekannt';
+      return d?.name || t('dashboard.unknown');
     }
     function carNameForLap(l){
       const car = l.carId ? getCar(l.carId) : null;
@@ -5085,23 +6852,27 @@ arr.sort((a,b)=>{
           }
         }
         const raceTotal = raceId ? getTeamRaceTotalFromStartMs(raceId, t.id, mode, rel) : totalMs;
-        const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[] };
+        const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[], penaltySecondsTotal:0, deductedLaps:0, projectedDeductedLaps:0 };
         return {
           id:t.id,
           name:t.name||'Team',
           members,
-          lapCount,
-          totalMs: (raceTotal==null ? totalMs : raceTotal),
+          rawLapCount: lapCount,
+          rawTotalMs: (raceTotal==null ? totalMs : raceTotal),
+          lapCount: mode==='endurance' ? Math.max(0, lapCount - (rule.deductedLaps||0)) : lapCount,
+          totalMs: mode==='endurance' ? (((raceTotal==null ? totalMs : raceTotal) || 0) + ((rule.penaltySecondsTotal||0) * 1000)) : (raceTotal==null ? totalMs : raceTotal),
           bestMs,
           lastMs,
           finished,
           compliant: mode==='endurance' ? !!rule.compliant : true,
           invalidStintCount: mode==='endurance' ? (rule.invalidStintCount||0) : 0,
-          statusText: mode==='endurance' ? (rule.statusText||'OK') : 'OK'
+          statusText: mode==='endurance' ? (rule.statusText||'OK') : 'OK',
+          penaltySecondsTotal: mode==='endurance' ? (rule.penaltySecondsTotal||0) : 0,
+          deductedLaps: mode==='endurance' ? (rule.deductedLaps||0) : 0,
+          projectedDeductedLaps: mode==='endurance' ? (rule.projectedDeductedLaps||0) : 0
         };
       });
       rows.sort((a,b)=>{
-        if(mode==='endurance' && (!!a.compliant)!=(!!b.compliant)) return a.compliant ? -1 : 1;
         if(b.lapCount!==a.lapCount) return b.lapCount-a.lapCount;
         return (a.totalMs||0)-(b.totalMs||0);
       });
@@ -5217,7 +6988,7 @@ function buildPodiumConfettiHtml(){
               <tbody>
                 ${rest.map((t,i)=>`<tr>
                   <td class="mono">${i+4}</td>
-                  <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">Außer Wertung</div>`:''}</td>
+                  <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">${esc(t.statusText||'Regelverstoss')}</div>`:''}</td>
                   <td class="mono">${t.lapCount}</td>
                   <td class="mono">${t.totalMs?msToTime(t.totalMs, dec):'—'}</td>
                   <td class="mono">${t.bestMs!=null && isFinite(t.bestMs)?msToTime(t.bestMs, dec):'—'}</td>
@@ -5254,16 +7025,16 @@ function buildPodiumConfettiHtml(){
       const rows = laps.map(l=>{
         const car = getCar(l.carId);
         const driver = l.driverId ? getDriver(l.driverId) : null;
-        const name = driver?.name || (car?.driverId ? getDriverSpeakName(car.driverId) : '') || getDriverNameForCar(car) || 'Unbekannt';
+        const name = driver?.name || (car?.driverId ? getDriverSpeakName(car.driverId) : '') || getDriverNameForCar(car) || t('dashboard.unknown');
         const carName = car?.name || '—';
         return `<tr><td>${esc(name)}</td><td>${esc(carName)}</td><td class="mono">${esc(msToTime(l.lapMs, 3))}</td><td class="small">${esc(l.phase||'')}</td></tr>`;
       }).join('');
       return `
-        <div class="muted">Live-Ansicht der letzten gemessenen Runden.</div>
+        <div class="muted">${t('dashboard.live_intro')}</div>
         <div class="hr"></div>
         <table class="table dashBig">
-          <thead><tr><th>Fahrer</th><th>Auto</th><th>Runde</th><th>Phase</th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="5" class="muted">Noch keine Runden.</td></tr>`}</tbody>
+          <thead><tr><th>${t('dashboard.driver')}</th><th>${t('dashboard.car')}</th><th>${t('dashboard.lap')}</th><th>${t('dashboard.phase')}</th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="5" class="muted">${t('dashboard.no_laps')}</td></tr>`}</tbody>
         </table>
       `;
     }
@@ -5273,12 +7044,12 @@ function buildPodiumConfettiHtml(){
     function renderTeams(){
       const teams = (raceMode==='team') ? (state.modes.team?.teams||[]) : (state.modes.endurance?.teams||[]);
       if(!teams.length){
-        return `<div class="muted">Keine Teams angelegt.</div>`;
+        return `<div class="muted">${t('dashboard.no_teams')}</div>`;
       }
       const teamRows = computeTeamStandingsGlobal(relevantLaps.filter(l=>!raceId || l.raceId===raceId), raceMode, (state.session.finish?.pending?state.session.finish:null));
       const rowsHtml = teamRows.map((t,i)=>{
         const pos = i+1;
-        const status = (raceMode==='endurance') ? (t.compliant===false ? `<span class="pill bad">AW</span><div class="muted tiny">${esc(t.statusText||'')}</div>` : `<span class="pill ok">OK</span>`) : '';
+        const status = (raceMode==='endurance') ? (t.compliant===false ? `<span class="pill bad">Strafe</span><div class="muted tiny">${esc(t.statusText||'')}</div>` : `<span class="pill ok">OK</span>`) : '';
         return `<tr>
           <td class="mono">${pos}</td>
           <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${status}</td>
@@ -5291,11 +7062,11 @@ function buildPodiumConfettiHtml(){
       }).join('');
 
       return `
-        <div class="muted">Teamwertung: Runden (primär), Gesamtzeit als Tie-Breaker. ${raceMode==='endurance' ? 'Teams mit zu kurzem Stint sind außer Wertung (AW).' : 'Best-/Letzte Runde und Durchschnittsgeschwindigkeit je Team.'}</div>
+        <div class="muted">${t('dashboard.team_intro')} ${raceMode==='endurance' ? t('dashboard.team_intro_endurance') : t('dashboard.team_intro_regular')}</div>
         <div class="hr"></div>
         <table class="table dashBig">
-          <thead><tr><th>#</th><th>Team</th><th>Runden</th><th>Gesamtzeit</th><th>Best</th><th>Letzte</th></tr></thead>
-          <tbody>${rowsHtml || `<tr><td colspan="7" class="muted">Noch keine Runden.</td></tr>`}</tbody>
+          <thead><tr><th>#</th><th>${t('dashboard.team')}</th><th>${t('dashboard.laps')}</th><th>${t('dashboard.total_time')}</th><th>${t('dashboard.best')}</th><th>${t('dashboard.last')}</th></tr></thead>
+          <tbody>${rowsHtml || `<tr><td colspan="7" class="muted">${t('dashboard.no_team_laps')}</td></tr>`}</tbody>
         </table>
       `;
     }
@@ -5350,38 +7121,28 @@ function buildPodiumConfettiHtml(){
         }
       }
       for(const s of arr){ s.finished = isDriverFinished(s.id); }
-arr.sort((a,b)=>{
-        // During a race, always sort by actual placement
-        if(inRace || postRaceResultMode){
-          if((b.lapsCount||0)!==(a.lapsCount||0)) return (b.lapsCount||0)-(a.lapsCount||0);
-          const at = a.totalMs==null ? 9e15 : a.totalMs;
-          const bt = b.totalMs==null ? 9e15 : b.totalMs;
-          if(at!==bt) return at-bt;
-          const ab = a.bestMs==null ? 9e15 : a.bestMs;
-          const bb = b.bestMs==null ? 9e15 : b.bestMs;
-          if(ab!==bb) return ab-bb;
+      if(inRace || postRaceResultMode){
+        const liveRaceRows = !!(raceIdNow && raceIdNow===state.session.currentRaceId && state.session.state==='RUNNING' && !(state.session.finish&&state.session.finish.pending));
+        sortDriverStandingRows(arr, race, { live: liveRaceRows });
+      } else {
+        arr.sort((a,b)=>{
+          if(sortPref==='name') return (a.name||'').localeCompare(b.name||'', getUiLocale());
+          if(sortPref==='last'){
+            const av = a.lastMs==null ? 9e15 : a.lastMs;
+            const bv = b.lastMs==null ? 9e15 : b.lastMs;
+            if(av!==bv) return av-bv;
+            const ab = a.bestMs==null ? 9e15 : a.bestMs;
+            const bb = b.bestMs==null ? 9e15 : b.bestMs;
+            return ab-bb;
+          }
+          const av = a.bestMs==null ? 9e15 : a.bestMs;
+          const bv = b.bestMs==null ? 9e15 : b.bestMs;
+          if(av!==bv) return av-bv;
           const al = a.lastMs==null ? 9e15 : a.lastMs;
           const bl = b.lastMs==null ? 9e15 : b.lastMs;
           return al-bl;
-        }
-
-        if(sortPref==='name') return (a.name||'').localeCompare(b.name||'','de');
-        if(sortPref==='last'){
-          const av = a.lastMs==null ? 9e15 : a.lastMs;
-          const bv = b.lastMs==null ? 9e15 : b.lastMs;
-          if(av!==bv) return av-bv;
-          const ab = a.bestMs==null ? 9e15 : a.bestMs;
-          const bb = b.bestMs==null ? 9e15 : b.bestMs;
-          return ab-bb;
-        }
-        // best (default)
-        const av = a.bestMs==null ? 9e15 : a.bestMs;
-        const bv = b.bestMs==null ? 9e15 : b.bestMs;
-        if(av!==bv) return av-bv;
-        const al = a.lastMs==null ? 9e15 : a.lastMs;
-        const bl = b.lastMs==null ? 9e15 : b.lastMs;
-        return al-bl;
-      });
+        });
+      }
       return arr;
     }
 
@@ -5406,11 +7167,11 @@ arr.sort((a,b)=>{
       `;
       }).join('');
       return `
-        <div class="muted">${inRace ? 'Rangliste (aktuelles Rennen) • Letzte Runde + Schnellste Runde + MRC Δ + Durchschnittsgeschwindigkeit + Gesamtzeit.' : 'Fahrerübersicht (Letzte Runde + Schnellste Runde + MRC Δ + Durchschnittsgeschwindigkeit).'}</div>
+        <div class="muted">${inRace ? t('dashboard.driver_intro_race') : t('dashboard.driver_intro_idle')}</div>
         <div class="hr"></div>
         <table class="table dashBig">
-          <thead><tr>${inRace?'<th>#</th>':''}<th>Fahrer</th><th>Letzte</th><th>Best</th><th>MRC Δ</th><th>Ø km/h</th>${inRace?'<th>Gesamtzeit</th>':''}<th class="small">Runden</th></tr></thead>
-          <tbody>${rows || `<tr><td colspan="${inRace?8:6}" class="muted">Noch keine Daten.</td></tr>`}</tbody>
+          <thead><tr>${inRace?'<th>#</th>':''}<th>${t('dashboard.driver')}</th><th>${t('dashboard.last')}</th><th>${t('dashboard.best')}</th><th>${t('dashboard.mrc_delta')}</th><th>${t('dashboard.average_kmh')}</th>${inRace?`<th>${t('dashboard.total_time')}</th>`:''}<th class="small">${t('dashboard.laps')}</th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="${inRace?8:6}" class="muted">${t('dashboard.no_driver_data')}</td></tr>`}</tbody>
         </table>
       `;
     }
@@ -5460,7 +7221,7 @@ arr.sort((a,b)=>{
           }
         }
         const liveRaceRows = !!(raceIdNow && raceIdNow===state.session.currentRaceId && state.session.state==='RUNNING' && !(state.session.finish&&state.session.finish.pending));
-        arr.sort((a,b)=>compareDriverStandingRows(a,b,{ live: liveRaceRows }));
+        sortDriverStandingRows(arr, race, { live: liveRaceRows });
       }
       const rows = arr.map((s,idx)=>`
         <tr>
@@ -5474,18 +7235,18 @@ arr.sort((a,b)=>{
           <td class="mono">${s.lastMs!=null ? esc(msToTime(s.lastMs, 3)) : '—'}</td>
         </tr>
       `).join('');
-      const body = rows || `<tr><td colspan="8" class="muted">Noch keine Runden im Rennen.</td></tr>`;
-      const hint = showLiveFallback ? `<div class="muted small" style="margin-top:10px;">Tipp: Du kannst rechts oben auf „Live“ umschalten, wenn du die letzten Runden sehen willst.</div>` : '';
+      const body = rows || `<tr><td colspan="8" class="muted">${t('dashboard.no_race_laps')}</td></tr>`;
+      const hint = showLiveFallback ? `<div class="muted small" style="margin-top:10px;">${t('dashboard.live_hint')}</div>` : '';
       const raceEndHighlights = (()=>{
         if(!postRaceResultMode || !race || race.mode==='team' || race.mode==='endurance') return '';
         try{ return renderRaceEndHighlightsHtml(computeRaceEndHighlights(race, rl, arr)); }catch{ return ''; }
       })();
       return `
-        <div class="muted">Rangliste (aktuelles Rennen) • sortiert nach Platzierung.</div>
+        <div class="muted">${t('dashboard.race_intro')}</div>
         ${raceEndHighlights}
         <div class="hr"></div>
         <table class="table dashBig">
-          <thead><tr><th>#</th><th>Fahrer</th><th class="small">Runden</th><th>Gesamtzeit</th><th>Best</th><th>MRC Δ</th><th>Ø km/h</th><th>Letzte</th></tr></thead>
+          <thead><tr><th>#</th><th>${t('dashboard.driver')}</th><th class="small">${t('dashboard.laps')}</th><th>${t('dashboard.total_time')}</th><th>${t('dashboard.best')}</th><th>${t('dashboard.mrc_delta')}</th><th>${t('dashboard.average_kmh')}</th><th>${t('dashboard.last')}</th></tr></thead>
           <tbody>${body}</tbody>
         </table>
         ${hint}
@@ -5493,23 +7254,24 @@ arr.sort((a,b)=>{
     }
 
     function viewLabel(v){
-      if(v==='auto') return 'Auto';
-      if(v==='race') return 'Rennen';
-      if(v==='drivers') return 'Fahrer';
-      if(v==='live') return 'Live';
+      if(v==='auto') return t('dashboard.view_auto');
+      if(v==='race') return t('dashboard.view_race');
+      if(v==='drivers') return t('dashboard.view_drivers');
+      if(v==='live') return t('dashboard.view_live');
+      if(v==='teams') return t('dashboard.view_teams');
       return v;
     }
 
     // header controls
     let viewOptions = [
-      {v:'auto', t:'Auto'},
-      {v:'race', t:'Rennen'},
-      {v:'drivers', t:'Fahrer'},
-      {v:'live', t:'Live'}
+      {v:'auto', t:t('dashboard.view_auto')},
+      {v:'race', t:t('dashboard.view_race')},
+      {v:'drivers', t:t('dashboard.view_drivers')},
+      {v:'live', t:t('dashboard.view_live')}
     ];
     if(hasTeamishMode){
       // In Team- und Langstreckenrennen ist eine Team-Ansicht sinnvoll
-      viewOptions.splice(2, 0, {v:'teams', t:'Teams'});
+      viewOptions.splice(2, 0, {v:'teams', t:t('dashboard.view_teams')});
     }
 
 
@@ -5519,12 +7281,12 @@ arr.sort((a,b)=>{
     }
 
     const sortOptions = [
-      {v:'best', t:'Bestzeit'},
-      {v:'last', t:'Letzte Runde'},
-      {v:'name', t:'Name'}
+      {v:'best', t:t('dashboard.sort_best')},
+      {v:'last', t:t('dashboard.sort_last')},
+      {v:'name', t:t('dashboard.sort_name')}
     ];
 
-    const title = idleMode ? 'Dashboard • Freies Fahren' : ((view==='race') ? ((postRaceResultMode ? 'Dashboard • Rennergebnis' : 'Dashboard • Platzierung')) : (view==='drivers' ? 'Dashboard • Fahrerübersicht' : (view==='teams' ? 'Dashboard • Teams' : 'Dashboard • Aktuelle Rundenzeiten')));
+    const title = idleMode ? t('dashboard.free_driving') : ((view==='race') ? ((postRaceResultMode ? t('dashboard.race_result') : t('dashboard.placement'))) : (view==='drivers' ? t('dashboard.drivers') : (view==='teams' ? t('dashboard.teams') : t('dashboard.live_laps'))));
 
     let content = '';
     if(view==='teams') content = renderTeams();
@@ -5551,8 +7313,8 @@ arr.sort((a,b)=>{
               ${viewOptions.map(o=>dashViewBtn(o.v, o.t)).join('')}
             </div>
             ${(view==='drivers' && !inRace) ? `
-              <select id="dashSort" class="pill" title="Sortierung">
-                ${sortOptions.map(o=>`<option value="${o.v}" ${o.v===sortPref?'selected':''}>Sort: ${o.t}</option>`).join('')}
+              <select id="dashSort" class="pill" title="${esc(t('dashboard.sort_title'))}">
+                ${sortOptions.map(o=>`<option value="${o.v}" ${o.v===sortPref?'selected':''}>${esc(t('dashboard.sort_prefix', { label:o.t }))}</option>`).join('')}
               </select>
             ` : ''}
             <span class="pill">${esc(getModeLabel())}</span>
@@ -5596,40 +7358,44 @@ arr.sort((a,b)=>{
     el.innerHTML = `
       <div class="grid2">
         <div class="card">
-          <div class="card-h"><h2>Einzelläufe</h2><span class="pill">${active?'AKTIV':'inaktiv'}</span></div>
+          <div class="card-h"><h2>${esc(t('single.title'))}</h2><span class="pill">${esc(active ? t('common.active') : t('common.inactive'))}</span></div>
           <div class="card-b">
-            <div class="muted">„Aktiv setzen“ → Session Control links steuert Start/Stop/Pause/Weiter.</div>
+            <div class="muted">${esc(t('single.hint'))}</div>
             <div class="hr"></div>
             <div class="field">
-              <label>Submodus</label>
+              <label>${esc(t('single.submode'))}</label>
               <select id="singleSub">
-                ${['Training','Qualifying','Rennen'].map(x=>`<option ${state.modes.singleSubmode===x?'selected':''}>${x}</option>`).join('')}
+                ${[
+                  { value:'Training', label:t('submode.training') },
+                  { value:'Qualifying', label:t('submode.qualifying') },
+                  { value:'Rennen', label:t('submode.race') }
+                ].map(x=>`<option value="${esc(x.value)}" ${state.modes.singleSubmode===x.value?'selected':''}>${esc(x.label)}</option>`).join('')}
               </select>
             </div>
             <div class="field">
-              <label>Lauf endet nach</label>
+              <label>${esc(t('single.finish_after'))}</label>
               <select id="singleFinishMode">
-                <option value="none" ${state.modes.single.finishMode==='none'?'selected':''}>Kein Limit</option>
-                <option value="time" ${state.modes.single.finishMode==='time'?'selected':''}>Zeit</option>
-                <option value="laps" ${state.modes.single.finishMode==='laps'?'selected':''}>Runden</option>
+                <option value="none" ${state.modes.single.finishMode==='none'?'selected':''}>${esc(t('single.limit_none'))}</option>
+                <option value="time" ${state.modes.single.finishMode==='time'?'selected':''}>${esc(t('single.limit_time'))}</option>
+                <option value="laps" ${state.modes.single.finishMode==='laps'?'selected':''}>${esc(t('single.limit_laps'))}</option>
               </select>
             </div>
             <div class="grid2" style="gap:12px;">
               <div class="field" id="singleTimeWrap">
-                <label>Zeit (Minuten)</label>
+                <label>${esc(t('single.time_minutes'))}</label>
                 <input id="singleTimeMin" type="number" min="1" step="1" value="${Math.max(1, Math.round((state.modes.single.timeLimitSec||180)/60))}">
               </div>
               <div class="field" id="singleLapWrap">
-                <label>Runden</label>
+                <label>${esc(t('single.laps'))}</label>
                 <input id="singleLapCount" type="number" min="1" step="1" value="${Math.max(1, state.modes.single.lapLimit||20)}">
               </div>
             </div>
             <div class="row">
-              <button class="btn btn-primary" id="btnActivateSingle">Aktiv setzen</button>
+              <button class="btn btn-primary" id="btnActivateSingle">${esc(t('single.activate'))}</button>
             </div>
           </div>
         </div>
-        <div class="card"><div class="card-h"><h2>Info</h2></div><div class="card-b"><div class="muted">Start/Stop läuft links.</div></div></div>
+        <div class="card"><div class="card-h"><h2>${esc(t('single.info'))}</h2></div><div class="card-b"><div class="muted">${esc(t('single.info_body'))}</div></div></div>
       </div>
     `;
     el.querySelector('#singleSub').onchange=(e)=>{ state.modes.singleSubmode=e.target.value; saveState(); renderAll(); };
@@ -5657,8 +7423,8 @@ arr.sort((a,b)=>{
     el.querySelector('#btnActivateSingle').onclick=()=>{
       state.modes.activeMode='single';
       saveState();
-      logLine('Modus aktiv: Einzelläufe ('+state.modes.singleSubmode+')');
-      toast('Modus','Einzelläufe aktiv.','ok');
+      logLine(t('single.log_activated', { submode:state.modes.singleSubmode }));
+      toast('Modus', t('single.activated'),'ok');
       renderSessionControl(); renderAll();
     };
   }
@@ -5678,69 +7444,69 @@ arr.sort((a,b)=>{
       <div class="grid2">
         <div class="card">
           <div class="card-h">
-            <h2>Teamrennen</h2>
-            <span class="pill">${active?'AKTIV':'inaktiv'}</span>
+            <h2>${esc(t('team.title'))}</h2>
+            <span class="pill">${esc(active ? t('common.active') : t('common.inactive'))}</span>
           </div>
           <div class="card-b">
             <div class="row between">
               <div class="field" style="flex:1">
-                <label>Fahrer suchen</label>
-                <input class="input" id="teamAssignQuery" placeholder="Name…" value="${esc(state.ui.teamAssignQuery||'')}"/>
+                <label>${esc(t('team.search_driver'))}</label>
+                <input class="input" id="teamAssignQuery" placeholder="${esc(t('common.search_name_placeholder'))}" value="${esc(state.ui.teamAssignQuery||'')}"/>
               </div>
             </div>
             <div class="hr"></div>
 
             <div class="field">
-              <label>Ziel / Ende</label>
+              <label>${esc(t('team.finish'))}</label>
               <select id="teamFinishMode">
-                <option value="time" ${state.modes.team.finishMode==='time'?'selected':''}>Zeit</option>
-                <option value="laps" ${state.modes.team.finishMode==='laps'?'selected':''}>Runden</option>
-                <option value="none" ${state.modes.team.finishMode==='none'?'selected':''}>Manuell</option>
+                <option value="time" ${state.modes.team.finishMode==='time'?'selected':''}>${esc(t('single.limit_time'))}</option>
+                <option value="laps" ${state.modes.team.finishMode==='laps'?'selected':''}>${esc(t('single.limit_laps'))}</option>
+                <option value="none" ${state.modes.team.finishMode==='none'?'selected':''}>${esc(t('team.finish_manual'))}</option>
               </select>
             </div>
 
             <div class="row" style="gap:10px; flex-wrap:wrap">
               <div class="field" style="flex:1; min-width:180px">
-                <label>Zeitlimit (Min.)</label>
+                <label>${esc(t('team.time_limit_min'))}</label>
                 <input class="input" id="teamTimeLimitMin" type="number" min="1" step="1" value="${esc(Math.max(1, Math.round((state.modes.team.timeLimitSec||180)/60)))}"/>
               </div>
               <div class="field" style="flex:1; min-width:180px">
-                <label>Rundenlimit</label>
+                <label>${esc(t('team.lap_limit'))}</label>
                 <input class="input" id="teamLapLimit" type="number" min="1" step="1" value="${esc(state.modes.team.lapLimit||20)}"/>
               </div>
               <div class="field" style="flex:2; min-width:260px">
-                <label>Punkte je Platz</label>
-                <input class="input" id="teamPointsScheme" placeholder="z.B. 10,8,6,5,4,3,2,1" value="${esc(state.modes.team.pointsScheme||'10,8,6,5,4,3,2,1')}"/>
-                <div class="muted small">Platz 1 bis n, Rest erhält 0 Punkte.</div>
+                <label>${esc(t('team.points_scheme'))}</label>
+                <input class="input" id="teamPointsScheme" placeholder="${esc(t('team.points_placeholder'))}" value="${esc(state.modes.team.pointsScheme||'10,8,6,5,4,3,2,1')}"/>
+                <div class="muted small">${esc(t('team.points_hint'))}</div>
               </div>
             </div>
 
-            <div class="muted small">Ziehe Fahrer in ein Team. Zugewiesene Fahrer verschwinden hier automatisch.</div>
-            <div id="teamPool" class="dnd-pool" aria-label="Fahrer Pool"></div>
+            <div class="muted small">${esc(t('team.drag_hint'))}</div>
+            <div id="teamPool" class="dnd-pool" aria-label="${esc(t('team.search_driver'))}"></div>
             <div class="hr"></div>
             <div class="row">
-              <button class="btn" id="btnAddTeam">+ Team</button>
-              <button class="btn btn-primary" id="btnActivateTeam">Aktiv setzen</button>
-              <button class="btn" id="btnDeactivateTeam">Deaktivieren</button>
+              <button class="btn" id="btnAddTeam">${esc(t('team.add'))}</button>
+              <button class="btn btn-primary" id="btnActivateTeam">${esc(t('team.activate'))}</button>
+              <button class="btn" id="btnDeactivateTeam">${esc(t('team.deactivate'))}</button>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-h">
-            <h2>Teams</h2>
-            <span class="pill">${teams.length} Teams</span>
+            <h2>${esc(t('common.teams'))}</h2>
+            <span class="pill">${teams.length} ${esc(t('common.teams'))}</span>
           </div>
           <div class="card-b">
             <div id="teamBoxes" class="team-boxes"></div>
             <div class="hr"></div>
-            <div class="drop-unassigned" id="dropUnassigned">⬅️ Hierhin ziehen, um Fahrer aus Team zu entfernen</div>
+            <div class="drop-unassigned" id="dropUnassigned">${esc(t('team.drop_remove'))}</div>
           </div>
         </div>
       </div>
     ` + `
       <div class="card" style="margin-top:12px">
-        <div class="card-h"><h2>Teamwertung über Punkte</h2></div>
+        <div class="card-h"><h2>${esc(t('team.points_title'))}</h2></div>
         <div class="card-b">
           ${(()=>{
             const rid = state.session.currentRaceId || '';
@@ -5750,23 +7516,23 @@ arr.sort((a,b)=>{
             const drvLive = computeDriverStandingsGlobal(laps);
             const ptsScheme = parsePointsScheme(state.modes.team.pointsScheme);
             return `
-              <div class="muted">Fahrer werden nach Platzierung bepunktet, Teams nach Punktesumme gewertet.</div>
+              <div class="muted">${esc(t('team.points_intro'))}</div>
               <div class="row wrap" style="gap:8px">${ptsScheme.map((p,idx)=>`<span class="badge">P${idx+1}: ${p}</span>`).join('')}</div>
               <table class="table">
-                <thead><tr><th>#</th><th>Team</th><th>Punkte</th><th>Mitglieder</th></tr></thead>
+                <thead><tr><th>#</th><th>${esc(t('common.team'))}</th><th>${esc(t('team.points'))}</th><th>${esc(t('team.members'))}</th></tr></thead>
                 <tbody>
-                  ${teamsLive.map((t,idx)=>`<tr><td>${idx+1}</td><td>${esc(t.name)}</td><td><b>${t.points||0}</b></td><td>${esc(t.members||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="muted">Noch keine Daten.</td></tr>`}
+                  ${teamsLive.map((teamRow,idx)=>`<tr><td>${idx+1}</td><td>${esc(teamRow.name)}</td><td><b>${teamRow.points||0}</b></td><td>${esc(teamRow.members||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="muted">${esc(t('common.no_data'))}</td></tr>`}
                 </tbody>
               </table>
               <div class="hr"></div>
               <table class="table">
-                <thead><tr><th>#</th><th>Fahrer</th><th>Team</th><th>Punkte</th><th>Runden</th><th>Zeit</th></tr></thead>
+                <thead><tr><th>#</th><th>${esc(t('team.driver'))}</th><th>${esc(t('common.team'))}</th><th>${esc(t('team.points'))}</th><th>${esc(t('single.laps'))}</th><th>${esc(t('team.time'))}</th></tr></thead>
                 <tbody>
                   ${drvLive.map((d,idx)=>{
-                    const team = (state.modes.team.teams||[]).find(t=>(t.driverIds||[]).includes(d.id));
+                    const teamRow = (state.modes.team.teams||[]).find(team=>(team.driverIds||[]).includes(d.id));
                     const pts = ptsScheme[idx] || 0;
-                    return `<tr><td>${idx+1}</td><td>${esc(d.name||'—')}</td><td>${esc(team?.name||'—')}</td><td>${pts}</td><td>${d.lapsCount||d.laps||0}</td><td class="mono">${d.totalMs!=null?esc(msToTime(d.totalMs,3)):'—'}</td></tr>`;
-                  }).join('') || `<tr><td colspan="6" class="muted">Noch keine Daten.</td></tr>`}
+                    return `<tr><td>${idx+1}</td><td>${esc(d.name||'—')}</td><td>${esc(teamRow?.name||'—')}</td><td>${pts}</td><td>${d.lapsCount||d.laps||0}</td><td class="mono">${d.totalMs!=null?esc(msToTime(d.totalMs,3)):'—'}</td></tr>`;
+                  }).join('') || `<tr><td colspan="6" class="muted">${esc(t('common.no_data'))}</td></tr>`}
                 </tbody>
               </table>
             `;
@@ -5777,20 +7543,20 @@ arr.sort((a,b)=>{
 
     // pool
     const pool = el.querySelector('#teamPool');
-    pool.innerHTML = drivers.length ? drivers.map(d=>renderDriverChip(d,'pool')).join('') : `<div class="muted">Keine freien Fahrer.</div>`;
+    pool.innerHTML = drivers.length ? drivers.map(d=>renderDriverChip(d,'pool')).join('') : `<div class="muted">${esc(t('common.no_free_drivers'))}</div>`;
 
     // teams
     const boxes = el.querySelector('#teamBoxes');
-    boxes.innerHTML = teams.map(t=>{
-      const members = (t.driverIds||[]).map(id=>state.masterData.drivers.find(d=>d.id===id)).filter(Boolean);
+    boxes.innerHTML = teams.map((team, idx)=>{
+      const members = (team.driverIds||[]).map(id=>state.masterData.drivers.find(d=>d.id===id)).filter(Boolean);
       return `
-        <div class="team-box" data-team-id="${esc(t.id)}">
+        <div class="team-box" data-team-id="${esc(team.id)}">
           <div class="team-box-h">
-            <input class="input team-name" data-team-name="${esc(t.id)}" value="${esc(t.name||'Team')}" />
-            <button class="icon-btn" title="Team löschen" data-del-team="${esc(t.id)}">🗑️</button>
+            <input class="input team-name" data-team-name="${esc(team.id)}" value="${esc(team.name||t('team.default_name', { n:idx+1 }))}" />
+            <button class="icon-btn" title="${esc(t('team.delete_title'))}" data-del-team="${esc(team.id)}">🗑️</button>
           </div>
-          <div class="team-drop" data-drop-team="${esc(t.id)}">
-            ${members.length ? members.map(d=>renderDriverChip(d,'team',t.id)).join('') : `<div class="muted small">Fahrer hier ablegen…</div>`}
+          <div class="team-drop" data-drop-team="${esc(team.id)}">
+            ${members.length ? members.map(d=>renderDriverChip(d,'team',team.id)).join('') : `<div class="muted small">${esc(t('team.drop_here'))}</div>`}
           </div>
         </div>
       `;
@@ -5804,35 +7570,35 @@ arr.sort((a,b)=>{
     });
 
     el.querySelector('#btnAddTeam').addEventListener('click', ()=>{
-      state.modes.team.teams.push({id:uid(), name:`Team ${state.modes.team.teams.length+1}`, driverIds:[]});
-      saveState(); renderTeamrennen(); toast('✅ Team hinzugefügt');
+      state.modes.team.teams.push({id:uid(), name:t('team.default_name', { n:state.modes.team.teams.length+1 }), driverIds:[]});
+      saveState(); renderTeamrennen(); toast('Modus', t('team.added'),'ok');
     });
 
     el.querySelector('#btnActivateTeam').addEventListener('click', ()=>{
       state.modes.activeMode='team';
-      saveState(); renderAll(); toast('✅ Teamrennen aktiv');
+      saveState(); renderAll(); toast('Modus', t('team.activated'),'ok');
     });
     el.querySelector('#btnDeactivateTeam').addEventListener('click', ()=>{
       if(state.modes.activeMode==='team') state.modes.activeMode='none';
-      saveState(); renderAll(); toast('✅ Teamrennen deaktiviert');
+      saveState(); renderAll(); toast('Modus', t('team.deactivated'),'ok');
     });
 
     // team name edits + delete
     boxes.querySelectorAll('input[data-team-name]').forEach(inp=>{
       inp.addEventListener('change', ()=>{
         const id = inp.getAttribute('data-team-name');
-        const t = state.modes.team.teams.find(x=>x.id===id);
-        if(t){ t.name = inp.value.trim()||t.name; saveState(); toast('✅ Teamname gespeichert'); renderTeamrennen(); }
+        const team = state.modes.team.teams.find(x=>x.id===id);
+        if(team){ team.name = inp.value.trim()||team.name; saveState(); toast('Modus', t('team.name_saved'),'ok'); renderTeamrennen(); }
       });
     });
     boxes.querySelectorAll('[data-del-team]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const id = btn.getAttribute('data-del-team');
-        const t = state.modes.team.teams.find(x=>x.id===id);
-        if(!t) return;
-        if((t.driverIds||[]).length){ toast('⚠️ Team ist nicht leer'); return; }
+        const team = state.modes.team.teams.find(x=>x.id===id);
+        if(!team) return;
+        if((team.driverIds||[]).length){ toast('Modus', t('team.not_empty'),'warn'); return; }
         state.modes.team.teams = state.modes.team.teams.filter(x=>x.id!==id);
-        saveState(); renderTeamrennen(); toast('🗑️ Team gelöscht');
+        saveState(); renderTeamrennen(); toast('Modus', t('team.deleted'),'ok');
       });
     });
 
@@ -5978,48 +7744,60 @@ arr.sort((a,b)=>{
     el.innerHTML = `
       <div class="grid2">
         <div class="card">
-          <div class="card-h"><h2>Langstrecke</h2><span class="pill">${active?'AKTIV':'inaktiv'}</span></div>
+          <div class="card-h"><h2>${esc(t('endurance.title'))}</h2><span class="pill">${esc(active ? t('common.active') : t('common.inactive'))}</span></div>
           <div class="card-b">
             <div class="field">
-              <label>Rennlänge (Minuten)</label>
+              <label>${esc(t('endurance.duration_min'))}</label>
               <input class="input" id="endDur" type="number" min="1" step="1" value="${esc(state.modes.endurance.durationMin)}"/>
             </div>
             <div class="field">
-              <label>Mindestrunden pro Stint</label>
+              <label>${esc(t('endurance.min_stint'))}</label>
               <input class="input" id="endMinStintLaps" type="number" min="0" step="1" value="${esc(state.modes.endurance.minStintLaps||0)}"/>
             </div>
             <div class="field">
-              <label>Maximalrunden pro Stint (0 = aus)</label>
+              <label>${esc(t('endurance.max_stint'))}</label>
               <input class="input" id="endMaxStintLaps" type="number" min="0" step="1" value="${esc(state.modes.endurance.maxStintLaps||0)}"/>
             </div>
-            <div class="muted small">Langstrecke wird immer als Zeitrennen gewertet. Jeder Stint muss mindestens diese Rundenzahl erreichen. Optional kann auch eine maximale Rundenzahl pro Stint geprüft werden.</div>
+            <div class="field">
+              <label>${esc(t('endurance.penalty_seconds'))}</label>
+              <input class="input" id="endPenaltySeconds" type="number" min="0" step="1" value="${esc(state.modes.endurance.penaltySecondsPerViolation||0)}"/>
+            </div>
+            <div class="field">
+              <label>${esc(t('endurance.penalty_threshold'))}</label>
+              <input class="input" id="endPenaltyLapThresholdSeconds" type="number" min="0" step="1" value="${esc(state.modes.endurance.penaltyLapThresholdSeconds||0)}"/>
+            </div>
+            <div class="field">
+              <label>${esc(t('endurance.penalty_laps'))}</label>
+              <input class="input" id="endPenaltyLapsPerThreshold" type="number" min="0" step="1" value="${esc(state.modes.endurance.penaltyLapsPerThreshold||0)}"/>
+            </div>
+            <div class="muted small">${esc(t('endurance.intro'))}</div>
 
             <div class="hr"></div>
             <div class="field">
-              <label>Fahrer suchen</label>
-              <input class="input" id="endAssignQuery" placeholder="Name…" value="${esc(state.ui.endAssignQuery||'')}"/>
+              <label>${esc(t('endurance.search_driver'))}</label>
+              <input class="input" id="endAssignQuery" placeholder="${esc(t('common.search_name_placeholder'))}" value="${esc(state.ui.endAssignQuery||'')}"/>
             </div>
-            <div class="muted small">Ziehe Fahrer in ein Team. (Langstrecke: Teams fahren nacheinander.)</div>
+            <div class="muted small">${esc(t('endurance.drag_hint'))}</div>
             <div id="endPool" class="dnd-pool"></div>
 
             <div class="hr"></div>
             <div class="row">
-              <button class="btn" id="btnAddEndTeam">+ Team</button>
-              <button class="btn btn-primary" id="btnActivateEnd">Aktiv setzen</button>
-              <button class="btn" id="btnDeactivateEnd">Deaktivieren</button>
+              <button class="btn" id="btnAddEndTeam">${esc(t('endurance.add'))}</button>
+              <button class="btn btn-primary" id="btnActivateEnd">${esc(t('endurance.activate'))}</button>
+              <button class="btn" id="btnDeactivateEnd">${esc(t('endurance.deactivate'))}</button>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-h"><h2>Teams</h2><span class="pill">${teams.length} Teams</span></div>
+          <div class="card-h"><h2>${esc(t('common.teams'))}</h2><span class="pill">${teams.length} ${esc(t('common.teams'))}</span></div>
           <div class="card-b">
             <div id="endTeamBoxes" class="team-boxes"></div>
             <div class="hr"></div>
-            <div class="drop-unassigned" id="endDropUnassigned">⬅️ Hierhin ziehen, um Fahrer aus Team zu entfernen</div>
+            <div class="drop-unassigned" id="endDropUnassigned">${esc(t('endurance.drop_remove'))}</div>
           </div>
         </div>
-      <div class="muted small" style="margin-top:12px">Mindeststint und aktive Fahrer/Stints findest du im Session Control, Dashboard und Presenter.</div>
+      <div class="muted small" style="margin-top:12px">${esc(t('endurance.note_status'))}</div>
       </div>
     `;
 
@@ -6028,17 +7806,23 @@ arr.sort((a,b)=>{
       const durNode = document.getElementById('endDur');
       const minNode = document.getElementById('endMinStintLaps');
       const maxNode = document.getElementById('endMaxStintLaps');
+      const penaltyNode = document.getElementById('endPenaltySeconds');
+      const thresholdNode = document.getElementById('endPenaltyLapThresholdSeconds');
+      const lapsNode = document.getElementById('endPenaltyLapsPerThreshold');
       state.modes.endurance.durationMin = clampInt(Number(durNode?.value||0), 1, 24*60);
       state.modes.endurance.minStintLaps = clampInt(Number(minNode?.value||0), 0, 99999);
       state.modes.endurance.maxStintLaps = clampInt(Number(maxNode?.value||0), 0, 99999);
+      state.modes.endurance.penaltySecondsPerViolation = clampInt(Number(penaltyNode?.value||0), 0, 99999);
+      state.modes.endurance.penaltyLapThresholdSeconds = clampInt(Number(thresholdNode?.value||0), 0, 99999);
+      state.modes.endurance.penaltyLapsPerThreshold = clampInt(Number(lapsNode?.value||0), 0, 99999);
       saveState();
       try{ renderSessionControl(); }catch(e){ console.warn('renderSessionControl failed after endurance settings save', e); }
       try{ renderDashboard(); }catch(e){ console.warn('renderDashboard failed after endurance settings save', e); }
     };
-    ['#endDur','#endMinStintLaps','#endMaxStintLaps'].forEach(sel=>{
+    ['#endDur','#endMinStintLaps','#endMaxStintLaps','#endPenaltySeconds','#endPenaltyLapThresholdSeconds','#endPenaltyLapsPerThreshold'].forEach(sel=>{
       const node = el.querySelector(sel);
       if(node) node.addEventListener('input', saveEnduranceSettings);
-      if(node) node.addEventListener('change', ()=>{ saveEnduranceSettings(); toast('✅ gespeichert'); });
+      if(node) node.addEventListener('change', ()=>{ saveEnduranceSettings(); toast('Modus', t('common.saved'),'ok'); });
     });
 
     el.querySelector('#endAssignQuery').addEventListener('input', (e)=>{
@@ -6048,66 +7832,79 @@ arr.sort((a,b)=>{
     });
 
     const pool = el.querySelector('#endPool');
-    pool.innerHTML = drivers.length ? drivers.map(d=>renderDriverChip(d,'pool')).join('') : `<div class="muted">Keine freien Fahrer.</div>`;
+    pool.innerHTML = drivers.length ? drivers.map(d=>renderDriverChip(d,'pool')).join('') : `<div class="muted">${esc(t('common.no_free_drivers'))}</div>`;
 
     const boxes = el.querySelector('#endTeamBoxes');
-    boxes.innerHTML = teams.map(t=>{
-      const members = (t.driverIds||[]).map(id=>state.masterData.drivers.find(d=>d.id===id)).filter(Boolean);
+    boxes.innerHTML = teams.map((team, idx)=>{
+      const members = (team.driverIds||[]).map(id=>state.masterData.drivers.find(d=>d.id===id)).filter(Boolean);
       return `
-        <div class="team-box" data-team-id="${esc(t.id)}">
+        <div class="team-box" data-team-id="${esc(team.id)}">
           <div class="team-box-h">
-            <input class="input team-name" data-end-team-name="${esc(t.id)}" value="${esc(t.name||'Team')}" />
-            <button class="icon-btn" title="Team löschen" data-end-del-team="${esc(t.id)}">🗑️</button>
+            <input class="input team-name" data-end-team-name="${esc(team.id)}" value="${esc(team.name||t('endurance.default_name', { n:idx+1 }))}" />
+            <button class="icon-btn" title="${esc(t('endurance.delete_title'))}" data-end-del-team="${esc(team.id)}">🗑️</button>
           </div>
-          <div class="team-drop" data-end-drop-team="${esc(t.id)}">
-            ${members.length ? members.map(d=>renderDriverChip(d,'team',t.id)).join('') : `<div class="muted small">Fahrer hier ablegen…</div>`}
+          <div class="team-drop" data-end-drop-team="${esc(team.id)}">
+            ${members.length ? members.map(d=>renderDriverChip(d,'team',team.id)).join('') : `<div class="muted small">${esc(t('endurance.drop_here'))}</div>`}
           </div>
         </div>
       `;
     }).join('');
 
     el.querySelector('#btnAddEndTeam').addEventListener('click', ()=>{
-      state.modes.endurance.teams.push({id:uid(), name:`Team ${state.modes.endurance.teams.length+1}`, driverIds:[]});
-      saveState(); renderLangstrecke(); toast('✅ Team hinzugefügt');
+      state.modes.endurance.teams.push({id:uid(), name:t('endurance.default_name', { n:state.modes.endurance.teams.length+1 }), driverIds:[]});
+      saveState(); renderLangstrecke(); toast('Modus', t('endurance.added'),'ok');
     });
     el.querySelector('#btnActivateEnd').addEventListener('click', ()=>{
       try{
         const durNode = document.getElementById('endDur');
         const minNode = document.getElementById('endMinStintLaps');
         const maxNode = document.getElementById('endMaxStintLaps');
+        const penaltyNode = document.getElementById('endPenaltySeconds');
+        const thresholdNode = document.getElementById('endPenaltyLapThresholdSeconds');
+        const lapsNode = document.getElementById('endPenaltyLapsPerThreshold');
         state.modes.endurance.durationMin = clampInt(Number(durNode?.value||0), 1, 24*60);
         state.modes.endurance.minStintLaps = clampInt(Number(minNode?.value||0), 0, 99999);
         state.modes.endurance.maxStintLaps = clampInt(Number(maxNode?.value||0), 0, 99999);
+        state.modes.endurance.penaltySecondsPerViolation = clampInt(Number(penaltyNode?.value||0), 0, 99999);
+        state.modes.endurance.penaltyLapThresholdSeconds = clampInt(Number(thresholdNode?.value||0), 0, 99999);
+        state.modes.endurance.penaltyLapsPerThreshold = clampInt(Number(lapsNode?.value||0), 0, 99999);
         state.modes.activeMode='endurance';
         saveState();
-        logLine(`Langstrecke aktiviert: ${state.modes.endurance.durationMin} Min, Mindeststint ${state.modes.endurance.minStintLaps}, Max-Stint ${state.modes.endurance.maxStintLaps||0}`);
+        logLine(t('endurance.log_activated', {
+          duration:state.modes.endurance.durationMin,
+          minStint:state.modes.endurance.minStintLaps,
+          maxStint:state.modes.endurance.maxStintLaps||0,
+          penalty:state.modes.endurance.penaltySecondsPerViolation||0,
+          threshold:state.modes.endurance.penaltyLapThresholdSeconds||0,
+          laps:state.modes.endurance.penaltyLapsPerThreshold||0
+        }));
         renderAll();
-        toast('✅ Langstrecke aktiv');
+        toast('Modus', t('endurance.activated'),'ok');
       }catch(e){
         console.error('btnActivateEnd failed', e);
-        toast('❌ Aktivieren fehlgeschlagen');
+        toast('Modus', t('endurance.activate_failed'),'err');
       }
     });
     el.querySelector('#btnDeactivateEnd').addEventListener('click', ()=>{
       if(state.modes.activeMode==='endurance') state.modes.activeMode='none';
-      saveState(); renderAll(); toast('✅ Langstrecke deaktiviert');
+      saveState(); renderAll(); toast('Modus', t('endurance.deactivated'),'ok');
     });
 
     boxes.querySelectorAll('input[data-end-team-name]').forEach(inp=>{
       inp.addEventListener('change', ()=>{
         const id = inp.getAttribute('data-end-team-name');
-        const t = state.modes.endurance.teams.find(x=>x.id===id);
-        if(t){ t.name = inp.value.trim()||t.name; saveState(); toast('✅ Teamname gespeichert'); renderLangstrecke(); }
+        const team = state.modes.endurance.teams.find(x=>x.id===id);
+        if(team){ team.name = inp.value.trim()||team.name; saveState(); toast('Modus', t('endurance.name_saved'),'ok'); renderLangstrecke(); }
       });
     });
     boxes.querySelectorAll('[data-end-del-team]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const id = btn.getAttribute('data-end-del-team');
-        const t = state.modes.endurance.teams.find(x=>x.id===id);
-        if(!t) return;
-        if((t.driverIds||[]).length){ toast('⚠️ Team ist nicht leer'); return; }
+        const team = state.modes.endurance.teams.find(x=>x.id===id);
+        if(!team) return;
+        if((team.driverIds||[]).length){ toast('Modus', t('endurance.not_empty'),'warn'); return; }
         state.modes.endurance.teams = state.modes.endurance.teams.filter(x=>x.id!==id);
-        saveState(); renderLangstrecke(); toast('🗑️ Team gelöscht');
+        saveState(); renderLangstrecke(); toast('Modus', t('endurance.deleted'),'ok');
       });
     });
 
@@ -6667,6 +8464,31 @@ host.querySelector('#drvSave').onclick=()=>{
     return (rd.races||[]).find(r=>r.id===raceId) || null;
   }
 
+  function raceUsesBestLapRanking(race){
+    const submode = String(race?.submode || '').trim().toLowerCase();
+    return submode === 'qualifying' || submode === 'training';
+  }
+
+  function sortDriverStandingRows(rows, race, opts={}){
+    const locale = getUiLocale();
+    const bestLapRanking = raceUsesBestLapRanking(race);
+    rows.sort((a,b)=>{
+      if(bestLapRanking){
+        const ab = a.bestMs==null ? 9e15 : a.bestMs;
+        const bb = b.bestMs==null ? 9e15 : b.bestMs;
+        if(ab!==bb) return ab-bb;
+        const al = (b.lapsCount || b.laps || 0) - (a.lapsCount || a.laps || 0);
+        if(al) return al;
+        const at = a.lastMs==null ? 9e15 : a.lastMs;
+        const bt = b.lastMs==null ? 9e15 : b.lastMs;
+        if(at!==bt) return at-bt;
+        return String(a.name||'').localeCompare(String(b.name||''), locale);
+      }
+      return compareDriverStandingRows(a,b, opts);
+    });
+    return rows;
+  }
+
   function getRelevantRaceLaps(raceId, lapsAll){
     const laps = (lapsAll||[]).filter(l=>l.raceId===raceId);
     const race = getRaceById(raceId);
@@ -6728,7 +8550,8 @@ for(const s of arr){
         }
       }
 const liveRaceForThisSet = !!(raceId && raceId===state.session.currentRaceId && state.session.state==='RUNNING' && !(state.session.finish&&state.session.finish.pending));
-arr.sort((a,b)=>compareDriverStandingRows(a,b,{ live: liveRaceForThisSet }));
+const race = getRaceById(raceId);
+sortDriverStandingRows(arr, race, { live: liveRaceForThisSet });
 return arr;
 }
 
@@ -6834,25 +8657,29 @@ function computeTeamStandingsGlobal(laps, mode, finish){
       }
     }
     const raceTotal = raceId ? getTeamRaceTotalFromStartMs(raceId, t.id, mode, rel) : totalMs;
-    const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[] };
+    const rule = (mode==='endurance' && raceId) ? getEnduranceRuleStateForTeam(t.id, raceId) : { compliant:true, invalidStintCount:0, statusText:'OK', minStint:0, stints:[], penaltySecondsTotal:0, deductedLaps:0, projectedDeductedLaps:0 };
     return {
       id:t.id,
       name:t.name||'Team',
       members,
-      lapCount,
-      totalMs: (raceTotal==null ? totalMs : raceTotal),
+      rawLapCount: lapCount,
+      rawTotalMs: (raceTotal==null ? totalMs : raceTotal),
+      lapCount: mode==='endurance' ? Math.max(0, lapCount - (rule.deductedLaps||0)) : lapCount,
+      totalMs: mode==='endurance' ? (((raceTotal==null ? totalMs : raceTotal) || 0) + ((rule.penaltySecondsTotal||0) * 1000)) : (raceTotal==null ? totalMs : raceTotal),
       bestMs,
       lastMs,
       finished,
       compliant: mode==='endurance' ? !!rule.compliant : true,
       invalidStintCount: mode==='endurance' ? (rule.invalidStintCount||0) : 0,
       statusText: mode==='endurance' ? (rule.statusText||'OK') : 'OK',
+      penaltySecondsTotal: mode==='endurance' ? (rule.penaltySecondsTotal||0) : 0,
+      deductedLaps: mode==='endurance' ? (rule.deductedLaps||0) : 0,
+      projectedDeductedLaps: mode==='endurance' ? (rule.projectedDeductedLaps||0) : 0,
       minStintLaps: mode==='endurance' ? (rule.minStint||0) : 0,
       stintCount: mode==='endurance' ? ((rule.stints||[]).length) : 0
     };
   });
   rows.sort((a,b)=>{
-    if(mode==='endurance' && (!!a.compliant)!=(!!b.compliant)) return a.compliant ? -1 : 1;
     if(b.lapCount!==a.lapCount) return b.lapCount-a.lapCount;
     return (a.totalMs||0)-(b.totalMs||0);
   });
@@ -7013,7 +8840,7 @@ function box(pos, data){
         <div class="podiumInfoCol">
           <div class="podiumName"><span class="nm">${esc(data.name)}</span>${data.finished?'<span class="finishFlag">🏁</span>':''}</div>
           <div class="podiumSub small muted">${esc(data.members)}</div>
-          ${(mode==='endurance' && data.compliant===false) ? `<div class="podiumSub small" style="color:#ff8f8f">Außer Wertung • ${esc(data.statusText||'')}</div>` : ''}
+          ${(mode==='endurance' && data.compliant===false) ? `<div class="podiumSub small" style="color:#ff8f8f">${esc(data.statusText||'Regelverstoss')}</div>` : ''}
           <div class="podiumStats small">
             ${(mode==='team')?`<div><span>Punkte</span><b>${data.points||0}</b></div>`:''}
             <div><span>Runden</span><b>${data.lapCount||0}</b></div>
@@ -7067,7 +8894,7 @@ const podiumHtml = `
         <tbody>
           ${rest.map((t,i)=>`<tr>
             <td class="mono">${i+4}</td>
-            <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">Außer Wertung</div>`:''}</td>
+            <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">${esc(t.statusText||'Regelverstoss')}</div>`:''}</td>
             <td class="mono">${t.lapCount}</td>
             <td class="mono">${t.totalMs?msToTime(t.totalMs, dec):'—'}</td>
             <td class="mono">${t.bestMs!=null && isFinite(t.bestMs)?msToTime(t.bestMs, dec):'—'}</td>
@@ -7278,7 +9105,7 @@ return podiumHtml;
 function renderRenntagAuswertung(){
     const el = document.getElementById('pageRenntagAuswertung');
     const rd = getActiveRaceDay();
-    if(!rd){ el.innerHTML='<div class="card"><div class="card-b">Kein Renntag.</div></div>'; return; }
+    if(!rd){ el.innerHTML=`<div class="card"><div class="card-b">${esc(t('renntag.none'))}</div></div>`; return; }
 
     const races = (rd.races||[]).slice().sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
     const stats = getDriverAggregateStatsForRaces(races).filter(x=>x.races>0);
@@ -7299,9 +9126,27 @@ function renderRenntagAuswertung(){
             <span class="badge">Sessions: ${races.length}</span>
             <span class="badge">Fahrer: ${stats.length}</span>
           </div>
-          <div class="row wrap" style="gap:10px; margin-top:12px">
-            <button class="btn" id="btnRaceDayWebhook" type="button">Renntag an Discord senden</button>
-            <button class="btn" id="btnRaceDayForumCopy" type="button">Forum-Text kopieren</button>
+          <div class="row wrap discord-preview-wrap" style="gap:10px; margin-top:12px">
+            <div class="card" style="width:100%">
+              <div class="card-h"><h3>Discord Vorschau</h3></div>
+              <div class="card-b">
+                <div class="discord-preview-grid">
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Text</div>
+                    <pre class="discord-preview-text" id="raceDayDiscordPreviewText">Lade Vorschau...</pre>
+                  </div>
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Bild</div>
+                    <div class="discord-preview-imagebox" id="raceDayDiscordPreviewImage"><div class="muted small">Lade Bild...</div></div>
+                  </div>
+                </div>
+                <div class="row wrap" style="gap:10px; margin-top:12px">
+                  <button class="btn" id="btnRaceDayForumCopy" type="button">Forum-Text kopieren</button>
+                  <button class="btn" id="btnRaceDayWebhook" type="button">Renntag an Discord senden</button>
+                </div>
+                <div class="muted small" style="margin-top:8px">Vorschau von Text und Bild, die an Discord gesendet werden. FÃ¼r Forum-KanÃ¤le kann optional ein Thread/Post erstellt werden.</div>
+              </div>
+            </div>
           </div>
           <div class="muted small" style="margin-top:8px">Sendet pro Strecke alle Fahrer mit ihrer besten Runde dieses Renntags. Für Forum-Kanäle kann optional ein Thread/Post erstellt werden.</div>
           <div class="hr"></div>
@@ -7360,6 +9205,20 @@ function renderRenntagAuswertung(){
     if(sel) sel.onchange = (e)=>{ state.ui.analysisRaceId = e.target.value; state.ui.analysisSessionDriverId = ''; saveState(); renderRenntagAuswertung(); };
     const dsel = el.querySelector('#analysisSessionDriverSel');
     if(dsel) dsel.onchange = (e)=>{ state.ui.analysisSessionDriverId = e.target.value; saveState(); renderRenntagAuswertung(); };
+    const previewRoot = el;
+    Promise.resolve().then(async ()=>{
+      try{
+        const msg = buildRaceDayWebhookMessage(rd.id);
+        const blob = await renderRaceDayWebhookBlob(rd.id);
+        if(previewRoot !== document.getElementById('pageRenntagAuswertung')) return;
+        setDiscordPreviewText(previewRoot, '#raceDayDiscordPreviewText', formatDiscordPayloadPreview(msg.payload));
+        setDiscordPreviewImage(previewRoot, '#raceDayDiscordPreviewImage', blob, 'Renntag Discord Vorschau');
+      }catch(err){
+        setDiscordPreviewText(previewRoot, '#raceDayDiscordPreviewText', 'Vorschau konnte nicht geladen werden.');
+        setDiscordPreviewImage(previewRoot, '#raceDayDiscordPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+        logLine('Renntag Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    });
     el.querySelectorAll('[data-del-lap-analysis]').forEach(btn=>{
       btn.onclick = ()=>{
         deleteLapById(btn.getAttribute('data-del-lap-analysis'));
@@ -7379,8 +9238,13 @@ function renderRenntagAuswertung(){
           toast('Discord','Renntag gesendet.','ok');
           logLine('Renntag Webhook gesendet: ' + (rd.name||rd.id));
         }catch(err){
-          toast('Discord','Renntag-Webhook fehlgeschlagen.','err');
-          logLine('Renntag Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          if(err?.queued){
+            toast('Discord','Renntag in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Renntag ' + String(rd.name || rd.id));
+          }else{
+            toast('Discord','Renntag-Webhook fehlgeschlagen.','err');
+            logLine('Renntag Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
         }finally{
           btnRaceDayWebhook.disabled = false;
           btnRaceDayWebhook.textContent = prev;
@@ -7412,8 +9276,13 @@ function renderRenntagAuswertung(){
           toast('Discord','Session gesendet.','ok');
           logLine('Session Webhook gesendet: ' + (race.name||race.id));
         }catch(err){
-          toast('Discord','Session-Webhook fehlgeschlagen.','err');
-          logLine('Session Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          if(err?.queued){
+            toast('Discord','Session in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Session ' + String(race.name || race.id));
+          }else{
+            toast('Discord','Session-Webhook fehlgeschlagen.','err');
+            logLine('Session Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
         }finally{
           btnAnalysisSessionDiscord.disabled = false;
           btnAnalysisSessionDiscord.textContent = prev;
@@ -7702,9 +9571,27 @@ function renderRenntagAuswertung(){
             <span class="badge">Rennen dieser Saison: ${stats.races.length}</span>
             <span class="badge">Fahrer: ${statRows.length}</span>
           </div>
-          <div class="row wrap" style="gap:10px; margin-bottom:12px">
-            <button class="btn" id="btnSeasonWebhook" type="button">Saison an Discord senden</button>
-            <button class="btn" id="btnSeasonForumCopy" type="button">Forum-Text kopieren</button>
+          <div class="row wrap discord-preview-wrap" style="gap:10px; margin-bottom:12px">
+            <div class="card" style="width:100%">
+              <div class="card-h"><h3>Discord Vorschau</h3></div>
+              <div class="card-b">
+                <div class="discord-preview-grid">
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Text</div>
+                    <pre class="discord-preview-text" id="seasonDiscordPreviewText">Lade Vorschau...</pre>
+                  </div>
+                  <div class="discord-preview-pane">
+                    <div class="muted small" style="margin-bottom:8px">Bild</div>
+                    <div class="discord-preview-imagebox" id="seasonDiscordPreviewImage"><div class="muted small">Lade Bild...</div></div>
+                  </div>
+                </div>
+                <div class="row wrap" style="gap:10px; margin-top:12px">
+                  <button class="btn" id="btnSeasonForumCopy" type="button">Forum-Text kopieren</button>
+                  <button class="btn" id="btnSeasonWebhook" type="button">Saison an Discord senden</button>
+                </div>
+                <div class="muted small" style="margin-top:8px">Vorschau von Text und Bild, die an Discord gesendet werden. Fuer Forum-Kanaele kann optional direkt ein Thread/Post erstellt werden.</div>
+              </div>
+            </div>
           </div>
           <div class="muted small" style="margin-bottom:14px">Sendet Gesamtwertung und Awards an Discord. Für Forum-Kanäle kann optional direkt ein Thread/Post erstellt werden.</div>
 
@@ -7803,6 +9690,57 @@ function renderRenntagAuswertung(){
       </div>
     `;
 
+    const seasonPreviewRoot = el;
+    Promise.resolve().then(async ()=>{
+      try{
+        const msg = buildSeasonWebhookMessage(active.id);
+        const blob = await renderSeasonWebhookBlob(active.id);
+        if(seasonPreviewRoot !== document.getElementById('pageSaisonAuswertung')) return;
+        setDiscordPreviewText(seasonPreviewRoot, '#seasonDiscordPreviewText', formatDiscordPayloadPreview(msg.payload));
+        setDiscordPreviewImage(seasonPreviewRoot, '#seasonDiscordPreviewImage', blob, 'Saison Discord Vorschau');
+      }catch(err){
+        setDiscordPreviewText(seasonPreviewRoot, '#seasonDiscordPreviewText', 'Vorschau konnte nicht geladen werden.');
+        setDiscordPreviewImage(seasonPreviewRoot, '#seasonDiscordPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+        logLine('Saison Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    });
+    const btnSeasonWebhook = el.querySelector('#btnSeasonWebhook');
+    if(btnSeasonWebhook){
+      btnSeasonWebhook.onclick = async ()=>{
+        btnSeasonWebhook.disabled = true;
+        const prev = btnSeasonWebhook.textContent;
+        btnSeasonWebhook.textContent = 'Sende...';
+        try{
+          await sendSeasonWebhook(active.id);
+          toast('Discord','Saison gesendet.','ok');
+          logLine('Saison Webhook gesendet: ' + (active.name||active.id));
+        }catch(err){
+          if(err?.queued){
+            toast('Discord','Saison in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Saison ' + String(active.name || active.id));
+          }else{
+            toast('Discord','Saison-Webhook fehlgeschlagen.','err');
+            logLine('Saison Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
+        }finally{
+          btnSeasonWebhook.disabled = false;
+          btnSeasonWebhook.textContent = prev;
+        }
+      };
+    }
+    const btnSeasonForumCopy = el.querySelector('#btnSeasonForumCopy');
+    if(btnSeasonForumCopy){
+      btnSeasonForumCopy.onclick = async ()=>{
+        try{
+          const msg = buildSeasonWebhookMessage(active.id);
+          await copyTextToClipboard(msg.forumText);
+          toast('Forum','Saison-Text kopiert.','ok');
+        }catch(err){
+          toast('Forum','Kopieren fehlgeschlagen.','err');
+          logLine('Saison Forum-Text Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      };
+    }
     const bindNum = (id, key)=>{
       const inp = el.querySelector('#'+id);
       if(!inp) return;
@@ -7823,7 +9761,7 @@ function renderRenntagAuswertung(){
 function renderRenntag(){
     const el = document.getElementById('pageRenntag');
     const rd = getActiveRaceDay();
-    if(!rd){ el.innerHTML='<div class="card"><div class="card-b">Kein Renntag.</div></div>'; return; }
+    if(!rd){ el.innerHTML=`<div class="card"><div class="card-b">${esc(t('renntag.none'))}</div></div>`; return; }
 
     const races = rd.races.slice().sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
     const selectedRaceId = state.ui.selectedRaceId || (races[0]?.id || '');
@@ -7837,41 +9775,80 @@ function renderRenntag(){
 
     el.innerHTML = `
       <div class="card">
-        <div class="card-h"><h2>Renntag</h2></div>
+        <div class="card-h"><h2>${t('renntag.title')}</h2></div>
         <div class="card-b">
-          <div class="muted">Renntag und Session auswählen.</div>
+          <div class="muted">${t('renntag.intro')}</div>
           <div class="hr"></div>
 
           <div class="field">
-            <label>Renntag auswählen</label>
+            <label>${t('renntag.select_day')}</label>
             <select id="raceDaySel">
               ${state.raceDay.raceDays.slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).map(d=>`<option value="${esc(d.id)}" ${d.id===state.raceDay.activeRaceDayId?'selected':''}>${esc(d.name)}</option>`).join('')}
             </select>
           </div>
 
           <div class="row">
-            <button class="btn" id="raceDayNew">+ Neuer Renntag</button>
+            <button class="btn" id="raceDayNew">${t('renntag.new_day')}</button>
           </div>
 
           <div class="hr"></div>
 
           <div class="field">
-            <label>Rennen/Session</label>
+            <label>${t('renntag.select_session')}</label>
             <select id="raceSel">
-              ${races.map(r=>`<option value="${esc(r.id)}" ${r.id===selectedRaceId?'selected':''}>${esc(r.name)}</option>`).join('') || `<option value="">(keine Sessions)</option>`}
+              ${races.map(r=>`<option value="${esc(r.id)}" ${r.id===selectedRaceId?'selected':''}>${esc(r.name)}</option>`).join('') || `<option value="">${esc(t('renntag.no_sessions'))}</option>`}
             </select>
           </div>
 
           <div class="row" style="gap:10px; flex-wrap:wrap">
-            <button class="btn" id="raceDelete">🗑 Lauf/Session löschen</button>
-            <button class="btn" id="raceDeleteAll">🗑 Alle Sessions dieses Renntags löschen</button>
+            <button class="btn" id="raceDelete">🗑 ${t('renntag.delete_session')}</button>
+            <button class="btn" id="raceDeleteAll">🗑 ${t('renntag.delete_all_sessions')}</button>
           </div>
 
           <div class="hr"></div>
           <div class="row wrap">
-            <span class="badge">Runden: ${raceLaps.length}</span>
-            <span class="badge">Fahrer: ${driverIds.length}</span>
-            <span class="badge">Autos: ${carsIds.length}</span>
+            <span class="badge">${t('renntag.badge_laps', { count:raceLaps.length })}</span>
+            <span class="badge">${t('renntag.badge_drivers', { count:driverIds.length })}</span>
+            <span class="badge">${t('renntag.badge_cars', { count:carsIds.length })}</span>
+          </div>
+          <div class="hr"></div>
+          <div class="card">
+            <div class="card-h"><h3>${t('renntag.preview_title')}</h3></div>
+            <div class="card-b">
+              <div class="discord-preview-grid">
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">${t('preview.text')}</div>
+                  <pre class="discord-preview-text" id="raceDayMainPreviewText">${t('preview.loading')}</pre>
+                </div>
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">${t('preview.image')}</div>
+                  <div class="discord-preview-imagebox" id="raceDayMainPreviewImage"><div class="muted small">${t('preview.loading_image')}</div></div>
+                </div>
+              </div>
+              <div class="row wrap" style="gap:10px; margin-top:12px">
+                <button class="btn" id="btnRaceDayMainForumCopy" type="button">${t('renntag.copy_forum')}</button>
+                <button class="btn" id="btnRaceDayMainWebhook" type="button">${t('renntag.send')}</button>
+              </div>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="card">
+            <div class="card-h"><h3>${t('session.preview_title')}</h3></div>
+            <div class="card-b">
+              <div class="discord-preview-grid">
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">${t('preview.text')}</div>
+                  <pre class="discord-preview-text" id="sessionMainPreviewText">${race ? t('preview.loading') : t('preview.no_session')}</pre>
+                </div>
+                <div class="discord-preview-pane">
+                  <div class="muted small" style="margin-bottom:8px">${t('preview.image')}</div>
+                  <div class="discord-preview-imagebox" id="sessionMainPreviewImage"><div class="muted small">${race ? t('preview.loading_image') : t('preview.no_session')}</div></div>
+                </div>
+              </div>
+              <div class="row wrap" style="gap:10px; margin-top:12px">
+                <button class="btn" id="btnSessionMainWebhook" type="button" ${race?'':'disabled'}>${t('session.send')}</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -7882,18 +9859,108 @@ function renderRenntag(){
     const btnNewRd = el.querySelector('#raceDayNew');
     if(btnNewRd) btnNewRd.onclick = ()=>{
       const id = uid('raceday');
-      const name = 'Renntag ' + new Date().toLocaleDateString('de-DE') + ' • ' + new Date().toLocaleTimeString('de-DE',{hour12:false});
+      const name = (getUiLanguage()==='en' ? 'Race Day ' : 'Renntag ') + new Date().toLocaleDateString(getUiLocale()) + ' • ' + new Date().toLocaleTimeString(getUiLocale(),{hour12:false});
       const rd = { id, name, seasonId: state.season.activeSeasonId, trackId: state.tracks.activeTrackId, createdAt: now(), races: [] };
       state.raceDay.raceDays.push(rd);
       state.raceDay.activeRaceDayId = id;
       state.ui.selectedRaceId=''; state.ui.selectedRaceDriverId='';
       saveState();
-      toast('Renntag','Neuer Renntag erstellt.','ok');
+      toast(t('renntag.title'), t('renntag.created'),'ok');
       logLine('Renntag erstellt: ' + name);
       renderRenntag(); renderSessionControl();
     };
 
     el.querySelector('#raceSel').onchange=(e)=>{ state.ui.selectedRaceId=e.target.value; state.ui.selectedRaceDriverId=''; saveState(); renderRenntag(); };
+    const renntagPreviewRoot = el;
+    Promise.resolve().then(async ()=>{
+      try{
+        const msg = buildRaceDayWebhookMessage(rd.id);
+        const blob = await renderRaceDayWebhookBlob(rd.id);
+        if(renntagPreviewRoot !== document.getElementById('pageRenntag')) return;
+        setDiscordPreviewText(renntagPreviewRoot, '#raceDayMainPreviewText', formatDiscordPayloadPreview(msg.payload));
+        setDiscordPreviewImage(renntagPreviewRoot, '#raceDayMainPreviewImage', blob, 'Renntag Discord Vorschau');
+      }catch(err){
+        setDiscordPreviewText(renntagPreviewRoot, '#raceDayMainPreviewText', t('preview.failed'));
+        setDiscordPreviewImage(renntagPreviewRoot, '#raceDayMainPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+        logLine('Renntag Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    });
+    if(race){
+      Promise.resolve().then(async ()=>{
+        try{
+          const preview = await buildSessionDiscordPreview(race.id);
+          if(renntagPreviewRoot !== document.getElementById('pageRenntag')) return;
+          setDiscordPreviewText(renntagPreviewRoot, '#sessionMainPreviewText', formatDiscordPayloadPreview(preview.payload));
+          setDiscordPreviewImage(renntagPreviewRoot, '#sessionMainPreviewImage', preview.blob, 'Session Discord Vorschau');
+        }catch(err){
+          setDiscordPreviewText(renntagPreviewRoot, '#sessionMainPreviewText', t('preview.failed'));
+          setDiscordPreviewImage(renntagPreviewRoot, '#sessionMainPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+          logLine('Session Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      });
+    }
+    const btnRaceDayMainWebhook = el.querySelector('#btnRaceDayMainWebhook');
+    if(btnRaceDayMainWebhook){
+      btnRaceDayMainWebhook.onclick = async ()=>{
+        btnRaceDayMainWebhook.disabled = true;
+        const prev = btnRaceDayMainWebhook.textContent;
+        btnRaceDayMainWebhook.textContent = t('button.sending');
+        try{
+          await sendRaceDayWebhook(rd.id);
+          toast('Discord', t('renntag.sent'),'ok');
+          logLine('Renntag Webhook gesendet: ' + (rd.name||rd.id));
+        }catch(err){
+          if(err?.queued){
+            toast('Discord','Renntag in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Renntag ' + String(rd.name || rd.id));
+          }else{
+            toast('Discord', t('renntag.send_failed'),'err');
+            logLine('Renntag Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
+        }finally{
+          btnRaceDayMainWebhook.disabled = false;
+          btnRaceDayMainWebhook.textContent = prev;
+        }
+      };
+    }
+    const btnRaceDayMainForumCopy = el.querySelector('#btnRaceDayMainForumCopy');
+    if(btnRaceDayMainForumCopy){
+      btnRaceDayMainForumCopy.onclick = async ()=>{
+        try{
+          const msg = buildRaceDayWebhookMessage(rd.id);
+          await copyTextToClipboard(msg.forumText);
+          toast('Forum', t('renntag.copied'),'ok');
+        }catch(err){
+          toast('Forum', t('copy.failed'),'err');
+          logLine('Renntag Forum-Text Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      };
+    }
+    const btnSessionMainWebhook = el.querySelector('#btnSessionMainWebhook');
+    if(btnSessionMainWebhook){
+      btnSessionMainWebhook.onclick = async ()=>{
+        if(!race) return;
+        btnSessionMainWebhook.disabled = true;
+        const prev = btnSessionMainWebhook.textContent;
+        btnSessionMainWebhook.textContent = t('button.sending');
+        try{
+          await sendDiscordSummaryForRace(race.id, { force:true });
+          toast('Discord', t('session.sent'),'ok');
+          logLine('Session Webhook gesendet: ' + (race.name||race.id));
+        }catch(err){
+          if(err?.queued){
+            toast('Discord','Session in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Session ' + String(race.name || race.id));
+          }else{
+            toast('Discord', t('session.send_failed'),'err');
+            logLine('Session Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
+        }finally{
+          btnSessionMainWebhook.disabled = false;
+          btnSessionMainWebhook.textContent = prev;
+        }
+      };
+    }
   }
 
   // -------- Saison --------
@@ -7904,58 +9971,134 @@ function renderRenntag(){
     el.innerHTML = `
       <div class="grid2">
         <div class="card">
-          <div class="card-h"><h2>Saison</h2></div>
+          <div class="card-h"><h2>${t('season.title')}</h2></div>
           <div class="card-b">
-            <div class="muted">Automatisch angelegt, umbenennbar, beendbar.</div>
+            <div class="muted">${t('season.intro')}</div>
             <div class="hr"></div>
             <div class="field">
-              <label>Aktive Saison</label>
+              <label>${t('season.active')}</label>
               <select id="seasonSel">
-                ${seasons.map(s=>`<option value="${esc(s.id)}" ${s.id===state.season.activeSeasonId?'selected':''}>${esc(s.name)}${s.status==='active'?' (aktiv)':' (beendet)'}</option>`).join('')}
+                ${seasons.map(s=>`<option value="${esc(s.id)}" ${s.id===state.season.activeSeasonId?'selected':''}>${esc(s.name)}${s.status==='active' ? ` (${t('season.status_active')})` : ` (${t('season.status_closed')})`}</option>`).join('')}
               </select>
             </div>
             <div class="field">
-              <label>Name</label>
+              <label>${t('season.name')}</label>
               <input class="input" id="seasonName" value="${esc(active?.name||'')}"/>
             </div>
             <div class="row">
-              <button class="btn btn-primary" id="seasonSave">Speichern</button>
-              <button class="btn btn-danger" id="seasonEnd">Saison beenden</button>
-              <button class="btn" id="seasonNew">+ Neue Saison</button>
+              <button class="btn btn-primary" id="seasonSave">${t('season.save')}</button>
+              <button class="btn btn-danger" id="seasonEnd">${t('season.end')}</button>
+              <button class="btn" id="seasonNew">${t('season.new')}</button>
             </div>
           </div>
         </div>
       </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-h"><h2>${t('season.preview_title')}</h2></div>
+        <div class="card-b">
+          <div class="discord-preview-grid">
+            <div class="discord-preview-pane">
+              <div class="muted small" style="margin-bottom:8px">${t('preview.text')}</div>
+              <pre class="discord-preview-text" id="seasonMainPreviewText">${active ? t('preview.loading') : t('season.no_active')}</pre>
+            </div>
+            <div class="discord-preview-pane">
+              <div class="muted small" style="margin-bottom:8px">${t('preview.image')}</div>
+              <div class="discord-preview-imagebox" id="seasonMainPreviewImage"><div class="muted small">${active ? t('preview.loading_image') : t('season.no_active')}</div></div>
+            </div>
+          </div>
+          <div class="row wrap" style="gap:10px; margin-top:12px">
+            <button class="btn" id="btnSeasonMainForumCopy" type="button" ${active?'':'disabled'}>${t('season.copy_forum')}</button>
+            <button class="btn" id="btnSeasonMainWebhook" type="button" ${active?'':'disabled'}>${t('season.send')}</button>
+          </div>
+        </div>
+      </div>
     `;
+    const saisonPreviewRoot = el;
+    if(active){
+      Promise.resolve().then(async ()=>{
+        try{
+          const msg = buildSeasonWebhookMessage(active.id);
+          const blob = await renderSeasonWebhookBlob(active.id);
+          if(saisonPreviewRoot !== document.getElementById('pageSaison')) return;
+          setDiscordPreviewText(saisonPreviewRoot, '#seasonMainPreviewText', formatDiscordPayloadPreview(msg.payload));
+          setDiscordPreviewImage(saisonPreviewRoot, '#seasonMainPreviewImage', blob, 'Saison Discord Vorschau');
+        }catch(err){
+          setDiscordPreviewText(saisonPreviewRoot, '#seasonMainPreviewText', t('preview.failed'));
+          setDiscordPreviewImage(saisonPreviewRoot, '#seasonMainPreviewImage', null, 'Vorschau konnte nicht geladen werden');
+          logLine('Saison Vorschau Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      });
+    }
     el.querySelector('#seasonSel').onchange=(e)=>{ state.season.activeSeasonId=e.target.value; saveState(); renderAll(); };
     el.querySelector('#seasonSave').onclick=()=>{
       const s=getActiveSeason(); if(!s) return;
       s.name = el.querySelector('#seasonName').value.trim() || s.name;
-      saveState(); toast('Saison','Gespeichert.','ok'); renderAll();
+      saveState(); toast(t('season.title'), t('season.saved'),'ok'); renderAll();
     };
     el.querySelector('#seasonEnd').onclick=()=>{
       const s=getActiveSeason(); if(!s) return;
       s.status='closed'; s.endedAt=now();
       const id=uid('season'); const year=new Date().getFullYear();
-      state.season.seasons.push({ id, name:'Saison '+year+' (neu)', status:'active', createdAt:now(), endedAt:null });
+      state.season.seasons.push({ id, name:t('season.new_name', { year }), status:'active', createdAt:now(), endedAt:null });
       state.season.activeSeasonId=id;
       for(const t of state.tracks.tracks){
         if(!t.recordsBySeason) t.recordsBySeason = {};
         t.recordsBySeason[id] = { ms:null, driverName:'', carName:'' };
       }
-      saveState(); toast('Saison','Saison beendet. Neue Saison erstellt.','ok'); renderAll();
+      saveState(); toast(t('season.title'), t('season.ended'),'ok'); renderAll();
     };
     el.querySelector('#seasonNew').onclick=()=>{
       for(const s of state.season.seasons){ if(s.status==='active'){ s.status='closed'; s.endedAt=now(); } }
       const id=uid('season'); const year=new Date().getFullYear();
-      state.season.seasons.push({ id, name:'Saison '+year+' (neu)', status:'active', createdAt:now(), endedAt:null });
+      state.season.seasons.push({ id, name:t('season.new_name', { year }), status:'active', createdAt:now(), endedAt:null });
       state.season.activeSeasonId=id;
       for(const t of state.tracks.tracks){
         if(!t.recordsBySeason) t.recordsBySeason = {};
         t.recordsBySeason[id] = { ms:null, driverName:'', carName:'' };
       }
-      saveState(); toast('Saison','Neue Saison erstellt.','ok'); renderAll();
+      saveState(); toast(t('season.title'), t('season.created'),'ok'); renderAll();
     };
+    const btnSeasonMainWebhook = el.querySelector('#btnSeasonMainWebhook');
+    if(btnSeasonMainWebhook){
+      btnSeasonMainWebhook.onclick = async ()=>{
+        const s = getActiveSeason();
+        if(!s) return;
+        btnSeasonMainWebhook.disabled = true;
+        const prev = btnSeasonMainWebhook.textContent;
+        btnSeasonMainWebhook.textContent = t('button.sending');
+        try{
+          await sendSeasonWebhook(s.id);
+          toast('Discord', t('season.sent'),'ok');
+          logLine('Saison Webhook gesendet: ' + (s.name||s.id));
+        }catch(err){
+          if(err?.queued){
+            toast('Discord','Saison in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Saison ' + String(s.name || s.id));
+          }else{
+            toast('Discord', t('season.send_failed'),'err');
+            logLine('Saison Webhook Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
+        }finally{
+          btnSeasonMainWebhook.disabled = false;
+          btnSeasonMainWebhook.textContent = prev;
+        }
+      };
+    }
+    const btnSeasonMainForumCopy = el.querySelector('#btnSeasonMainForumCopy');
+    if(btnSeasonMainForumCopy){
+      btnSeasonMainForumCopy.onclick = async ()=>{
+        const s = getActiveSeason();
+        if(!s) return;
+        try{
+          const msg = buildSeasonWebhookMessage(s.id);
+          await copyTextToClipboard(msg.forumText);
+          toast('Forum', t('season.copied'),'ok');
+        }catch(err){
+          toast('Forum', t('copy.failed'),'err');
+          logLine('Saison Forum-Text Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+        }
+      };
+    }
   }
 
 
@@ -8050,7 +10193,7 @@ function renderRenntag(){
     await ensureBuiltInDefaultDriverSound();
   }
 
-  function clearRaceDataOnly(){
+  async function clearRaceDataOnly(){
     const fresh = defaultState();
     state.personalRecords = fresh.personalRecords;
     state.raceDay = fresh.raceDay;
@@ -8068,15 +10211,17 @@ function renderRenntag(){
       state.ui.freeDrivingEnabled = false;
     }
     state.usb.lastLines = [];
-    try{ localStorage.removeItem('ZN_PRES_SNAPSHOT'); }catch{}
+    try{ localStorage.removeItem(PRES_SNAPSHOT_KEY); }catch{}
     saveState();
+    await flushExternalAppDataPersist();
   }
 
   async function clearAllStoredData(){
     try{ stopAudioPreview(); }catch{}
+    await clearExternalAppDataStores();
     try{ localStorage.removeItem(LS_KEY); }catch{}
     try{ localStorage.removeItem(LS_UI); }catch{}
-    try{ localStorage.removeItem('ZN_PRES_SNAPSHOT'); }catch{}
+    try{ localStorage.removeItem(PRES_SNAPSHOT_KEY); }catch{}
     state = defaultState();
     ensureAutoEntities(state);
     if(typeof ui==='object' && ui){
@@ -8084,6 +10229,7 @@ function renderRenntag(){
       ui.logCollapsed = (window.innerWidth || 1600) < 900;
     }
     saveState();
+    await flushExternalAppDataPersist();
     saveUi();
     try{ await audioAssetClearAll(); }catch(err){ logLine('audio clear error: ' + (err?.message || err)); }
     await ensureBuiltInDefaultDriverSound();
@@ -8764,7 +10910,7 @@ function renderRenntag(){
     function readSettingsForm(){
       return {
         appName: el.querySelector('#appName').value.trim() || 'Zeitnahme 2.0',
-        baudRate: Math.max(1, parseInt(el.querySelector('#baud').value,10)||19200),
+        language: String(el.querySelector('#appLanguage')?.value || 'de').trim() === 'en' ? 'en' : 'de',
         allowIdleReads: false,
         discordWebhook: String(el.querySelector('#webhook')?.value || '').trim(),
         discordAutoSend: !!el.querySelector('#discordAutoSend')?.checked,
@@ -8782,11 +10928,14 @@ function renderRenntag(){
     }
 
     function commitSettingsDraft(draft, {notify=false, log=false} = {}){
+      const languageChanged = String(state.settings?.language || 'de') !== String(draft?.language || 'de');
       Object.assign(state.settings, draft);
       saveState();
+      renderTopMenu();
       renderHeader();
-      if(notify) toast('Einstellungen','Gespeichert.','ok');
-      if(log) logLine('Einstellungen gespeichert');
+      if(languageChanged) renderAll();
+      if(notify) toast(t('tab.pageEinstellungen'), t('settings.saved'),'ok');
+      if(log) logLine(t('settings.saved_log'));
       return draft;
     }
 
@@ -8816,22 +10965,22 @@ function renderRenntag(){
           <div class="settings-sectionlabel">Betrieb</div>
           <div class="settings-mini-grid">
             <div class="card settings-card" style="margin-bottom:12px">
-            <div class="card-h"><h2>Allgemein</h2></div>
+            <div class="card-h"><h2>${t('settings.general')}</h2></div>
             <div class="card-b">
-              <div class="settings-form-row">
-                <div class="field">
-                  <label>Name im Header</label>
-                  <input class="input" id="appName" value="${esc(state.settings.appName)}"/>
-                </div>
-                <div class="field">
-                  <label>USB Baudrate</label>
-                  <input class="input" id="baud" type="number" min="1" step="1" value="${esc(state.settings.baudRate)}"/>
-                  <div class="muted">Standard: 19200</div>
-                </div>
+              <div class="field" style="margin-bottom:0">
+                <label>${t('settings.header_name')}</label>
+                <input class="input" id="appName" value="${esc(state.settings.appName)}"/>
+              </div>
+              <div class="field" style="margin-top:12px; margin-bottom:0">
+                <label>${t('settings.language')}</label>
+                <select id="appLanguage">
+                  <option value="de" ${getUiLanguage()==='de'?'selected':''}>${t('settings.language_de')}</option>
+                  <option value="en" ${getUiLanguage()==='en'?'selected':''}>${t('settings.language_en')}</option>
+                </select>
               </div>
               <div class="settings-actionbar">
                 <div class="muted settings-action-note">Speichern uebernimmt alle editierbaren Felder in diesem Tab, inklusive Discord- und Massstab-Werten.</div>
-                <button class="btn btn-primary" id="saveSettings">Speichern</button>
+                <button class="btn btn-primary" id="saveSettings">${t('settings.save')}</button>
               </div>
             </div>
           </div>
@@ -8864,7 +11013,7 @@ function renderRenntag(){
           </div>
 
           <div class="settings-sectionlabel">Sicherung und Reset</div>
-          <div class="card settings-card" style="margin-bottom:12px">
+          <div class="card settings-card" id="settingsBackupCard" style="margin-bottom:12px">
             <div class="card-h"><h2>Backup / Restore</h2></div>
             <div class="card-b">
               <div class="muted">Backup exportiert alles als JSON. Restore importiert JSON und überschreibt den aktuellen Stand.</div>
@@ -8935,9 +11084,6 @@ function renderRenntag(){
                 <input class="input" id="discordThreadName" value="${esc(state.settings.discordThreadName || '{track}, {date} {time}') }" placeholder="{track}, {date} {time}"/>
                 <div class="muted">Platzhalter: {track}, {mode}, {session}, {type}, {season}, {renntag}, {date}, {time}</div>
               </div>
-              <div class="settings-actions">
-                <button class="btn" id="btnDiscordTest" type="button">Session-Test senden</button>
-              </div>
                 </div>
                 <div class="settings-subcard settings-discord-card">
                   <div class="settings-tag">Renntag</div>
@@ -8989,7 +11135,7 @@ function renderRenntag(){
             </div>
           </div>
 
-          <div class="card settings-card">
+          <div class="card settings-card" id="settingsDataExchangeCard">
             <div class="card-h"><h2>Import / Export</h2></div>
             <div class="card-b">
               <div class="settings-actions">
@@ -9010,33 +11156,90 @@ function renderRenntag(){
       </div>
     `;
 
+    const backupCard = el.querySelector('#settingsBackupCard .card-b');
+    if(backupCard){
+      backupCard.innerHTML = `
+        <div class="settings-subcards settings-subcards-compact">
+          <div class="settings-subcard">
+            <div class="settings-tag">App-Backup</div>
+            <h3>Komplette App-Daten sichern</h3>
+            <div class="muted settings-subcopy">Exportiert Sessions, Renntag, Saison, Stammdaten und Einstellungen als JSON. Die Audio-DB wird separat im Audio-Tab exportiert.</div>
+            <div class="settings-actions">
+              <button class="btn" id="btnBackup">App-Backup exportieren</button>
+            </div>
+          </div>
+          <div class="settings-subcard">
+            <div class="settings-tag">Restore</div>
+            <h3>Backup zurueckspielen</h3>
+            <div class="muted settings-subcopy">Akzeptiert aktuelle App-Backups und aeltere rohe State-Backups. Stammdaten- und Audio-Exporte gehoeren nicht hier hinein.</div>
+            <div class="settings-actions">
+              <label class="btn" style="cursor:pointer;">
+                Backup importieren
+                <input id="fileRestore" type="file" accept="application/json" style="display:none"/>
+              </label>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const dataExchangeCard = el.querySelector('#settingsDataExchangeCard .card-b');
+    if(dataExchangeCard){
+      dataExchangeCard.innerHTML = `
+        <div class="settings-subcards settings-subcards-compact">
+          <div class="settings-subcard">
+            <div class="settings-tag">Stammdaten</div>
+            <h3>Fahrer und Autos austauschen</h3>
+            <div class="muted settings-subcopy">Exportiert und importiert nur Stammdaten. Bestehende Datensaetze werden nicht ueberschrieben; doppelte Chip-IDs werden uebersprungen.</div>
+            <div class="settings-actions">
+              <button class="btn" id="btnExportMaster">Stammdaten exportieren</button>
+            </div>
+            <div class="hr"></div>
+            <div class="field" style="margin-bottom:0">
+              <label>Stammdaten-Datei</label>
+              <input class="input settings-file-input" type="file" id="importFile" accept="application/json"/>
+            </div>
+            <label class="row settings-toggle" style="margin-top:12px">
+              <input type="checkbox" id="importAllowDupNames"/>
+              <span>Duplikate nach Name erlauben</span>
+            </label>
+            <div class="settings-actions">
+              <button class="btn" id="btnImportMaster">Stammdaten importieren</button>
+            </div>
+          </div>
+          <div class="settings-note">
+            <div class="settings-tag">Audio</div>
+            <h3 style="margin:8px 0 0">Audio-DB separat</h3>
+            <div class="muted settings-subcopy">Sounds liegen in IndexedDB und werden deshalb im Audio-Tab separat exportiert und importiert.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const generalFormRow = el.querySelector('.settings-form-row');
+    const baudField = el.querySelector('#baud')?.closest('.field');
+    if(baudField){
+      baudField.remove();
+      if(generalFormRow) generalFormRow.style.gridTemplateColumns = '1fr';
+    }
+
+    const lapTimeCard = el.querySelector('#setLapTimeSource')?.closest('.settings-card');
+    if(lapTimeCard) lapTimeCard.remove();
+
+    const settingsStacks = el.querySelectorAll('.settings-stack');
+    const dataExchangeCardNode = el.querySelector('#settingsDataExchangeCard');
+    const backupCardNode = el.querySelector('#settingsBackupCard');
+    const resetCardNode = el.querySelector('#btnResetAll')?.closest('.settings-card');
+    if(settingsStacks.length >= 2 && dataExchangeCardNode && backupCardNode){
+      settingsStacks[0].insertBefore(dataExchangeCardNode, resetCardNode || null);
+      const rightSectionLabel = settingsStacks[1].querySelector('.settings-sectionlabel');
+      if(rightSectionLabel) rightSectionLabel.textContent = 'Integrationen';
+    }
+
     el.querySelector('#saveSettings').onclick=()=>{
       saveSettingsFromForm({ notify:true, log:true });
     };
 
-    const btnDiscordTest = el.querySelector('#btnDiscordTest');
-    if(btnDiscordTest){
-      btnDiscordTest.onclick = async ()=>{
-        const draft = readSettingsForm();
-        const webhookUrl = draft.discordWebhook;
-        if(!webhookUrl){ toast('Discord','Bitte zuerst eine Webhook-URL eintragen.','err'); return; }
-        commitSettingsDraft(draft);
-        btnDiscordTest.disabled = true;
-        const prev = btnDiscordTest.textContent;
-        btnDiscordTest.textContent = 'Sende Test...';
-        try{
-          await sendDiscordTestWebhook();
-          toast('Discord','Test erfolgreich gesendet.','ok');
-          logLine('Discord Test erfolgreich gesendet');
-        }catch(err){
-          toast('Discord','Test fehlgeschlagen.','err');
-          logLine('Discord Test Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
-        }finally{
-          btnDiscordTest.disabled = false;
-          btnDiscordTest.textContent = prev;
-        }
-      };
-    }
     const btnRaceDayWebhookTest = el.querySelector('#btnRaceDayWebhookTest');
     if(btnRaceDayWebhookTest){
       btnRaceDayWebhookTest.onclick = async ()=>{
@@ -9054,8 +11257,13 @@ function renderRenntag(){
           toast('Discord','Renntag erfolgreich gesendet.','ok');
           logLine('Renntag Test erfolgreich gesendet');
         }catch(err){
-          toast('Discord','Renntag-Test fehlgeschlagen.','err');
-          logLine('Renntag Test Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          if(err?.queued){
+            toast('Discord','Renntag-Test in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Renntag Test');
+          }else{
+            toast('Discord','Renntag-Test fehlgeschlagen.','err');
+            logLine('Renntag Test Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
         }finally{
           btnRaceDayWebhookTest.disabled = false;
           btnRaceDayWebhookTest.textContent = prev;
@@ -9079,8 +11287,13 @@ function renderRenntag(){
           toast('Discord','Saison erfolgreich gesendet.','ok');
           logLine('Saison Test erfolgreich gesendet');
         }catch(err){
-          toast('Discord','Saison-Test fehlgeschlagen.','err');
-          logLine('Saison Test Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          if(err?.queued){
+            toast('Discord','Saison-Test in Warteschlange. Versand folgt automatisch.','warn');
+            logLine('Discord Queue aktiv: Saison Test');
+          }else{
+            toast('Discord','Saison-Test fehlgeschlagen.','err');
+            logLine('Saison Test Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+          }
         }finally{
           btnSeasonWebhookTest.disabled = false;
           btnSeasonWebhookTest.textContent = prev;
@@ -9088,18 +11301,34 @@ function renderRenntag(){
       };
     }
 
-    el.querySelector('#btnBackup').onclick=()=>{
-      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href=url;
-      a.download = 'zeitnahme2_backup_' + new Date().toISOString().slice(0,10) + '.json';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 1500);
-      toast('Backup','Export gestartet.','ok');
-      logLine('Backup export gestartet');
+    const btnBackup = el.querySelector('#btnBackup');
+    if(btnBackup) btnBackup.onclick = ()=>{
+      exportAll();
+    };
+
+    const btnExportMaster = el.querySelector('#btnExportMaster');
+    if(btnExportMaster) btnExportMaster.onclick = ()=>{
+      exportStammdaten();
+    };
+
+    const btnImportMaster = el.querySelector('#btnImportMaster');
+    if(btnImportMaster) btnImportMaster.onclick = async ()=>{
+      const importFile = el.querySelector('#importFile');
+      const file = importFile?.files?.[0];
+      if(!file){ toast('Import','Bitte Datei auswaehlen.','warn'); return; }
+      try{
+        const allowDup = !!el.querySelector('#importAllowDupNames')?.checked;
+        await importStammdatenFile(file, allowDup);
+      }catch(err){
+        const code = String(err?.message || err || '');
+        const msg = code==='import_invalid_masterdata_file'
+          ? 'Ungueltige Stammdaten-Datei.'
+          : 'Konnte Datei nicht importieren.';
+        toast('Import', msg, 'err');
+        logLine('Import Fehler: ' + code);
+      } finally {
+        if(importFile) importFile.value = '';
+      }
     };
 
 
@@ -9110,8 +11339,8 @@ function renderRenntag(){
       renderAll();
     };
 
-    el.querySelector('#btnResetRaceData').onclick=()=>{
-      clearRaceDataOnly();
+    el.querySelector('#btnResetRaceData').onclick=async ()=>{
+      await clearRaceDataOnly();
       toast('Reset','Renndaten gelöscht.','ok');
       logLine('Reset: Nur Renndaten gelöscht');
       renderAll();
@@ -9128,19 +11357,18 @@ function renderRenntag(){
       const f = ev.target.files && ev.target.files[0];
       if(!f) return;
       try{
-        const parsed = JSON.parse(await f.text());
-        const restorePayload = (parsed && parsed.kind==='zeitnahme_full_v1' && parsed.state && typeof parsed.state==='object')
-          ? parsed.state
-          : parsed;
-        state = deepMerge(defaultState(), restorePayload);
-        ensureAutoEntities(state);
-        saveState();
-        toast('Restore','Import erfolgreich.','ok');
+        await restoreStateFromFile(f);
+        toast('Restore','Backup importiert.','ok');
         logLine('Restore import erfolgreich');
-        renderAll();
       }catch(e){
-        toast('Restore','Import fehlgeschlagen: ' + String(e?.message||e), 'err');
-        logLine('Restore Fehler: ' + String(e?.message||e));
+        const code = String(e?.message || e || '');
+        const msg = code==='restore_received_masterdata_export'
+          ? 'Das ist ein Stammdaten-Export. Bitte unten bei Stammdaten importieren.'
+          : (code==='restore_received_audio_export'
+            ? 'Das ist ein Audio-DB-Export. Bitte im Audio-Tab importieren.'
+            : 'Ungueltige Backup-Datei.');
+        toast('Restore', msg, 'err');
+        logLine('Restore Fehler: ' + code);
       } finally { ev.target.value=''; }
     };
 
@@ -9310,10 +11538,21 @@ sendPresenterSnapshot();
     backgroundUiRefresh(false);
   }, 250);
 
+  setInterval(()=>{
+    processDiscordQueue(false).catch(()=>{});
+  }, 30000);
+
   document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden) backgroundUiRefresh(true);
+    if(!document.hidden){
+      backgroundUiRefresh(true);
+      processDiscordQueue(false).catch(()=>{});
+    }
   });
-  window.addEventListener('focus', ()=>backgroundUiRefresh(true));
+  window.addEventListener('focus', ()=>{
+    backgroundUiRefresh(true);
+    processDiscordQueue(false).catch(()=>{});
+  });
+  window.addEventListener('online', ()=>scheduleDiscordQueueProcessing(250));
 
 // --------------------- Wire buttons ---------------------
   function wire(){
@@ -9366,29 +11605,11 @@ sendPresenterSnapshot();
     document.getElementById('btnToggleLog').onclick=toggleLogPane;
     const btnToggleLogDock = document.getElementById('btnToggleLogDock');
     if(btnToggleLogDock) btnToggleLogDock.onclick = toggleLogPane;
+    const btnPresenter = document.getElementById('btnPresenter');
+    if(btnPresenter) btnPresenter.onclick = ()=>openPresenterWindow();
 
     wireLogResizer();
   
-    // Import / Export (Stammdaten)
-    const btnExportMaster = document.getElementById('btnExportMaster');
-    if(btnExportMaster) btnExportMaster.onclick = ()=>exportStammdaten();
-    const btnExportAll = document.getElementById('btnExportAll');
-    if(btnExportAll) btnExportAll.onclick = ()=>exportAll();
-
-    const btnImportMaster = document.getElementById('btnImportMaster');
-    if(btnImportMaster) btnImportMaster.onclick = async ()=>{
-      const file = document.getElementById('importFile')?.files?.[0];
-      if(!file){ toast('Import','Bitte Datei auswählen.','warn'); return; }
-      try{
-        const txt = await file.text();
-        const obj = JSON.parse(txt);
-        const allowDup = !!document.getElementById('importAllowDupNames')?.checked;
-        importStammdatenFromJson(obj, allowDup);
-      }catch(e){
-        toast('Import','Konnte Datei nicht lesen.','err');
-      }
-    };
-
 }
 
   // --------------------- Render all ---------------------
@@ -9468,10 +11689,12 @@ sendPresenterSnapshot();
     }, true);
     // raceDelete delegated
 
-    // Import/Export (delegated, robust gegen Re-Renders)
-    document.addEventListener('click', async (ev)=>{
+    // Legacy Import/Export path intentionally disabled; handled in renderEinstellungen.
+    if(false) document.addEventListener('click', async (ev)=>{
       const t = ev.target;
       if(!t || !t.id) return;
+      // handled directly in renderEinstellungen / wire to avoid duplicate exports/imports
+      return;
 
       if(t.id==='btnExportMaster'){
         try{ exportStammdaten(); }catch(e){ toast('Export','Fehler.','err'); logLine('Export error: '+(e?.message||e)); }
@@ -9504,13 +11727,13 @@ sendPresenterSnapshot();
   state.ble.available = ('bluetooth' in navigator);
   setBleUi(false);
   window.addEventListener('resize', applyLogUi);
+  await hydrateExternalAppData();
   renderAll();
   wire();
   ensureBuiltInDefaultDriverSound().then(()=>{ try{ renderAudio(); }catch{} });
+  scheduleDiscordQueueProcessing(2000);
   requestAnimationFrame(tick);
   logLine('Zeitnahme 2.0 geladen (' + BUILD + ')');
   toast('Build', 'Geladen: ' + BUILD, 'ok');
   bleAutoReconnectOnLoad();
 })();
-    const btnPresenter = document.getElementById('btnPresenter');
-    if(btnPresenter) btnPresenter.onclick = ()=>openPresenterWindow();
