@@ -3964,7 +3964,7 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
   }
 
   async function sendRaceDayWebhook(raceDayId, opts={}){
-    const webhookUrl = String(opts.webhookUrl ?? state.settings?.discordRaceDayWebhook || '').trim();
+    const webhookUrl = String((opts.webhookUrl ?? state.settings?.discordRaceDayWebhook) || '').trim();
     if(!webhookUrl) throw new Error('Renntag Webhook fehlt');
     const msg = buildRaceDayWebhookMessage(raceDayId);
     const useThread = opts.useThread ?? state.settings?.discordRaceDayUseThread;
@@ -3992,7 +3992,7 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
   }
 
   async function sendSeasonWebhook(seasonId, opts={}){
-    const webhookUrl = String(opts.webhookUrl ?? state.settings?.discordSeasonWebhook || '').trim();
+    const webhookUrl = String((opts.webhookUrl ?? state.settings?.discordSeasonWebhook) || '').trim();
     if(!webhookUrl) throw new Error('Saison Webhook fehlt');
     const msg = buildSeasonWebhookMessage(seasonId);
     const useThread = opts.useThread ?? state.settings?.discordSeasonUseThread;
@@ -4087,7 +4087,7 @@ function getDriver(id){ return state.masterData.drivers.find(d=>d.id===id) || nu
     if(!summary) throw new Error('Session nicht gefunden');
     const race = summary.race;
     if(race.discordSentAt && !opts.force) return false;
-    const webhookUrl = String(opts.webhookUrl ?? state.settings?.discordWebhook || '').trim();
+    const webhookUrl = String((opts.webhookUrl ?? state.settings?.discordWebhook) || '').trim();
     if(!webhookUrl) throw new Error('Discord Webhook fehlt');
     const standings = summary.standings || [];
     const top = standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name||'—'} (${s.bestMs!=null ? msToTime(s.bestMs,3) : '—'})`).join('\n') || '—';
