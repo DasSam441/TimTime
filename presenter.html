@@ -156,6 +156,7 @@
 
 <script>
   const $ = (id)=>document.getElementById(id);
+  const PRES_SNAPSHOT_KEY = 'ZN_PRES_SNAPSHOT';
   function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[c])); }
   function calcAvgKmh(bestMs, trackLengthMeters, scaleDenominator){
     const lap = Number(bestMs || 0);
@@ -380,26 +381,29 @@ function buildEnduranceHtml(erows){
     bc = new BroadcastChannel('zeitnahme_presenter');
     bc.onmessage = (e)=>{ if(e?.data?.type==='snapshot') render(e.data.payload); };
   }catch{}
+  window.addEventListener('message', (e)=>{
+    if(e?.data?.type==='snapshot') render(e.data.payload);
+  });
   window.addEventListener('storage', (e)=>{
-    if(e.key==='ZN_PRES_SNAPSHOT' && e.newValue){
+    if(e.key===PRES_SNAPSHOT_KEY && e.newValue){
       try{ render(JSON.parse(e.newValue)); }catch{}
     }
   });
   try{
-    const raw = localStorage.getItem('ZN_PRES_SNAPSHOT');
+    const raw = localStorage.getItem(PRES_SNAPSHOT_KEY);
     if(raw) render(JSON.parse(raw));
   }catch{}
 
   // Fallback polling (some browsers/file:// don't fire storage/BC reliably)
   setInterval(()=>{
     try{
-      const raw = localStorage.getItem('ZN_PRES_SNAPSHOT');
+      const raw = localStorage.getItem(PRES_SNAPSHOT_KEY);
       if(!raw) return;
       if(window.__lastSnapRaw === raw) return;
       window.__lastSnapRaw = raw;
       render(JSON.parse(raw));
     }catch{}
-  }, 1000);
+  }, 500);
 
 </script>
 </body>
