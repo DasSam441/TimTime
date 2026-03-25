@@ -4,8 +4,8 @@
 
   function trimDiscordFieldValue(value, max=1024){
     const txt = String(value ?? '').trim();
-    if(txt.length <= max) return txt || 'Ã¢â‚¬â€';
-    return (txt.slice(0, Math.max(1, max-1)).trimEnd() + 'Ã¢â‚¬Â¦').slice(0, max);
+    if(txt.length <= max) return txt || '—';
+    return (txt.slice(0, Math.max(1, max-1)).trimEnd() + '…').slice(0, max);
   }
 
   function buildDiscordThreadName(baseName, ctx={}, templateOverride=''){
@@ -49,9 +49,9 @@
       if(winsLeader) awards.push(`Meiste Siege: ${winsLeader.driver.name} (${winsLeader.wins})`);
       if(podiumLeader) awards.push(`Meiste Podien: ${podiumLeader.driver.name} (${podiumLeader.podiums})`);
       if(fastestLeader) awards.push(`Meiste schnellste Runden: ${fastestLeader.driver.name} (${fastestLeader.fastestLapCount})`);
-      if(consistencyLeader && consistencyLeader.avgPos!=null) awards.push(`Konstantester Fahrer: ${consistencyLeader.driver.name} (ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Platz ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})`);
+      if(consistencyLeader && consistencyLeader.avgPos!=null) awards.push(`Konstantester Fahrer: ${consistencyLeader.driver.name} (Ø Platz ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})`);
       if(startsLeader) awards.push(`Meiste Starts: ${startsLeader.driver.name} (${startsLeader.races})`);
-      if(avgLapLeader && avgLapLeader.avgMs!=null) awards.push(`Beste ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})`);
+      if(avgLapLeader && avgLapLeader.avgMs!=null) awards.push(`Beste Ø Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})`);
     }
     const trackBestMap = new Map();
     for(const row of statRows){
@@ -60,7 +60,7 @@
         if(!(ms>0)) continue;
         const cur = trackBestMap.get(trackId);
         if(!cur || ms < cur.ms){
-          trackBestMap.set(trackId, { trackId, ms, driverName: row.driver?.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â' });
+          trackBestMap.set(trackId, { trackId, ms, driverName: row.driver?.name || '—' });
         }
       }
     }
@@ -76,7 +76,7 @@
     const recentRaceLines = seasonRaces.slice(-5).map((race, idx, arr)=>{
       const laps = getRelevantRaceLaps(race.id, state.session.laps || []);
       const standings = computeDriverStandingsGlobal(laps);
-      const winner = standings[0]?.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+      const winner = standings[0]?.name || '—';
       const fastestDid = getFastestDriverIdFromLaps(laps);
       const fastestDriver = fastestDid ? (getDriver(fastestDid)?.name || fastestDid) : '';
       const fastestLap = laps.filter(l=>{
@@ -88,7 +88,7 @@
       }, null);
       const parts = [`${seasonRaces.length - arr.length + idx + 1}. ${race.name || 'Rennen'}`, `Sieg: ${winner}`];
       if(fastestDriver && fastestLap?.lapMs) parts.push(`SR: ${fastestDriver} (${msToTime(fastestLap.lapMs,3)})`);
-      return parts.join(' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ');
+      return parts.join(' • ');
     });
     const standingsLines = topRows.map((row, idx)=>{
       const pieces = [
@@ -103,50 +103,50 @@
         `${row.podiums} Podien`,
         `${row.fastestLapCount} SR`
       ];
-      return pieces.join(' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ');
+      return pieces.join(' • ');
     });
     const highlightLines = [
       winsLeader ? `Meiste Siege: ${winsLeader.driver.name} (${winsLeader.wins})` : '',
       podiumLeader ? `Meiste Podien: ${podiumLeader.driver.name} (${podiumLeader.podiums})` : '',
       fastestLeader ? `Meiste SR: ${fastestLeader.driver.name} (${fastestLeader.fastestLapCount})` : '',
-      consistencyLeader && consistencyLeader.avgPos!=null ? `Konstantester Fahrer: ${consistencyLeader.driver.name} (ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})` : '',
+      consistencyLeader && consistencyLeader.avgPos!=null ? `Konstantester Fahrer: ${consistencyLeader.driver.name} (Ø ${String(consistencyLeader.avgPos.toFixed(2)).replace('.',',')})` : '',
       startsLeader ? `Meiste Starts: ${startsLeader.driver.name} (${startsLeader.races})` : '',
-      avgLapLeader && avgLapLeader.avgMs!=null ? `Beste ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})` : '',
+      avgLapLeader && avgLapLeader.avgMs!=null ? `Beste Ø Runde: ${avgLapLeader.driver.name} (${msToTime(avgLapLeader.avgMs,3)})` : '',
       champRaceLeader ? `Meiste Rennpunkte: ${champRaceLeader.driver.name} (${champRaceLeader.countedRacePoints || 0})` : '',
       champBonusLeader ? `Meiste Bonuspunkte: ${champBonusLeader.driver.name} (${champBonusLeader.countedBonusPoints || 0})` : ''
     ].filter(Boolean);
     const textLines = [
-      `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â  **Saison-Auswertung**`,
-      `**Saison:** ${season.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}`,
+      `🏁 **Saison-Auswertung**`,
+      `**Saison:** ${season.name || '—'}`,
       `**Renntage:** ${getRaceDaysForSeason(seasonId).length}`,
       `**Rennen:** ${stats.races.length}`,
       `**Fahrer:** ${statRows.length}`,
       `**Gewertete Rennen:** ${champ.settings.countedRaces || 'alle'} pro Fahrer`,
       `**Gewertete SR:** ${champ.settings.countedFastestLaps || 'alle'} pro Fahrer`,
-      `**Gestrichene Punkte:** Rennen ${totalDiscardedRacePoints} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ Bonus ${totalDiscardedBonusPoints}`,
-      `**Meisterschaft:** ${champLeader ? `${champLeader.driver.name} mit ${champLeader.totalPoints} Punkten` : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}`,
+      `**Gestrichene Punkte:** Rennen ${totalDiscardedRacePoints} • Bonus ${totalDiscardedBonusPoints}`,
+      `**Meisterschaft:** ${champLeader ? `${champLeader.driver.name} mit ${champLeader.totalPoints} Punkten` : '—'}`,
       '',
       '**Gesamtwertung**',
-      ...(standingsLines.length ? standingsLines : ['ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Keine gewerteten Rennen']),
+      ...(standingsLines.length ? standingsLines : ['— Keine gewerteten Rennen']),
       '',
       '**Highlights**',
-      ...(highlightLines.length ? highlightLines : ['ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Keine Daten']),
+      ...(highlightLines.length ? highlightLines : ['— Keine Daten']),
       '',
       '**Streckenbestzeiten**',
-      ...(trackBestLines.length ? trackBestLines : ['ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Keine Daten']),
+      ...(trackBestLines.length ? trackBestLines : ['— Keine Daten']),
       '',
       '**Letzte Rennen**',
-      ...(recentRaceLines.length ? recentRaceLines : ['ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Keine Daten'])
+      ...(recentRaceLines.length ? recentRaceLines : ['— Keine Daten'])
     ];
     const embeds = [{
       title: 'Saison-Auswertung',
-      description: trimDiscordFieldValue(`${season.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}\nKomplette Saisonstatistik und MeisterschaftsÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼bersicht`, 4096),
+      description: trimDiscordFieldValue(`${season.name || '—'}\nKomplette Saisonstatistik und Meisterschaftsübersicht`, 4096),
       color: 0x7d5cff,
       fields: [
-        { name:'ÃƒÆ’Ã†â€™Ãƒâ€¦Ã¢â‚¬Å“berblick', value: trimDiscordFieldValue(`Renntage: ${getRaceDaysForSeason(seasonId).length}\nRennen: ${stats.races.length}\nFahrer: ${statRows.length}\nGewertete Rennen gesamt: ${champ.races.length}`), inline:true },
+        { name:'Überblick', value: trimDiscordFieldValue(`Renntage: ${getRaceDaysForSeason(seasonId).length}\nRennen: ${stats.races.length}\nFahrer: ${statRows.length}\nGewertete Rennen gesamt: ${champ.races.length}`), inline:true },
         { name:'Punkte-Regel', value: trimDiscordFieldValue(`Gewertete Rennen: ${champ.settings.countedRaces || 'alle'} pro Fahrer\nGewertete SR: ${champ.settings.countedFastestLaps || 'alle'} pro Fahrer\nFaktor: ${champ.settings.factor}\nSR-Punkte: ${champ.settings.fastestLapPoints}`), inline:true },
         { name:'Streichresultate', value: trimDiscordFieldValue(`Gestrichene Rennpunkte: ${totalDiscardedRacePoints}\nGestrichene Bonuspunkte: ${totalDiscardedBonusPoints}`), inline:true },
-        { name:'MeisterschaftsfÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼hrer', value: trimDiscordFieldValue(champLeader ? `${champLeader.driver.name}\n${champLeader.totalPoints} Punkte\n${champLeader.wins} Siege ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ${champLeader.podiums} Podien` : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'), inline:true }
+        { name:'Meisterschaftsführer', value: trimDiscordFieldValue(champLeader ? `${champLeader.driver.name}\n${champLeader.totalPoints} Punkte\n${champLeader.wins} Siege • ${champLeader.podiums} Podien` : '—'), inline:true }
       ],
       footer: { text:'TimTime Saison Webhook' },
       timestamp: new Date(createdAt).toISOString()
@@ -360,7 +360,7 @@
       if(!prev || ms < prev.bestMs){
         trackMap.set(did, {
           driverId: did,
-          driverName: getDriver(did)?.name || lap?.driverName || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â',
+          driverName: getDriver(did)?.name || lap?.driverName || '—',
           bestMs: ms,
           lapId: lap?.id || '',
           raceId: lap?.raceId || '',
@@ -391,10 +391,10 @@
     const placementHeaders = Array.from({length:maxPos}, (_,i)=>`${i+1}.`);
     const table1Rows = driverStats.map(row=>({
       driverId: row.driver.id,
-      driverName: row.driver.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â',
+      driverName: row.driver.name || '—',
       cells: tracks.map(group=>{
         const ms = Number(row.bestByTrack?.[group.trackId]);
-        return Number.isFinite(ms) && ms>0 ? msToTime(ms,3) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+        return Number.isFinite(ms) && ms>0 ? msToTime(ms,3) : '—';
       })
     }));
     const table2Rows = driverStats.map(row=>({
@@ -417,16 +417,16 @@
     const { rd, tracks, createdAt, table1Rows } = data;
     const embeds = [{
       title: 'Renntag-Auswertung',
-      description: trimDiscordFieldValue(`${rd.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}\n${tracks.length} Strecke${tracks.length===1?'':'n'} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ${table1Rows.length} Fahrer`, 4096),
+      description: trimDiscordFieldValue(`${rd.name || '—'}\n${tracks.length} Strecke${tracks.length===1?'':'n'} • ${table1Rows.length} Fahrer`, 4096),
       color: 0x4ea1ff,
       fields: [
-        { name:'Inhalt', value: trimDiscordFieldValue(`1) Schnellste Runde je Fahrer und Strecke\n2) Wie oft Platz 1, 2, 3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦\n3) Wie oft schnellste Rennrunde`, 1024), inline:false }
+        { name:'Inhalt', value: trimDiscordFieldValue(`1) Schnellste Runde je Fahrer und Strecke\n2) Wie oft Platz 1, 2, 3 …\n3) Wie oft schnellste Rennrunde`, 1024), inline:false }
       ],
       footer: { text:'TimTime Renntag Webhook' },
       timestamp: new Date(createdAt).toISOString(),
       image: { url:'attachment://renntag_auswertung.png' }
     }];
-    const forumText = [`ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â **Renntag-Auswertung**`,`**Renntag:** ${rd.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}`,`**Datum:** ${new Date(createdAt).toLocaleDateString('de-DE')}`,`**Strecken:** ${tracks.map(t=>t.trackDisplayName || t.trackName).join(', ') || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}`].join('\n');
+    const forumText = [`🏁 **Renntag-Auswertung**`,`**Renntag:** ${rd.name || '—'}`,`**Datum:** ${new Date(createdAt).toLocaleDateString('de-DE')}`,`**Strecken:** ${tracks.map(t=>t.trackDisplayName || t.trackName).join(', ') || '—'}`].join('\n');
     const payload = { username: state.settings?.appName || 'TimTime', content:'', embeds };
     const threadName = buildDiscordThreadName(rd.name || 'Renntag', { type:'Renntag-Auswertung', raceDay: rd.name || 'Renntag', track: tracks[0]?.trackDisplayName || 'Strecke', createdAt }, state.settings?.discordRaceDayThreadName || '');
     return { payload, forumText, threadName, raceDay: rd, tracks, tableData:data };
@@ -461,8 +461,8 @@
     const webhookUrl = String((opts.webhookUrl ?? state.settings?.discordWebhook) || '').trim();
     if(!webhookUrl) throw new Error('Discord Webhook fehlt');
     const standings = summary.standings || [];
-    const top = standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name||'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'} (${s.bestMs!=null ? msToTime(s.bestMs,3) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'})`).join('\n') || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
-    const bestText = summary.bestLap ? `${driverNameByIdGlobal(driverKeyForLapGlobal(summary.bestLap))} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ${msToTime(summary.bestLap.lapMs,3)}` : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    const top = standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name||'—'} (${s.bestMs!=null ? msToTime(s.bestMs,3) : '—'})`).join('\n') || '—';
+    const bestText = summary.bestLap ? `${driverNameByIdGlobal(driverKeyForLapGlobal(summary.bestLap))} • ${msToTime(summary.bestLap.lapMs,3)}` : '—';
     const payload = {
       username: state.settings?.appName || 'TimTime',
       embeds: [{
@@ -470,7 +470,7 @@
         description: summary.subtitle,
         color: summary.freeDriving ? 5814783 : 5153791,
         fields: [
-          { name: summary.freeDriving ? 'Top Bestzeiten' : 'Podium', value: top || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â', inline: false },
+          { name: summary.freeDriving ? 'Top Bestzeiten' : 'Podium', value: top || '—', inline: false },
           { name:'Schnellste Runde', value: bestText, inline:true },
           { name:'Beendet', value: formatDiscordDateTime(race.endedAt), inline:true }
         ],
@@ -563,7 +563,7 @@
             logLine('Discord Queue verschoben: ' + String(job.kind || 'job') + ' in ' + Math.round((job.nextAttemptAt - now())/1000) + 's');
           }else{
             await deleteDiscordQueueJob(job.id);
-            logLine('Discord Queue verworfen: ' + String(job.kind || 'job') + ' ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ' + String(err?.message || err || 'Unbekannter Fehler'));
+            logLine('Discord Queue verworfen: ' + String(job.kind || 'job') + ' • ' + String(err?.message || err || 'Unbekannter Fehler'));
           }
         }
       }
@@ -662,7 +662,7 @@
       bestLap: { lapMs: bests[0], driverId: standings[0].id, carId: '' },
       chart,
       title: 'Rennergebnis',
-      subtitle: `${getTrackPlainName(track)} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ Discord Testlauf`
+      subtitle: `${getTrackPlainName(track)} • Discord Testlauf`
     };
   }
 
@@ -676,12 +676,12 @@
       content: '',
       embeds: [{
         title: 'Discord Test',
-        description: 'Fake-Daten fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼r Webhook-Test',
+        description: 'Fake-Daten für Webhook-Test',
         color: 5153791,
         fields: [
           { name:'Strecke', value:getTrackPlainName(summary.track), inline:true },
           { name:'Modus', value:'Rennen (Test)', inline:true },
-          { name:'Podium', value: summary.standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name} (${msToTime(s.bestMs,3)})`).join('\n') || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â', inline:false }
+          { name:'Podium', value: summary.standings.slice(0,3).map((s,idx)=>`${idx+1}. ${s.name} (${msToTime(s.bestMs,3)})`).join('\n') || '—', inline:false }
         ],
         image: { url: 'attachment://discord_test_summary.png' },
         footer: { text:'TimTime Discord Test' },
@@ -767,7 +767,7 @@
     ta.select();
     const ok = document.execCommand('copy');
     ta.remove();
-    if(!ok) throw new Error('Clipboard nicht verfÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼gbar');
+    if(!ok) throw new Error('Clipboard nicht verfügbar');
     return true;
   }
 

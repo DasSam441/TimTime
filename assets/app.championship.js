@@ -84,21 +84,15 @@ function compareDriverStandingRows(a,b, opts={}){
     bindShared();
   if((b.laps||0)!==(a.laps||0)) return (b.laps||0)-(a.laps||0);
 
-  // Bei gleicher Rundenzahl gilt sportlich schlicht:
-  // wer die Ziellinie zuerst ein weiteres Mal ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼berquert hat, liegt vorne.
-  // Deshalb ist die letzte gÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼ltige ZielÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼berfahrt der wichtigste Tiebreaker ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ
-  // nicht die aufsummierte Gesamtzeit, die durch HTML/MRC-Mix kurzfristig
-  // springen kann. FrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼here lastTs = weiter vorne.
-  const al = Number.isFinite(a.lastTs) ? Number(a.lastTs) : Number.MAX_SAFE_INTEGER;
-  const bl = Number.isFinite(b.lastTs) ? Number(b.lastTs) : Number.MAX_SAFE_INTEGER;
-  if(al!==bl) return al-bl;
-
   const at = a.totalMs==null ? 9e15 : a.totalMs;
   const bt = b.totalMs==null ? 9e15 : b.totalMs;
   if(at!==bt) return at-bt;
   const ab = a.bestMs==null ? 9e15 : a.bestMs;
   const bb = b.bestMs==null ? 9e15 : b.bestMs;
   if(ab!==bb) return ab-bb;
+  const al = Number.isFinite(a.lastTs) ? Number(a.lastTs) : Number.MAX_SAFE_INTEGER;
+  const bl = Number.isFinite(b.lastTs) ? Number(b.lastTs) : Number.MAX_SAFE_INTEGER;
+  if(al!==bl) return al-bl;
   const am = a.lastMs==null ? 9e15 : a.lastMs;
   const bm = b.lastMs==null ? 9e15 : b.lastMs;
   if(am!==bm) return am-bm;
@@ -201,23 +195,6 @@ function computeTeamPointsStandings(laps){
 
 function computeTeamStandingsGlobal(laps, mode, finish){
     bindShared();
-  if(mode==='team'){
-    const rows = computeTeamPointsStandings(laps);
-    // carry finished marker from finish runtime if available
-    if(finish && finish.pending && finish.activeCarIds && finish.finishedCarIds){
-      const teams = state.modes.team?.teams || [];
-      rows.forEach(r=>{
-        const t = teams.find(x=>x.id===r.id);
-        const driverIds = (t?.driverIds||[]).map(x=>String(x||'').trim()).filter(Boolean);
-        const carIds = new Set();
-        driverIds.forEach(did=>getCarsByDriver(did).forEach(c=>carIds.add(c.id)));
-        const active = (finish.activeCarIds||[]).filter(cid=>carIds.has(cid));
-        if(active.length) r.finished = active.every(cid=>!!finish.finishedCarIds[cid]);
-      });
-    }
-    return rows;
-  }
-
   const teams = (mode==='team') ? (state.modes.team?.teams||[]) : (state.modes.endurance?.teams||[]);
   const raceId = (laps && laps[0] && laps[0].raceId) ? laps[0].raceId : '';
   const rows = teams.map(t=>{
@@ -747,31 +724,31 @@ function renderRenntagAuswertung(){
                   <button class="btn" id="btnRaceDayForumCopy" type="button">Forum-Text kopieren</button>
                   <button class="btn" id="btnRaceDayWebhook" type="button">Renntag an Discord senden</button>
                 </div>
-                <div class="muted small" style="margin-top:8px">Vorschau von Text und Bild, die an Discord gesendet werden. FÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼r Forum-KanÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤le kann optional ein Thread/Post erstellt werden.</div>
+                <div class="muted small" style="margin-top:8px">Vorschau von Text und Bild, die an Discord gesendet werden. Für Forum-Kanäle kann optional ein Thread/Post erstellt werden.</div>
               </div>
             </div>
           </div>
-          <div class="muted small" style="margin-top:8px">Sendet pro Strecke alle Fahrer mit ihrer besten Runde dieses Renntags. FÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼r Forum-KanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤le kann optional ein Thread/Post erstellt werden.</div>
+          <div class="muted small" style="margin-top:8px">Sendet pro Strecke alle Fahrer mit ihrer besten Runde dieses Renntags. Für Forum-Kanäle kann optional ein Thread/Post erstellt werden.</div>
           <div class="hr"></div>
           <div class="renntag-highlights-grid" style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; align-items:stretch">
-            <div class="card"><div class="card-b"><div class="muted small">Meiste Siege</div><div style="font-weight:800; font-size:20px; margin-top:4px">${winsLeader?esc(winsLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${winsLeader?`${winsLeader.p1} Sieg${winsLeader.p1===1?'':'e'}`:'Keine Daten'}</div></div></div>
-            <div class="card"><div class="card-b"><div class="muted small">Meiste Podien</div><div style="font-weight:800; font-size:20px; margin-top:4px">${podiumLeader?esc(podiumLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${podiumLeader?`${podiumLeader.podiums} Podien`:'Keine Daten'}</div></div></div>
-            <div class="card"><div class="card-b"><div class="muted small">Meiste schnellste Runden</div><div style="font-weight:800; font-size:20px; margin-top:4px">${fastestLeader?esc(fastestLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${fastestLeader?`${fastestLeader.fastestLapCount}x schnellste Runde`:'Keine Daten'}</div></div></div>
-            <div class="card"><div class="card-b"><div class="muted small">Konstant am stÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤rksten</div><div style="font-weight:800; font-size:20px; margin-top:4px">${consistencyLeader?esc(consistencyLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${consistencyLeader && consistencyLeader.avgPos!=null?`ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Platz ${esc((consistencyLeader.avgPos||0).toFixed(2).replace('.',','))}`:'Keine Daten'}</div></div></div>
+            <div class="card"><div class="card-b"><div class="muted small">Meiste Siege</div><div style="font-weight:800; font-size:20px; margin-top:4px">${winsLeader?esc(winsLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${winsLeader?`${winsLeader.p1} Sieg${winsLeader.p1===1?'':'e'}`:'Keine Daten'}</div></div></div>
+            <div class="card"><div class="card-b"><div class="muted small">Meiste Podien</div><div style="font-weight:800; font-size:20px; margin-top:4px">${podiumLeader?esc(podiumLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${podiumLeader?`${podiumLeader.podiums} Podien`:'Keine Daten'}</div></div></div>
+            <div class="card"><div class="card-b"><div class="muted small">Meiste schnellste Runden</div><div style="font-weight:800; font-size:20px; margin-top:4px">${fastestLeader?esc(fastestLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${fastestLeader?`${fastestLeader.fastestLapCount}x schnellste Runde`:'Keine Daten'}</div></div></div>
+            <div class="card"><div class="card-b"><div class="muted small">Konstant am stärksten</div><div style="font-weight:800; font-size:20px; margin-top:4px">${consistencyLeader?esc(consistencyLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${consistencyLeader && consistencyLeader.avgPos!=null?`Ø Platz ${esc((consistencyLeader.avgPos||0).toFixed(2).replace('.',','))}`:'Keine Daten'}</div></div></div>
           </div>
           <div class="hr"></div>
           <table class="table">
-            <thead><tr><th>Fahrer</th><th>Rennen</th><th>Siege</th><th>Podien</th><th>Schnellste Runde</th><th>ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Platzierung</th><th>ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Runde</th><th>Bestzeiten je Strecke</th></tr></thead>
+            <thead><tr><th>Fahrer</th><th>Rennen</th><th>Siege</th><th>Podien</th><th>Schnellste Runde</th><th>Ø Platzierung</th><th>Ø Runde</th><th>Bestzeiten je Strecke</th></tr></thead>
             <tbody>
               ${stats.map(x=>`
                 <tr>
-                  <td>${esc(x.driver.name||'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â')}</td>
+                  <td>${esc(x.driver.name||'—')}</td>
                   <td>${x.races||0}</td>
                   <td>${x.p1||0}</td>
                   <td>${x.podiums||0}</td>
                   <td>${x.fastestLapCount||0}</td>
-                  <td>${x.avgPos!=null ? esc(x.avgPos.toFixed(2).replace('.',',')) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-                  <td class="mono">${x.avgMs!=null ? esc(msToTime(x.avgMs,3)) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
+                  <td>${x.avgPos!=null ? esc(x.avgPos.toFixed(2).replace('.',',')) : '—'}</td>
+                  <td class="mono">${x.avgMs!=null ? esc(msToTime(x.avgMs,3)) : '—'}</td>
                   <td>${renderBestByTrackCell(x.bestByTrack)}</td>
                 </tr>
               `).join('') || `<tr><td colspan="8" class="muted">Keine Daten.</td></tr>`}
@@ -786,13 +763,13 @@ function renderRenntagAuswertung(){
           <div class="field">
             <label>Session</label>
             <select id="analysisRaceSel">
-              ${races.map(r=>`<option value="${esc(r.id)}" ${r.id===selectedRaceId?'selected':''}>${esc(r.name)} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ ${esc(getRaceTrackName(r))}</option>`).join('') || `<option value="">(keine Sessions)</option>`}
+              ${races.map(r=>`<option value="${esc(r.id)}" ${r.id===selectedRaceId?'selected':''}>${esc(r.name)} • ${esc(getRaceTrackName(r))}</option>`).join('') || `<option value="">(keine Sessions)</option>`}
             </select>
           </div>
           <div class="row wrap" style="gap:10px; margin-top:12px">
             <button class="btn" id="btnAnalysisSessionDiscord" type="button" ${race?'':'disabled'}>Session an Discord senden</button>
           </div>
-          <div class="muted small" style="margin-top:8px">Sendet die aktuell ausgewÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤hlte Session mit Summary-Grafik und RundenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼bersicht an den Session-Webhook.</div>
+          <div class="muted small" style="margin-top:8px">Sendet die aktuell ausgewählte Session mit Summary-Grafik und Rundenübersicht an den Session-Webhook.</div>
           ${race ? `
             <div class="hr"></div>
             <div class="muted">${race.endedAt ? 'Podium' : 'Aktuelle Platzierung'}</div>
@@ -1206,32 +1183,32 @@ function renderRenntagAuswertung(){
               </div>
             </div>
           </div>
-          <div class="muted small" style="margin-bottom:14px">Sendet Gesamtwertung und Awards an Discord. FÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼r Forum-KanÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤le kann optional direkt ein Thread/Post erstellt werden.</div>
+          <div class="muted small" style="margin-bottom:14px">Sendet Gesamtwertung und Awards an Discord. Für Forum-Kanäle kann optional direkt ein Thread/Post erstellt werden.</div>
 
           <div class="card" style="margin-bottom:14px">
             <div class="card-h"><h3>Saison Statistik</h3></div>
             <div class="card-b">
               <div class="renntag-highlights-grid" style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; align-items:stretch">
-                <div class="card"><div class="card-b"><div class="muted small">Meiste Siege</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statWinsLeader?esc(statWinsLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${statWinsLeader?`${statWinsLeader.wins} Sieg${statWinsLeader.wins===1?'':'e'}`:'Keine Daten'}</div></div></div>
-                <div class="card"><div class="card-b"><div class="muted small">Meiste Podien</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statPodiumLeader?esc(statPodiumLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${statPodiumLeader?`${statPodiumLeader.podiums} Podien`:'Keine Daten'}</div></div></div>
-                <div class="card"><div class="card-b"><div class="muted small">Meiste schnellste Runden</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statFastestLeader?esc(statFastestLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${statFastestLeader?`${statFastestLeader.fastestLapCount}x schnellste Runde`:'Keine Daten'}</div></div></div>
-                <div class="card"><div class="card-b"><div class="muted small">Konstantester Fahrer</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statConsistencyLeader?esc(statConsistencyLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${statConsistencyLeader && statConsistencyLeader.avgPos!=null?`ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Platz ${esc((statConsistencyLeader.avgPos||0).toFixed(2).replace('.',','))}`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Meiste Siege</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statWinsLeader?esc(statWinsLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${statWinsLeader?`${statWinsLeader.wins} Sieg${statWinsLeader.wins===1?'':'e'}`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Meiste Podien</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statPodiumLeader?esc(statPodiumLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${statPodiumLeader?`${statPodiumLeader.podiums} Podien`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Meiste schnellste Runden</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statFastestLeader?esc(statFastestLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${statFastestLeader?`${statFastestLeader.fastestLapCount}x schnellste Runde`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Konstantester Fahrer</div><div style="font-weight:800; font-size:20px; margin-top:4px">${statConsistencyLeader?esc(statConsistencyLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${statConsistencyLeader && statConsistencyLeader.avgPos!=null?`Ø Platz ${esc((statConsistencyLeader.avgPos||0).toFixed(2).replace('.',','))}`:'Keine Daten'}</div></div></div>
               </div>
               <div class="hr"></div>
               <div class="card" style="margin-bottom:12px"><div class="card-b"><div class="muted small" style="margin-bottom:8px">Saisonverlauf</div>${renderSeasonPointsChart(stats, 'stats')}</div></div>
               <table class="table">
-                <thead><tr><th>#</th><th>Fahrer</th><th>Starts</th><th>Siege</th><th>Podien</th><th>Schnellste Runden</th><th>ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Platzierung</th><th>ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ Runde</th><th>Bestzeiten je Strecke</th></tr></thead>
+                <thead><tr><th>#</th><th>Fahrer</th><th>Starts</th><th>Siege</th><th>Podien</th><th>Schnellste Runden</th><th>Ø Platzierung</th><th>Ø Runde</th><th>Bestzeiten je Strecke</th></tr></thead>
                 <tbody>
                   ${statRows.map((x,idx)=>`
                     <tr>
                       <td>${idx+1}</td>
-                      <td><span style="display:inline-flex; align-items:center; gap:8px"><span style="width:10px; height:10px; border-radius:999px; background:${x.color}; display:inline-block"></span>${esc(x.driver.name||'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â')}</span></td>
+                      <td><span style="display:inline-flex; align-items:center; gap:8px"><span style="width:10px; height:10px; border-radius:999px; background:${x.color}; display:inline-block"></span>${esc(x.driver.name||'—')}</span></td>
                       <td>${x.races||0}</td>
                       <td>${x.wins||0}</td>
                       <td>${x.podiums||0}</td>
                       <td>${x.fastestLapCount||0}</td>
-                      <td>${x.avgPos!=null ? esc(x.avgPos.toFixed(2).replace('.',',')) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-                      <td class="mono">${x.avgMs!=null ? esc(msToTime(x.avgMs,3)) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
+                      <td>${x.avgPos!=null ? esc(x.avgPos.toFixed(2).replace('.',',')) : '—'}</td>
+                      <td class="mono">${x.avgMs!=null ? esc(msToTime(x.avgMs,3)) : '—'}</td>
                       <td>${renderBestByTrackCell(x.bestByTrack)}</td>
                     </tr>
                   `).join('') || `<tr><td colspan="9" class="muted">Keine Daten.</td></tr>`}
@@ -1247,34 +1224,34 @@ function renderRenntagAuswertung(){
                 <div class="field">
                   <label>Gewertete Rennen</label>
                   <input class="input" id="championshipCountedRaces" type="number" min="0" step="1" value="${champSettings.countedRaces}" />
-                  <div class="muted small" style="margin-top:6px">0 = alle, sonst zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤hlen die punktstÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤rksten Rennen.</div>
+                  <div class="muted small" style="margin-top:6px">0 = alle, sonst zählen die punktstärksten Rennen.</div>
                 </div>
                 <div class="field">
                   <label>Gewertete schnellste Runden</label>
                   <input class="input" id="championshipCountedFastestLaps" type="number" min="0" step="1" value="${champSettings.countedFastestLaps}" />
-                  <div class="muted small" style="margin-top:6px">0 = alle Bonus-Ergebnisse zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤hlen.</div>
+                  <div class="muted small" style="margin-top:6px">0 = alle Bonus-Ergebnisse zählen.</div>
                 </div>
                 <div class="field">
                   <label>Punktefaktor pro Fahrer</label>
                   <input class="input" id="championshipFactor" type="number" min="1" step="1" value="${champSettings.factor}" />
-                  <div class="muted small" style="margin-top:6px">Bei 10 Fahrern: 1. Platz = 10 ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Faktor.</div>
+                  <div class="muted small" style="margin-top:6px">Bei 10 Fahrern: 1. Platz = 10 × Faktor.</div>
                 </div>
                 <div class="field">
-                  <label>Punkte fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼r schnellste Runde</label>
+                  <label>Punkte für schnellste Runde</label>
                   <input class="input" id="championshipFastestLapPoints" type="number" min="0" step="1" value="${champSettings.fastestLapPoints}" />
-                  <div class="muted small" style="margin-top:6px">Bonuspunkte pro Rennen fÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼r die schnellste Runde.</div>
+                  <div class="muted small" style="margin-top:6px">Bonuspunkte pro Rennen für die schnellste Runde.</div>
                 </div>
               </div>
               <div class="row wrap" style="gap:10px; margin-top:10px">
                 <span class="badge">Nur echte Rennen dieser Saison</span>
-                <span class="badge">Standard: 5 Rennen ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ Faktor 4 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ 1 Punkt ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ 5 Bonus-Wertungen</span>
+                <span class="badge">Standard: 5 Rennen • Faktor 4 • 1 Punkt • 5 Bonus-Wertungen</span>
               </div>
               <div class="hr"></div>
               <div class="renntag-highlights-grid" style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; align-items:stretch">
-                <div class="card"><div class="card-b"><div class="muted small">MeisterschaftsfÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼hrer</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champLeader?esc(champLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${champLeader?`${champLeader.totalPoints} Punkte`:'Keine Daten'}</div></div></div>
-                <div class="card"><div class="card-b"><div class="muted small">Meiste Rennpunkte</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champRaceLeader?esc(champRaceLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${champRaceLeader?`${champRaceLeader.countedRacePoints} Punkte`:'Keine Daten'}</div></div></div>
-                <div class="card"><div class="card-b"><div class="muted small">Meiste Bonuspunkte</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champBonusLeader?esc(champBonusLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${champBonusLeader?`${champBonusLeader.countedBonusPoints} Punkte`:'Keine Daten'}</div></div></div>
-                <div class="card"><div class="card-b"><div class="muted small">StÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤rkste Punkteausbeute</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champStreakLeader?esc(champStreakLeader.driver.name):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</div><div class="muted" style="margin-top:4px">${champStreakLeader?`${champStreakLeader.totalPoints} Gesamtpunkte`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Meisterschaftsführer</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champLeader?esc(champLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${champLeader?`${champLeader.totalPoints} Punkte`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Meiste Rennpunkte</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champRaceLeader?esc(champRaceLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${champRaceLeader?`${champRaceLeader.countedRacePoints} Punkte`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Meiste Bonuspunkte</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champBonusLeader?esc(champBonusLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${champBonusLeader?`${champBonusLeader.countedBonusPoints} Punkte`:'Keine Daten'}</div></div></div>
+                <div class="card"><div class="card-b"><div class="muted small">Stärkste Punkteausbeute</div><div style="font-weight:800; font-size:20px; margin-top:4px">${champStreakLeader?esc(champStreakLeader.driver.name):'—'}</div><div class="muted" style="margin-top:4px">${champStreakLeader?`${champStreakLeader.totalPoints} Gesamtpunkte`:'Keine Daten'}</div></div></div>
               </div>
               <div class="hr"></div>
               <div class="card" style="margin-bottom:12px"><div class="card-b"><div class="muted small" style="margin-bottom:8px">Meisterschaftsverlauf</div>${renderSeasonPointsChart(champ, 'championship')}</div></div>
