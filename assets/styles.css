@@ -30,6 +30,19 @@ body{
   backdrop-filter: blur(10px);
   position:sticky; top:0; z-index:50;
 }
+.global-warning-bar{
+  position:sticky;
+  top:65px;
+  z-index:49;
+  padding:10px 14px;
+  border-bottom:1px solid rgba(248,113,113,.28);
+  background:linear-gradient(180deg, rgba(127,29,29,.92), rgba(91,22,22,.92));
+  color:#fee2e2;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.01em;
+  box-shadow:0 10px 24px rgba(0,0,0,.22);
+}
 .brand{display:flex; align-items:center; gap:10px; min-width:220px}
 .stopwatch{
   width:44px; height:44px; display:flex; align-items:center; justify-content:center;
@@ -81,6 +94,8 @@ body{
   border-color: rgba(239,68,68,.28);
 }
 .btn-usb{display:flex; align-items:center; gap:8px; padding:10px 12px}
+.transport-label-wrap{display:flex; flex-direction:column; align-items:flex-start; line-height:1.1}
+.transport-meta{font-size:11px; opacity:.78; margin-top:2px; white-space:nowrap}
 .dot{width:10px; height:10px; border-radius:999px; background:var(--red); box-shadow:0 0 0 4px rgba(239,68,68,.12)}
 .dot.green{background:var(--green); box-shadow:0 0 0 4px rgba(34,197,94,.14)}
 .dot.amber{background:var(--amber); box-shadow:0 0 0 4px rgba(234,179,8,.16)}
@@ -342,6 +357,36 @@ body{
 .settings-subcard h3{margin:4px 0 0; font-size:16px}
 .settings-subcopy{margin-top:8px}
 .settings-actions{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:12px}
+.settings-folder-hero{
+  border-color:rgba(96,165,250,.28);
+  background:
+    radial-gradient(circle at top right, rgba(56,189,248,.14), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(250,204,21,.08), transparent 28%),
+    linear-gradient(180deg, rgba(15,23,42,.82), rgba(15,23,42,.64));
+  box-shadow:0 16px 36px rgba(2,6,23,.18);
+}
+.settings-folder-hero h3{
+  font-size:20px;
+  line-height:1.1;
+}
+.settings-folder-path{
+  margin-top:12px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(2,6,23,.28);
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:12px;
+  word-break:break-word;
+}
+.settings-folder-actions{
+  justify-content:flex-start;
+}
+.settings-folder-btn{
+  min-height:46px;
+  padding:12px 18px;
+  font-size:14px;
+}
 .settings-file-input{max-width:420px}
 .settings-toggle{display:flex; gap:8px; align-items:flex-start}
 .settings-mini-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px}

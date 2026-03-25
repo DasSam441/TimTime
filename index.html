@@ -23,12 +23,16 @@
         <span class="dot" id="usbDot"></span>
         <span id="usbLabel">USB verbinden</span>
       </button>
-      <button class="btn btn-usb" id="btnBt" title="Bluetooth verbinden">
-        <span class="dot" id="btDot"></span>
-        <span id="btLabel">BT verbinden</span>
-      </button>
+          <button class="btn btn-usb" id="btnBt" title="Bluetooth verbinden">
+            <span class="dot" id="btDot"></span>
+            <span class="transport-label-wrap">
+              <span id="btLabel">BT verbinden</span>
+              <span class="transport-meta" id="btMeta"></span>
+            </span>
+          </button>
     </div>
   </header>
+  <div class="global-warning-bar" id="globalProjectDataWarning" style="display:none"></div>
 
   <div class="layout" id="layoutRoot">
     <aside class="side" aria-label="Session Control">
@@ -189,7 +193,38 @@
 
   <div class="toast-host" id="toastHost" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="assets/app.constants.js"></script>
+  <script src="assets/app.i18n.js"></script>
+  <script src="assets/app.utils.js"></script>
+  <script src="assets/app.state.js"></script>
+  <script src="assets/app.storage.js"></script>
+  <script src="assets/app.discord.js"></script>
+  <script src="assets/app.presenter.js"></script>
+  <script src="assets/app.dashboard.js"></script>
+  <script src="assets/app.session.js"></script>
+  <script src="assets/app.reader.js"></script>
+  <script src="assets/app.audio.js"></script>
+  <script src="assets/app.dom.js"></script>
+  <script src="assets/app.results.js"></script>
+  <script src="assets/app.championship.js"></script>
+  <script src="assets/app.transport.js"></script>
+  <script src="assets/app.core.js"></script>
+  <script src="assets/app.entities.js"></script>
+  <script src="assets/app.runtime.js"></script>
+  <script src="assets/app.locale.js"></script>
+  <script src="assets/app.defaults.js"></script>
+  <script src="assets/app.pages.js"></script>
+  <script src="assets/app.bootstrap.js"></script>
+  <script src="assets/app.shell.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>
             
+
+
+
+
+
+
+
+

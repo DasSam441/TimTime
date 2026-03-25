@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="de">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Zeitnahme – Presenter</title>
+  <title>Zeitnahme - Presenter</title>
   <link rel="stylesheet" href="assets/styles.css"/>
   <style>
     body{background:#05070d}
@@ -157,7 +157,66 @@
 <script>
   const $ = (id)=>document.getElementById(id);
   const PRES_SNAPSHOT_KEY = 'ZN_PRES_SNAPSHOT';
-  function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[c])); }
+  function demojibake(value){
+    let out = String(value ?? '');
+    const replacements = [
+      [/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â/g, '—'],
+      [/ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢/g, '•'],
+      [/Ã¢â‚¬â€/g, '—'],
+      [/Ã¢â‚¬Â¦/g, '…'],
+      [/â€¢/g, '•'],
+      [/â€”/g, '—'],
+      [/â€“/g, '–'],
+      [/â€¦/g, '…'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ/g, 'Ø'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼/g, 'ü'],
+      [/ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼/g, 'ü'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¶/g, 'ö'],
+      [/ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶/g, 'ö'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤/g, 'ä'],
+      [/ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤/g, 'ä'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€¦Ã¢â‚¬Å“/g, 'Ü'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚â€“/g, 'Ö'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚â€ž/g, 'Ä'],
+      [/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Å¸/g, 'ß'],
+      [/Ã„/g, 'Ä'],
+      [/Ã–/g, 'Ö'],
+      [/Ãœ/g, 'Ü'],
+      [/Ã¤/g, 'ä'],
+      [/Ã¶/g, 'ö'],
+      [/Ã¼/g, 'ü'],
+      [/ÃŸ/g, 'ß']
+    ];
+    for(const [pattern, replacement] of replacements){
+      out = out.replace(pattern, replacement);
+    }
+    const badPattern = /Ã|Â|â|�/;
+    const score = (s)=>{
+      if(!s) return 0;
+      let n = 0;
+      for(const ch of String(s)){
+        const code = ch.charCodeAt(0);
+        if(ch === 'Ã' || ch === 'Â' || ch === 'â' || ch === '�') n += 3;
+        else if((code >= 0 && code < 32 && ch !== '\n' && ch !== '\r' && ch !== '\t')) n += 5;
+      }
+      return n;
+    };
+    if(!badPattern.test(out)) return out;
+    for(let i=0;i<4;i++){
+      try{
+        const bytes = new Uint8Array(Array.from(out, ch => ch.charCodeAt(0) & 0xff));
+        const next = new TextDecoder('utf-8', { fatal:false }).decode(bytes);
+        if(!next || next === out) break;
+        if(score(next) >= score(out)) break;
+        out = next;
+        if(!badPattern.test(out)) break;
+      }catch{
+        break;
+      }
+    }
+    return out;
+  }
+  function esc(s){ return demojibake(String(s??'')).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[c])); }
   function calcAvgKmh(bestMs, trackLengthMeters, scaleDenominator){
     const lap = Number(bestMs || 0);
     const len = Number(trackLengthMeters || 0);
@@ -280,7 +339,7 @@ function buildEnduranceHtml(erows){
   function buildRowsHtml(snapshot){
     return (snapshot.rows || []).map((r)=> {
       const style = r.bg ? ` style="background:${r.bg};color:${r.tc||'#fff'}"` : '';
-      const subCars = snapshot.isFreeDriving ? (r.carBestRows || []).map(c=>`
+      const subCars = (r.carBestRows || []).length ? (r.carBestRows || []).map(c=>`
         <div class="carSubNode">
           <div class="carSubName">${esc(c.carName||'—')}</div>
           <div class="carSubBest pmono">${esc(msToTime(c.bestMs, 3))}</div>
@@ -313,8 +372,28 @@ function buildEnduranceHtml(erows){
   function setTextIfChanged(id, value){
     const el = $(id);
     if(!el) return;
-    const next = value == null || value === '' ? '—' : String(value);
+    let nextValue = value;
+    if(nextValue && typeof nextValue === 'object'){
+      nextValue = nextValue.text || nextValue.value || nextValue.label || '';
+    }
+    const next = nextValue == null || nextValue === '' ? '—' : demojibake(String(nextValue));
     if(el.textContent !== next) el.textContent = next;
+  }
+
+  function sanitizePresenterText(root=document.body){
+    const maybeBad = /Ã|Â|â|�/;
+    try{
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while((node = walker.nextNode())){
+        const raw = String(node?.nodeValue || '');
+        if(!raw || !maybeBad.test(raw)) continue;
+        const tag = String(node.parentNode?.nodeName || '').toUpperCase();
+        if(tag === 'SCRIPT' || tag === 'STYLE') continue;
+        const next = demojibake(raw);
+        if(next && next !== raw) node.nodeValue = next;
+      }
+    }catch{}
   }
 
   function render(snapshot){
@@ -374,6 +453,7 @@ function buildEnduranceHtml(erows){
       window.__lastTableSig = tableSig;
       $('pTable').innerHTML = buildRowsHtml(snapshot);
     }
+    sanitizePresenterText(document.body);
   }
 
   let bc=null;
@@ -415,3 +495,5 @@ function buildEnduranceHtml(erows){
 </script>
 </body>
 </html>
+
+
