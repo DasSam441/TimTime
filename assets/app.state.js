@@ -723,7 +723,7 @@ return merged;
     const projectState = await loadProjectStateSnapshot();
     if(projectState){
       if(isRestoreStateCandidate(projectState)){
-        const mergedProjectState = deepMerge(defaultState(), projectState);
+        const mergedProjectState = deepMerge(projectState, state);
         ensureAutoEntities(mergedProjectState);
         replaceStateInPlace(mergedProjectState);
       }
@@ -1063,6 +1063,21 @@ return merged;
         try{ logLine('Projekt-Speicher Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }catch{}
       });
     }, 250);
+  }
+
+  async function flushProjectStatePersist(snapshot){
+    bindShared();
+    if(_projectStatePersistTimer){
+      clearTimeout(_projectStatePersistTimer);
+      _projectStatePersistTimer = null;
+    }
+    try{
+      await persistProjectStateSnapshot(snapshot || state);
+      return true;
+    }catch(err){
+      try{ logLine('Projekt-Speicher Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }catch{}
+      return false;
+    }
   }
 
   async function getProjectDataStatus(){
@@ -1495,5 +1510,5 @@ function downloadJson(filename, obj){
 
 
   // --------------------- Toast + Log ---------------------
-  return { defaultState, deepMerge, ensureAutoEntities, loadState, getState, replaceStateInPlace, idbRequestToPromise, getAppDataDb, buildExternalAppDataSnapshot, buildExternalStateChunkSnapshot, isStateChunkEmpty, buildSlimPersistedState, replaceObjectStoreData, persistExternalAppDataSnapshot, persistExternalStateChunkSnapshot, readAllFromObjectStore, loadExternalAppDataSnapshot, loadExternalStateChunkSnapshot, scheduleExternalAppDataPersist, flushExternalAppDataPersist, clearExternalAppDataStores, hydrateExternalAppData, saveState, chooseProjectDataDirectory, loadProjectStateSnapshot, persistProjectStateSnapshot, getProjectDataStatus, _deepFindArrays, _isDriverArray, _isCarArray, getDriversArray, getCarsArray, ensureDriversArray, ensureCarsArray, downloadJson, exportStammdaten, buildFullExportState, exportAll, normalizeName, normalizeChipCode, isRestoreStateCandidate, extractRestorePayload, importStammdatenFile, restoreStateFromFile, importStammdatenFromJsonLegacy1, importStammdatenFromJsonLegacy2, importStammdatenFromJson };
+  return { defaultState, deepMerge, ensureAutoEntities, loadState, getState, replaceStateInPlace, idbRequestToPromise, getAppDataDb, buildExternalAppDataSnapshot, buildExternalStateChunkSnapshot, isStateChunkEmpty, buildSlimPersistedState, replaceObjectStoreData, persistExternalAppDataSnapshot, persistExternalStateChunkSnapshot, readAllFromObjectStore, loadExternalAppDataSnapshot, loadExternalStateChunkSnapshot, scheduleExternalAppDataPersist, flushExternalAppDataPersist, clearExternalAppDataStores, hydrateExternalAppData, saveState, chooseProjectDataDirectory, loadProjectStateSnapshot, persistProjectStateSnapshot, flushProjectStatePersist, getProjectDataStatus, _deepFindArrays, _isDriverArray, _isCarArray, getDriversArray, getCarsArray, ensureDriversArray, ensureCarsArray, downloadJson, exportStammdaten, buildFullExportState, exportAll, normalizeName, normalizeChipCode, isRestoreStateCandidate, extractRestorePayload, importStammdatenFile, restoreStateFromFile, importStammdatenFromJsonLegacy1, importStammdatenFromJsonLegacy2, importStammdatenFromJson };
 })();

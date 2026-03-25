@@ -671,6 +671,7 @@
       state.audio.sayPersonalBestSeason = !!el.querySelector('#sayPersonalBestSeason').checked;
       state.audio.sayPersonalBestDay = !!el.querySelector('#sayPersonalBestDay').checked;
       saveState();
+      try{ if(typeof flushProjectStatePersist === 'function') flushProjectStatePersist(); }catch{}
       toast(t('audio.title', null, 'Audio'), t('common.saved', null, 'Saved.'), 'ok');
     };
 
@@ -687,6 +688,7 @@
       meta.fadeOutMs = Math.max(0, parseInt(el.querySelector('#audioFadeOutMs')?.value||0,10) || 0);
       meta.updatedAt = now();
       saveState();
+      try{ if(typeof flushProjectStatePersist === 'function') flushProjectStatePersist(); }catch{}
       return meta;
     };
 
