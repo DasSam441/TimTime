@@ -9,6 +9,7 @@ window.TIMTIME_OBS = (function(){
   let _pending = new Map();
   let _lastAutoScene = '';
   let _lastAutoKey = '';
+  let _lastTextPayloadKey = '';
   let _lastConnectError = '';
   let _reconnectTimer = null;
 
@@ -56,7 +57,12 @@ window.TIMTIME_OBS = (function(){
       sceneTraining: String(s.obsSceneTraining || '').trim(),
       sceneQualifying: String(s.obsSceneQualifying || '').trim(),
       sceneRace: String(s.obsSceneRace || '').trim(),
-      scenePodium: String(s.obsScenePodium || '').trim()
+      scenePodium: String(s.obsScenePodium || '').trim(),
+      sourceTimer: String(s.obsSourceTimer || '').trim(),
+      sourceMode: String(s.obsSourceMode || '').trim(),
+      sourceTrack: String(s.obsSourceTrack || '').trim(),
+      sourceLeader: String(s.obsSourceLeader || '').trim(),
+      sourceLap: String(s.obsSourceLap || '').trim()
     };
   }
 
@@ -242,6 +248,19 @@ window.TIMTIME_OBS = (function(){
     return true;
   }
 
+  async function setObsTextSource(sourceName, textValue){
+    const inputName = String(sourceName || '').trim();
+    if(!inputName) return false;
+    await sendObsRequest('SetInputSettings', {
+      inputName,
+      inputSettings: {
+        text: String(textValue ?? '')
+      },
+      overlay: true
+    });
+    return true;
+  }
+
   function getCurrentRace(){
     bindShared();
     if(typeof getRaceById === 'function' && state.session?.currentRaceId){
@@ -318,6 +337,39 @@ window.TIMTIME_OBS = (function(){
     return true;
   }
 
+  function buildObsTextPayload(){
+    bindShared();
+    const cfg = getObsSettings();
+    const snapshot = (typeof buildPresenterSnapshot === 'function') ? buildPresenterSnapshot() : {};
+    const rows = Array.isArray(snapshot?.rows) ? snapshot.rows : [];
+    const leader = rows[0] || null;
+    const lapText = leader && Number.isFinite(Number(leader.laps)) ? String(leader.laps) : '0';
+    return {
+      [cfg.sourceTimer]: String(snapshot?.timerText || '').trim(),
+      [cfg.sourceMode]: String(snapshot?.modeLabel || '').trim(),
+      [cfg.sourceTrack]: String(snapshot?.trackName || '').trim(),
+      [cfg.sourceLeader]: leader ? String(leader.name || '').trim() : '',
+      [cfg.sourceLap]: lapText
+    };
+  }
+
+  async function syncObsTextSources(force=false){
+    bindShared();
+    const cfg = getObsSettings();
+    if(!cfg.enabled) return false;
+    const payload = buildObsTextPayload();
+    const entries = Object.entries(payload).filter(([name])=>String(name || '').trim());
+    if(!entries.length) return false;
+    const payloadKey = JSON.stringify(entries);
+    if(!force && payloadKey === _lastTextPayloadKey) return false;
+    await connectObs(true);
+    for(const [sourceName, value] of entries){
+      await setObsTextSource(sourceName, value);
+    }
+    _lastTextPayloadKey = payloadKey;
+    return true;
+  }
+
   async function obsAutoConnectOnLoad(){
     const cfg = getObsSettings();
     if(!cfg.enabled) return false;
@@ -336,6 +388,8 @@ window.TIMTIME_OBS = (function(){
     sendObsRequest,
     setObsScene,
     testObsScene,
+    setObsTextSource,
+    syncObsTextSources,
     syncObsAutoScene,
     obsAutoConnectOnLoad
   };

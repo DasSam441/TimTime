@@ -488,6 +488,7 @@ function tick(){
 
 sendPresenterSnapshot();
     try{ if(typeof syncObsAutoScene === 'function') syncObsAutoScene(false); }catch{}
+    try{ if(typeof syncObsTextSources === 'function') syncObsTextSources(false); }catch{}
     loopTick();
     singleTick();
     teamTick();
@@ -877,6 +878,7 @@ sendPresenterSnapshot();
       try{ await obsAutoConnectOnLoad(); }catch{}
       await usbProbeOnLoad();
       try{ await syncObsAutoScene(true); }catch{}
+      try{ await syncObsTextSources(true); }catch{}
       ensureBuiltInDefaultDriverSound().then(()=>{ try{ renderAudio(); }catch{} });
     scheduleDiscordQueueProcessing(2000);
     requestAnimationFrame(tick);

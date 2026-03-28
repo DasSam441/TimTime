@@ -1181,6 +1181,11 @@ function renderRenntag(){
         obsSceneQualifying: String(el.querySelector('#obsSceneQualifying')?.value || '').trim(),
         obsSceneRace: String(el.querySelector('#obsSceneRace')?.value || '').trim(),
         obsScenePodium: String(el.querySelector('#obsScenePodium')?.value || '').trim(),
+        obsSourceTimer: String(el.querySelector('#obsSourceTimer')?.value || '').trim(),
+        obsSourceMode: String(el.querySelector('#obsSourceMode')?.value || '').trim(),
+        obsSourceTrack: String(el.querySelector('#obsSourceTrack')?.value || '').trim(),
+        obsSourceLeader: String(el.querySelector('#obsSourceLeader')?.value || '').trim(),
+        obsSourceLap: String(el.querySelector('#obsSourceLap')?.value || '').trim(),
         scaleDenominator: Math.max(1, parseInt(el.querySelector('#setScaleDenominator').value,10)||50),
         lapTimeSource:'mrc'
       };
@@ -1449,6 +1454,33 @@ function renderRenntag(){
                   <div class="settings-actions">
                     <button class="btn" id="btnObsTestRace" type="button">Rennszene testen</button>
                     <button class="btn" id="btnObsTestPodium" type="button">Podium testen</button>
+                  </div>
+                </div>
+                <div class="settings-subcard">
+                  <div class="settings-tag">Textquellen</div>
+                  <h3>Live-Daten in OBS</h3>
+                  <div class="field">
+                    <label>Timer-Quelle</label>
+                    <input class="input" id="obsSourceTimer" value="${esc(state.settings.obsSourceTimer || '')}" placeholder="OBS Textquelle fuer Timer"/>
+                  </div>
+                  <div class="field">
+                    <label>Modus-Quelle</label>
+                    <input class="input" id="obsSourceMode" value="${esc(state.settings.obsSourceMode || '')}" placeholder="OBS Textquelle fuer Modus"/>
+                  </div>
+                  <div class="field">
+                    <label>Strecken-Quelle</label>
+                    <input class="input" id="obsSourceTrack" value="${esc(state.settings.obsSourceTrack || '')}" placeholder="OBS Textquelle fuer Strecke"/>
+                  </div>
+                  <div class="field">
+                    <label>Fuehrender / P1</label>
+                    <input class="input" id="obsSourceLeader" value="${esc(state.settings.obsSourceLeader || '')}" placeholder="OBS Textquelle fuer P1"/>
+                  </div>
+                  <div class="field">
+                    <label>Runden / P1</label>
+                    <input class="input" id="obsSourceLap" value="${esc(state.settings.obsSourceLap || '')}" placeholder="OBS Textquelle fuer Runden"/>
+                  </div>
+                  <div class="settings-actions">
+                    <button class="btn" id="btnObsSyncText" type="button">Textquellen jetzt aktualisieren</button>
                   </div>
                 </div>
               </div>
@@ -1763,6 +1795,20 @@ function renderRenntag(){
         refreshObsStatus();
         toast('OBS','Podiumsszene konnte nicht gesetzt werden.','err');
         logLine('OBS Test Podium Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    };
+
+    const btnObsSyncText = el.querySelector('#btnObsSyncText');
+    if(btnObsSyncText) btnObsSyncText.onclick = async ()=>{
+      commitSettingsDraft(readSettingsForm());
+      try{
+        await syncObsTextSources(true);
+        refreshObsStatus();
+        toast('OBS','Textquellen aktualisiert.','ok');
+      }catch(err){
+        refreshObsStatus();
+        toast('OBS','Textquellen konnten nicht gesetzt werden.','err');
+        logLine('OBS Textquellen Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
       }
     };
 

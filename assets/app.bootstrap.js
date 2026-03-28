@@ -321,6 +321,8 @@
   const sendObsRequest = ObsApi.sendObsRequest || (async()=>false);
   const setObsScene = ObsApi.setObsScene || (async()=>false);
   const testObsScene = ObsApi.testObsScene || (async()=>false);
+  const setObsTextSource = ObsApi.setObsTextSource || (async()=>false);
+  const syncObsTextSources = ObsApi.syncObsTextSources || (async()=>false);
   const syncObsAutoScene = ObsApi.syncObsAutoScene || (async()=>false);
   const obsAutoConnectOnLoad = ObsApi.obsAutoConnectOnLoad || (async()=>false);
   const loadUi = ShellApi.loadUi || (()=>({}));
@@ -521,6 +523,8 @@
     sendObsRequest,
     setObsScene,
     testObsScene,
+    setObsTextSource,
+    syncObsTextSources,
     syncObsAutoScene,
     obsAutoConnectOnLoad,
     getUsbPort,
@@ -625,7 +629,6 @@
 // --------------------- Transport ---------------------
 // --------------------- UI Shell ---------------------
 })();
-
 
 
 
