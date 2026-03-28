@@ -470,7 +470,7 @@ function buildPodiumConfettiHtml(){
         <div class="muted">${t('dashboard.team_intro')} ${raceMode==='endurance' ? t('dashboard.team_intro_endurance') : t('dashboard.team_intro_regular')}</div>
         <div class="hr"></div>
         <table class="table dashBig">
-          <thead><tr><th>#</th><th>${t('dashboard.team')}</th><th>${t('dashboard.laps')}</th><th>${t('dashboard.total_time')}</th><th>${t('dashboard.best')}</th><th>${t('dashboard.last')}</th></tr></thead>
+          <thead><tr><th>#</th><th>${t('dashboard.team')}</th><th>${t('dashboard.laps')}</th><th>${t('dashboard.total_time')}</th><th>${t('dashboard.best')}</th><th>${t('dashboard.average_kmh')}</th><th>${t('dashboard.last')}</th></tr></thead>
           <tbody>${rowsHtml || `<tr><td colspan="7" class="muted">${t('dashboard.no_team_laps')}</td></tr>`}</tbody>
         </table>
       `;
@@ -803,5 +803,4 @@ function buildPodiumConfettiHtml(){
 
   return { resolveRaceId, isLiveRace, renderSessionControl, renderDashboard };
 })();
-
 

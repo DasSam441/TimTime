@@ -63,6 +63,7 @@
   const ReaderApi = window.TIMTIME_READER || {};
   const ChampionshipApi = window.TIMTIME_CHAMPIONSHIP || {};
   const TransportApi = window.TIMTIME_TRANSPORT || {};
+  const ObsApi = window.TIMTIME_OBS || {};
   const ShellApi = window.TIMTIME_SHELL || {};
   const CoreApi = window.TIMTIME_CORE || {};
   const EntitiesApi = window.TIMTIME_ENTITIES || {};
@@ -314,6 +315,14 @@
   const usbAutoConnect = TransportApi.usbAutoConnect;
   const kickTransportAutoReconnect = TransportApi.kickTransportAutoReconnect || (async()=>{});
   const startTransportReconnectWatch = TransportApi.startTransportReconnectWatch || (()=>{});
+  const getObsStatus = ObsApi.getObsStatus || (()=>({ available:false, connected:false, connecting:false, scene:'', lastError:'' }));
+  const connectObs = ObsApi.connectObs || (async()=>false);
+  const disconnectObs = ObsApi.disconnectObs || (async()=>false);
+  const sendObsRequest = ObsApi.sendObsRequest || (async()=>false);
+  const setObsScene = ObsApi.setObsScene || (async()=>false);
+  const testObsScene = ObsApi.testObsScene || (async()=>false);
+  const syncObsAutoScene = ObsApi.syncObsAutoScene || (async()=>false);
+  const obsAutoConnectOnLoad = ObsApi.obsAutoConnectOnLoad || (async()=>false);
   const loadUi = ShellApi.loadUi || (()=>({}));
   const saveUi = ShellApi.saveUi || (()=>{});
   const applyLogUi = ShellApi.applyLogUi || (()=>{});
@@ -431,6 +440,7 @@
     ReaderApi,
     ChampionshipApi,
     TransportApi,
+    ObsApi,
     ShellApi,
     CoreApi,
     EntitiesApi,
@@ -505,6 +515,14 @@
     bleAutoReconnectOnLoad,
     kickTransportAutoReconnect,
     startTransportReconnectWatch,
+    getObsStatus,
+    connectObs,
+    disconnectObs,
+    sendObsRequest,
+    setObsScene,
+    testObsScene,
+    syncObsAutoScene,
+    obsAutoConnectOnLoad,
     getUsbPort,
     setUsbPort,
     getUsbReader,
@@ -527,6 +545,7 @@
     renderSaisonAuswertung,
     renderEinstellungen,
     getRaceDaysForSeason,
+    getRaceById,
     computeTeamPointsStandings,
     computeDriverStandingsGlobal,
     computeTeamStandingsGlobal,
@@ -606,8 +625,6 @@
 // --------------------- Transport ---------------------
 // --------------------- UI Shell ---------------------
 })();
-
-
 
 
 

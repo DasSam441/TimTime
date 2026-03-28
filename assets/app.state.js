@@ -2,6 +2,7 @@ window.TIMTIME_STATE = (function(){
   'use strict';
   function bindShared(){ Object.assign(globalThis, window.TIMTIME_SHARED || {}); }
   const LS_KEY = 'zeitnahme2_state_v3';
+  const LS_PROJECT_STATE_MIRROR_KEY = 'zeitnahme2_project_state_mirror_v1';
   const APP_DATA_DB_VERSION = 3;
   const APP_DATA_DB_NAME = 'zeitnahme2_app_data_v1';
   const APP_DATA_AVATAR_STORE = 'driverAvatars';
@@ -276,6 +277,30 @@ s.season = { seasons:[{id,name:'Saison '+year,status:'active',createdAt:safeNow(
       const raw = localStorage.getItem(LS_KEY);
       if(!raw) return defaultState();
       const parsed = JSON.parse(raw);
+      const localProjectMirror = loadLocalProjectStateMirror();
+      if(localProjectMirror && typeof localProjectMirror === 'object'){
+        const mergeKeys = ['settings','ui','transport','masterData','raceDay','season','tracks','session','personalRecords','modes','audio','media'];
+        for(const key of mergeKeys){
+          if(parsed[key] == null && localProjectMirror[key] != null){
+            parsed[key] = JSON.parse(JSON.stringify(localProjectMirror[key]));
+          }
+        }
+        if((!parsed.masterData || typeof parsed.masterData !== 'object' || ((!Array.isArray(parsed.masterData.drivers) || !parsed.masterData.drivers.length) && (!Array.isArray(parsed.masterData.cars) || !parsed.masterData.cars.length))) && localProjectMirror.masterData){
+          parsed.masterData = JSON.parse(JSON.stringify(localProjectMirror.masterData));
+        }
+        if((!parsed.raceDay || !Array.isArray(parsed.raceDay.raceDays) || !parsed.raceDay.raceDays.length) && localProjectMirror.raceDay){
+          parsed.raceDay = JSON.parse(JSON.stringify(localProjectMirror.raceDay));
+        }
+        if((!parsed.season || !Array.isArray(parsed.season.seasons) || !parsed.season.seasons.length) && localProjectMirror.season){
+          parsed.season = JSON.parse(JSON.stringify(localProjectMirror.season));
+        }
+        if((!parsed.tracks || !Array.isArray(parsed.tracks.tracks) || !parsed.tracks.tracks.length) && localProjectMirror.tracks){
+          parsed.tracks = JSON.parse(JSON.stringify(localProjectMirror.tracks));
+        }
+        if((!parsed.audio || typeof parsed.audio !== 'object') && localProjectMirror.audio){
+          parsed.audio = JSON.parse(JSON.stringify(localProjectMirror.audio));
+        }
+      }
       const localChunkMirror = loadLocalStateChunkMirror();
       if(localChunkMirror && typeof localChunkMirror === 'object'){
         if((!parsed.masterData || typeof parsed.masterData !== 'object' || ((!Array.isArray(parsed.masterData.drivers) || !parsed.masterData.drivers.length) && (!Array.isArray(parsed.masterData.cars) || !parsed.masterData.cars.length))) && !isStateChunkEmpty('masterData', localChunkMirror.masterData)){
@@ -367,6 +392,14 @@ s.season = { seasons:[{id,name:'Saison '+year,status:'active',createdAt:safeNow(
       if(typeof merged.settings?.discordSeasonUseThread!=='boolean') merged.settings.discordSeasonUseThread = false;
       if(typeof merged.settings?.discordRaceDayThreadName!=='string') merged.settings.discordRaceDayThreadName = '{type} • {date}';
       if(typeof merged.settings?.discordSeasonThreadName!=='string') merged.settings.discordSeasonThreadName = '{type} • {season}';
+      if(typeof merged.settings?.obsEnabled!=='boolean') merged.settings.obsEnabled = false;
+      if(typeof merged.settings?.obsHost!=='string') merged.settings.obsHost = '127.0.0.1';
+      if(!Number.isFinite(Number(merged.settings?.obsPort))) merged.settings.obsPort = 4455;
+      if(typeof merged.settings?.obsPassword!=='string') merged.settings.obsPassword = '';
+      if(typeof merged.settings?.obsSceneTraining!=='string') merged.settings.obsSceneTraining = '';
+      if(typeof merged.settings?.obsSceneQualifying!=='string') merged.settings.obsSceneQualifying = '';
+      if(typeof merged.settings?.obsSceneRace!=='string') merged.settings.obsSceneRace = '';
+      if(typeof merged.settings?.obsScenePodium!=='string') merged.settings.obsScenePodium = '';
       if(!merged.media) merged.media = { driverAvatars:{} };
       if(!merged.media.driverAvatars) merged.media.driverAvatars = {};
       if(!merged.modes?.team?.teams) merged.modes.team.teams = defaultState().modes.team.teams;
@@ -446,6 +479,7 @@ return merged;
   let _appDataPersistInFlight = null;
   let _appDataHydrated = false;
   let _projectStatePersistTimer = null;
+  let _projectStatePersistInFlight = null;
 
   function idbRequestToPromise(req){
     bindShared();
@@ -563,6 +597,20 @@ return merged;
         idleLaps: []
       }
     };
+  }
+
+  function buildLocalProjectStateMirror(srcState=state){
+    bindShared();
+    const files = buildProjectStateFilesSnapshot(srcState);
+    if(files.session && typeof files.session === 'object'){
+      files.session = {
+        ...files.session,
+        laps: [],
+        idleLaps: []
+      };
+    }
+    delete files.audioAssets;
+    return files;
   }
 
   function replaceObjectStoreData(tx, storeName, rows){
@@ -723,7 +771,7 @@ return merged;
     const projectState = await loadProjectStateSnapshot();
     if(projectState){
       if(isRestoreStateCandidate(projectState)){
-        const mergedProjectState = deepMerge(projectState, state);
+        const mergedProjectState = deepMerge(state, projectState);
         ensureAutoEntities(mergedProjectState);
         replaceStateInPlace(mergedProjectState);
       }
@@ -803,6 +851,7 @@ return merged;
       ensureAutoEntities(state);
       localStorage.setItem(LS_KEY, JSON.stringify(buildSlimPersistedState()));
       saveLocalStateChunkMirror(buildExternalStateChunkSnapshot());
+      saveLocalProjectStateMirror(buildLocalProjectStateMirror());
       scheduleProjectStatePersist(buildFullExportState());
     }catch(err){
       logLine('State Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
@@ -826,6 +875,25 @@ return merged;
     bindShared();
     try{
       localStorage.setItem(LS_STATE_CHUNKS_KEY, JSON.stringify(snapshot || {}));
+    }catch{}
+  }
+
+  function loadLocalProjectStateMirror(){
+    bindShared();
+    try{
+      const raw = localStorage.getItem(LS_PROJECT_STATE_MIRROR_KEY);
+      if(!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    }catch{
+      return null;
+    }
+  }
+
+  function saveLocalProjectStateMirror(snapshot){
+    bindShared();
+    try{
+      localStorage.setItem(LS_PROJECT_STATE_MIRROR_KEY, JSON.stringify(snapshot || {}));
     }catch{}
   }
 
@@ -1059,8 +1127,10 @@ return merged;
     if(_projectStatePersistTimer) clearTimeout(_projectStatePersistTimer);
     _projectStatePersistTimer = setTimeout(()=>{
       _projectStatePersistTimer = null;
-      persistProjectStateSnapshot(snapshot).catch(err=>{
+      _projectStatePersistInFlight = persistProjectStateSnapshot(snapshot).catch(err=>{
         try{ logLine('Projekt-Speicher Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }catch{}
+      }).finally(()=>{
+        _projectStatePersistInFlight = null;
       });
     }, 250);
   }
@@ -1071,10 +1141,16 @@ return merged;
       clearTimeout(_projectStatePersistTimer);
       _projectStatePersistTimer = null;
     }
+    if(_projectStatePersistInFlight){
+      try{ await _projectStatePersistInFlight; }catch{}
+    }
     try{
-      await persistProjectStateSnapshot(snapshot || state);
+      _projectStatePersistInFlight = persistProjectStateSnapshot(snapshot || state);
+      await _projectStatePersistInFlight;
+      _projectStatePersistInFlight = null;
       return true;
     }catch(err){
+      _projectStatePersistInFlight = null;
       try{ logLine('Projekt-Speicher Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }catch{}
       return false;
     }

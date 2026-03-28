@@ -315,7 +315,11 @@ function computeRaceEndHighlights(podiumRace, laps, standings){
       return (a.lastMs??9e15)-(b.lastMs??9e15);
     });
     const leader = rows[0];
-    if(leader) leadCounts.set(leader.id, (leadCounts.get(leader.id)||0) + 1);
+    // Fuehrungsrunden sollen nur dann zaehlen, wenn der Fahrer mit dieser
+    // Ueberfahrt selbst eine Runde als Fuehrender abgeschlossen hat.
+    if(leader && leader.id===did){
+      leadCounts.set(leader.id, (leadCounts.get(leader.id)||0) + 1);
+    }
   }
   let leadLeader = null;
   for(const [did, count] of leadCounts.entries()){

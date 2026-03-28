@@ -1173,6 +1173,14 @@ function renderRenntag(){
         discordSeasonUseThread: !!el.querySelector('#discordSeasonUseThread')?.checked,
         discordRaceDayThreadName: String(el.querySelector('#discordRaceDayThreadName')?.value || '').trim(),
         discordSeasonThreadName: String(el.querySelector('#discordSeasonThreadName')?.value || '').trim(),
+        obsEnabled: !!el.querySelector('#obsEnabled')?.checked,
+        obsHost: String(el.querySelector('#obsHost')?.value || '127.0.0.1').trim() || '127.0.0.1',
+        obsPort: Math.max(1, parseInt(el.querySelector('#obsPort')?.value,10)||4455),
+        obsPassword: String(el.querySelector('#obsPassword')?.value || '').trim(),
+        obsSceneTraining: String(el.querySelector('#obsSceneTraining')?.value || '').trim(),
+        obsSceneQualifying: String(el.querySelector('#obsSceneQualifying')?.value || '').trim(),
+        obsSceneRace: String(el.querySelector('#obsSceneRace')?.value || '').trim(),
+        obsScenePodium: String(el.querySelector('#obsScenePodium')?.value || '').trim(),
         scaleDenominator: Math.max(1, parseInt(el.querySelector('#setScaleDenominator').value,10)||50),
         lapTimeSource:'mrc'
       };
@@ -1381,6 +1389,67 @@ function renderRenntag(){
               <div class="settings-actions">
                 <button class="btn" id="btnSeasonWebhookTest" type="button">Saison-Test senden</button>
               </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card settings-card" style="margin-bottom:12px">
+            <div class="card-h"><h2>OBS</h2></div>
+            <div class="card-b">
+              <div class="settings-note" style="margin-bottom:12px">
+                <div>Direkte Verbindung zu OBS per obs-websocket.</div>
+                <div class="muted small">Typisch: Host 127.0.0.1, Port 4455, dazu dein OBS-WebSocket-Passwort.</div>
+              </div>
+              <label class="row settings-toggle" style="margin-bottom:12px">
+                <input type="checkbox" id="obsEnabled" ${state.settings.obsEnabled?'checked':''}/>
+                <span>OBS-Anbindung aktivieren</span>
+              </label>
+              <div class="settings-subcards settings-subcards-compact">
+                <div class="settings-subcard">
+                  <div class="settings-tag">Verbindung</div>
+                  <h3>OBS WebSocket</h3>
+                  <div class="field">
+                    <label>Host</label>
+                    <input class="input" id="obsHost" value="${esc(state.settings.obsHost || '127.0.0.1')}" placeholder="127.0.0.1"/>
+                  </div>
+                  <div class="field">
+                    <label>Port</label>
+                    <input class="input" id="obsPort" type="number" min="1" step="1" value="${esc(Number(state.settings.obsPort || 4455))}" placeholder="4455"/>
+                  </div>
+                  <div class="field">
+                    <label>Passwort</label>
+                    <input class="input" id="obsPassword" type="password" value="${esc(state.settings.obsPassword || '')}" placeholder="OBS WebSocket Passwort"/>
+                  </div>
+                  <div class="muted small" id="obsStatusLine">OBS: nicht verbunden</div>
+                  <div class="settings-actions">
+                    <button class="btn btn-primary" id="btnObsConnect" type="button">OBS verbinden</button>
+                    <button class="btn" id="btnObsDisconnect" type="button">Trennen</button>
+                  </div>
+                </div>
+                <div class="settings-subcard">
+                  <div class="settings-tag">Szenen</div>
+                  <h3>Automatischer Wechsel</h3>
+                  <div class="field">
+                    <label>Training</label>
+                    <input class="input" id="obsSceneTraining" value="${esc(state.settings.obsSceneTraining || '')}" placeholder="Trainingsszene"/>
+                  </div>
+                  <div class="field">
+                    <label>Qualifying</label>
+                    <input class="input" id="obsSceneQualifying" value="${esc(state.settings.obsSceneQualifying || '')}" placeholder="Qualifyingszene"/>
+                  </div>
+                  <div class="field">
+                    <label>Rennen</label>
+                    <input class="input" id="obsSceneRace" value="${esc(state.settings.obsSceneRace || '')}" placeholder="Rennszene"/>
+                  </div>
+                  <div class="field">
+                    <label>Podium</label>
+                    <input class="input" id="obsScenePodium" value="${esc(state.settings.obsScenePodium || '')}" placeholder="Podiumsszene"/>
+                  </div>
+                  <div class="settings-actions">
+                    <button class="btn" id="btnObsTestRace" type="button">Rennszene testen</button>
+                    <button class="btn" id="btnObsTestPodium" type="button">Podium testen</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1616,6 +1685,87 @@ function renderRenntag(){
       }
     });
 
+    const obsStatusLine = el.querySelector('#obsStatusLine');
+    const refreshObsStatus = ()=>{
+      if(!obsStatusLine) return;
+      const st = (typeof getObsStatus === 'function') ? getObsStatus() : {};
+      if(st.connecting){
+        obsStatusLine.textContent = 'OBS: verbinde ...';
+        return;
+      }
+      if(st.connected){
+        const sceneText = String(st.scene || '').trim();
+        obsStatusLine.textContent = sceneText ? `OBS: verbunden • Szene ${sceneText}` : 'OBS: verbunden';
+        return;
+      }
+      if(st.lastError){
+        obsStatusLine.textContent = `OBS: Fehler • ${String(st.lastError)}`;
+        return;
+      }
+      obsStatusLine.textContent = 'OBS: nicht verbunden';
+    };
+    refreshObsStatus();
+
+    const btnObsConnect = el.querySelector('#btnObsConnect');
+    if(btnObsConnect) btnObsConnect.onclick = async ()=>{
+      commitSettingsDraft(readSettingsForm());
+      btnObsConnect.disabled = true;
+      const prev = btnObsConnect.textContent;
+      btnObsConnect.textContent = 'Verbinde ...';
+      try{
+        await connectObs(true);
+        refreshObsStatus();
+        toast('OBS','OBS verbunden.','ok');
+      }catch(err){
+        refreshObsStatus();
+        toast('OBS','OBS Verbindung fehlgeschlagen.','err');
+        logLine('OBS Connect Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }finally{
+        btnObsConnect.disabled = false;
+        btnObsConnect.textContent = prev;
+      }
+    };
+
+    const btnObsDisconnect = el.querySelector('#btnObsDisconnect');
+    if(btnObsDisconnect) btnObsDisconnect.onclick = async ()=>{
+      try{
+        await disconnectObs();
+        refreshObsStatus();
+        toast('OBS','OBS getrennt.','ok');
+      }catch(err){
+        toast('OBS','OBS Trennen fehlgeschlagen.','err');
+        logLine('OBS Disconnect Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    };
+
+    const btnObsTestRace = el.querySelector('#btnObsTestRace');
+    if(btnObsTestRace) btnObsTestRace.onclick = async ()=>{
+      commitSettingsDraft(readSettingsForm());
+      try{
+        await testObsScene('race');
+        refreshObsStatus();
+        toast('OBS','Rennszene gesetzt.','ok');
+      }catch(err){
+        refreshObsStatus();
+        toast('OBS','Rennszene konnte nicht gesetzt werden.','err');
+        logLine('OBS Test Rennen Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    };
+
+    const btnObsTestPodium = el.querySelector('#btnObsTestPodium');
+    if(btnObsTestPodium) btnObsTestPodium.onclick = async ()=>{
+      commitSettingsDraft(readSettingsForm());
+      try{
+        await testObsScene('podium');
+        refreshObsStatus();
+        toast('OBS','Podiumsszene gesetzt.','ok');
+      }catch(err){
+        refreshObsStatus();
+        toast('OBS','Podiumsszene konnte nicht gesetzt werden.','err');
+        logLine('OBS Test Podium Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }
+    };
+
     const btnExportMaster = el.querySelector('#btnExportMaster');
     if(btnExportMaster) btnExportMaster.onclick = ()=>{
       exportStammdaten();
@@ -1690,4 +1840,3 @@ function renderRenntag(){
 
   return { renderEinzellaeufe, renderTeamrennen, renderLangstrecke, renderStammdaten, renderStrecken, renderRenntag, renderSaison, renderEinstellungen };
 })();
-

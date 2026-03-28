@@ -487,6 +487,7 @@ function tick(){
     }
 
 sendPresenterSnapshot();
+    try{ if(typeof syncObsAutoScene === 'function') syncObsAutoScene(false); }catch{}
     loopTick();
     singleTick();
     teamTick();
@@ -869,12 +870,14 @@ sendPresenterSnapshot();
     await hydrateExternalAppData();
     sanitizeTransientReloadState();
     syncSharedContext();
-    renderAll();
-    wire();
-    installUsbConnectDisconnectListeners();
-    startTransportReconnectWatch();
-    await usbProbeOnLoad();
-    ensureBuiltInDefaultDriverSound().then(()=>{ try{ renderAudio(); }catch{} });
+      renderAll();
+      wire();
+      installUsbConnectDisconnectListeners();
+      startTransportReconnectWatch();
+      try{ await obsAutoConnectOnLoad(); }catch{}
+      await usbProbeOnLoad();
+      try{ await syncObsAutoScene(true); }catch{}
+      ensureBuiltInDefaultDriverSound().then(()=>{ try{ renderAudio(); }catch{} });
     scheduleDiscordQueueProcessing(2000);
     requestAnimationFrame(tick);
     logLine('Zeitnahme 2.0 geladen (' + BUILD + ')');

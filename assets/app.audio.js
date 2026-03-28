@@ -636,7 +636,7 @@
       </div>
     `;
 
-    const saveAudio = ()=>{
+    const saveAudio = async ()=>{
       state.audio.enabled = (el.querySelector('#audEnabled').value==='true');
       state.audio.lapAnnounceMode = normalizeLapAnnounceMode(el.querySelector('#lapMode').value);
       state.audio.sayName = el.querySelector('#sayName').checked;
@@ -671,11 +671,11 @@
       state.audio.sayPersonalBestSeason = !!el.querySelector('#sayPersonalBestSeason').checked;
       state.audio.sayPersonalBestDay = !!el.querySelector('#sayPersonalBestDay').checked;
       saveState();
-      try{ if(typeof flushProjectStatePersist === 'function') flushProjectStatePersist(); }catch{}
+      try{ if(typeof flushProjectStatePersist === 'function') await flushProjectStatePersist(); }catch{}
       toast(t('audio.title', null, 'Audio'), t('common.saved', null, 'Saved.'), 'ok');
     };
 
-    const persistSelectedMeta = ()=>{
+    const persistSelectedMeta = async ()=>{
       const meta = getAudioAssetMeta(state.ui.audioSelectedId);
       if(!meta) return null;
       meta.name = String(el.querySelector('#audioName')?.value || meta.name || '').trim() || t('audio.default_sound_name', null, 'Sound');
@@ -688,14 +688,14 @@
       meta.fadeOutMs = Math.max(0, parseInt(el.querySelector('#audioFadeOutMs')?.value||0,10) || 0);
       meta.updatedAt = now();
       saveState();
-      try{ if(typeof flushProjectStatePersist === 'function') flushProjectStatePersist(); }catch{}
+      try{ if(typeof flushProjectStatePersist === 'function') await flushProjectStatePersist(); }catch{}
       return meta;
     };
 
-    el.querySelector('#audSave').onclick = saveAudio;
-    el.querySelector('#audSave2').onclick = saveAudio;
-    el.querySelector('#audTest').onclick = ()=>{
-      saveAudio();
+    el.querySelector('#audSave').onclick = ()=>{ void saveAudio(); };
+    el.querySelector('#audSave2').onclick = ()=>{ void saveAudio(); };
+    el.querySelector('#audTest').onclick = async ()=>{
+      await saveAudio();
       speak(t('audio.test_phrase', null, 'Test. Audio output works.'));
       toast(t('audio.title', null, 'Audio'), t('audio.test_started', null, 'Test announcement started.'), 'ok');
     };
@@ -705,9 +705,17 @@
     const filterEl = el.querySelector('#audioCategoryFilter');
     if(filterEl) filterEl.onchange = ()=>{ state.ui.audioFilterCategory = filterEl.value || ''; renderAudio(); };
     const globalTargetEl = el.querySelector('#audioGlobalTargetDb');
-    if(globalTargetEl) globalTargetEl.onchange = ()=>{ state.audio.targetDb = clamp(parseFloat(globalTargetEl.value), -30, -6); saveState(); };
+    if(globalTargetEl) globalTargetEl.onchange = async ()=>{
+      state.audio.targetDb = clamp(parseFloat(globalTargetEl.value), -30, -6);
+      saveState();
+      try{ if(typeof flushProjectStatePersist === 'function') await flushProjectStatePersist(); }catch{}
+    };
     const defaultDriverSoundEl = el.querySelector('#audioDefaultDriverSoundId');
-    if(defaultDriverSoundEl) defaultDriverSoundEl.onchange = ()=>{ state.audio.defaultDriverSoundId = defaultDriverSoundEl.value || ''; saveState(); };
+    if(defaultDriverSoundEl) defaultDriverSoundEl.onchange = async ()=>{
+      state.audio.defaultDriverSoundId = defaultDriverSoundEl.value || '';
+      saveState();
+      try{ if(typeof flushProjectStatePersist === 'function') await flushProjectStatePersist(); }catch{}
+    };
 
     const addInput = el.querySelector('#audioFileAdd');
     el.querySelector('#audioAddBtn').onclick = ()=> addInput?.click();
@@ -728,22 +736,23 @@
 
     el.querySelectorAll('[data-audio-select]').forEach(btn=> btn.onclick = ()=>{ state.ui.audioSelectedId = btn.getAttribute('data-audio-select') || ''; saveState(); renderAudio(); });
     el.querySelector('#audioStopPreview')?.addEventListener('click', ()=> stopAudioPreview());
-    el.querySelector('#audioAlignAll')?.addEventListener('click', ()=>{
+    el.querySelector('#audioAlignAll')?.addEventListener('click', async ()=>{
       for(const meta of getAudioLibrary()){
         const target = Number.isFinite(meta.targetDb) ? meta.targetDb : Number(state.audio.targetDb || -16);
         meta.gainDb = calcRecommendedGainDb(meta, target);
         meta.updatedAt = now();
       }
       saveState();
+      try{ if(typeof flushProjectStatePersist === 'function') await flushProjectStatePersist(); }catch{}
       toast(t('audio.db_title', null, 'Audio database'), t('audio.aligned_all', null, 'All sounds aligned.'), 'ok');
       renderAudio();
     });
 
     if(selected){
-      el.querySelector('#audioSaveMetaBtn')?.addEventListener('click', ()=>{ persistSelectedMeta(); toast(t('audio.db_title', null, 'Audio database'), t('audio.sound_saved', null, 'Sound saved.'), 'ok'); renderAudio(); });
+      el.querySelector('#audioSaveMetaBtn')?.addEventListener('click', async ()=>{ await persistSelectedMeta(); toast(t('audio.db_title', null, 'Audio database'), t('audio.sound_saved', null, 'Sound saved.'), 'ok'); renderAudio(); });
       el.querySelector('#audioPreviewBtn')?.addEventListener('click', async ()=>{
         try{
-          const meta = persistSelectedMeta();
+          const meta = await persistSelectedMeta();
           await previewAudioAsset(meta);
         }catch(err){
           toast(t('audio.db_title', null, 'Audio database'), t('audio.preview_failed', null, 'Preview failed.'), 'err');
@@ -752,7 +761,7 @@
       });
       el.querySelector('#audioAnalyzeBtn')?.addEventListener('click', async ()=>{
         try{
-          persistSelectedMeta();
+          await persistSelectedMeta();
           await reanalyzeAudioAsset(selected.id);
           toast(t('audio.db_title', null, 'Audio database'), t('audio.analysis_updated', null, 'Analysis updated.'), 'ok');
           renderAudio();
@@ -778,7 +787,7 @@
         const file = replaceInput.files?.[0];
         if(!file) return;
         try{
-          persistSelectedMeta();
+          await persistSelectedMeta();
           await createOrReplaceAudioAsset(file, selected.id);
           toast(t('audio.db_title', null, 'Audio database'), t('audio.file_replaced', null, 'File replaced.'), 'ok');
           renderAudio();
@@ -789,19 +798,21 @@
           replaceInput.value='';
         }
       };
-      el.querySelector('#audioAutoGainBtn')?.addEventListener('click', ()=>{
-        const meta = persistSelectedMeta();
+      el.querySelector('#audioAutoGainBtn')?.addEventListener('click', async ()=>{
+        const meta = await persistSelectedMeta();
         if(!meta) return;
         meta.gainDb = calcRecommendedGainDb(meta, Number(meta.targetDb || state.audio.targetDb || -16));
         saveState();
+        try{ if(typeof flushProjectStatePersist === 'function') await flushProjectStatePersist(); }catch{}
         renderAudio();
       });
-      el.querySelector('#audioNormalizeBtn')?.addEventListener('click', ()=>{
-        const meta = persistSelectedMeta();
+      el.querySelector('#audioNormalizeBtn')?.addEventListener('click', async ()=>{
+        const meta = await persistSelectedMeta();
         if(!meta) return;
         const peakDb = Number(meta.peakDb);
         meta.gainDb = Number.isFinite(peakDb) ? Math.max(-24, Math.min(24, -1 - peakDb)) : 0;
         saveState();
+        try{ if(typeof flushProjectStatePersist === 'function') await flushProjectStatePersist(); }catch{}
         renderAudio();
       });
     }
@@ -1205,6 +1216,3 @@ function speakTrackRecord(prefix, name, ms){
     normalizeLapAnnounceMode
   };
 })();
-
-
-
