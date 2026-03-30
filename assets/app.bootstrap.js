@@ -8,7 +8,7 @@
   const LS_UI  = 'zeitnahme2_ui_v3';
   const AUDIO_ASSET_DB_NAME = 'zeitnahme2_audio_assets_v1';
   const AUDIO_ASSET_STORE = 'assets';
-  const APP_DATA_DB_VERSION = 2;
+  const APP_DATA_DB_VERSION = 3;
   const APP_DATA_DB_NAME = 'zeitnahme2_app_data_v1';
   const APP_DATA_AVATAR_STORE = 'driverAvatars';
   const APP_DATA_SESSION_LAPS_STORE = 'sessionLaps';
