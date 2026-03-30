@@ -104,7 +104,6 @@ window.TIMTIME_STATE = (function(){
         rate:1.0, pitch:1.0, volume:1.0,
         targetDb:-16,
         defaultDriverSoundId:'',
-        driverSoundOnlyOnBestMode:true,
         sayOvertakes:true,
         sayLappingWarning:true,
         lappingWarnSec:3,
@@ -377,7 +376,6 @@ s.season = { seasons:[{id,name:'Saison '+year,status:'active',createdAt:safeNow(
       if(!Array.isArray(merged.audio.library)) merged.audio.library = [];
       if(typeof merged.audio.targetDb!=='number' || !Number.isFinite(merged.audio.targetDb)) merged.audio.targetDb = -16;
       if(typeof merged.audio.defaultDriverSoundId!=='string') merged.audio.defaultDriverSoundId = '';
-      if(typeof merged.audio.driverSoundOnlyOnBestMode!=='boolean') merged.audio.driverSoundOnlyOnBestMode = true;
       if(typeof merged.ui.audioSelectedId!=='string') merged.ui.audioSelectedId = '';
       if(typeof merged.ui.audioFilterCategory!=='string') merged.ui.audioFilterCategory = '';
       if(typeof merged.ui.audioSearch!=='string') merged.ui.audioSearch = '';

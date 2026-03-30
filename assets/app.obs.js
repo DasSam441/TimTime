@@ -62,7 +62,8 @@ window.TIMTIME_OBS = (function(){
       sourceMode: String(s.obsSourceMode || '').trim(),
       sourceTrack: String(s.obsSourceTrack || '').trim(),
       sourceLeader: String(s.obsSourceLeader || '').trim(),
-      sourceLap: String(s.obsSourceLap || '').trim()
+      sourceLap: String(s.obsSourceLap || '').trim(),
+      sourcePlacements: String(s.obsSourcePlacements || '').trim()
     };
   }
 
@@ -344,12 +345,17 @@ window.TIMTIME_OBS = (function(){
     const rows = Array.isArray(snapshot?.rows) ? snapshot.rows : [];
     const leader = rows[0] || null;
     const lapText = leader && Number.isFinite(Number(leader.laps)) ? String(leader.laps) : '0';
+    const placementsText = rows
+      .map((row, idx)=>`${idx + 1}. ${String(row?.name || '').trim()}`.trim())
+      .filter(Boolean)
+      .join('\n');
     return {
       [cfg.sourceTimer]: String(snapshot?.timerText || '').trim(),
       [cfg.sourceMode]: String(snapshot?.modeLabel || '').trim(),
       [cfg.sourceTrack]: String(snapshot?.trackName || '').trim(),
       [cfg.sourceLeader]: leader ? String(leader.name || '').trim() : '',
-      [cfg.sourceLap]: lapText
+      [cfg.sourceLap]: lapText,
+      [cfg.sourcePlacements]: placementsText
     };
   }
 

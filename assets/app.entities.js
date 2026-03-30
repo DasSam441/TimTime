@@ -86,8 +86,16 @@ window.TIMTIME_ENTITIES = (function(){
         text += secs;
       }
     }
-    if(state.audio?.sayPositionsAtRest && state.modes.activeMode==='single' && state.session.state==='RUNNING' && !isFreeDrivingMode()){
-      const pos = buildCurrentRacePositionsSpeech(3);
+    if(
+      state.audio?.sayPositionsAtRest &&
+      state.session.state==='RUNNING' &&
+      !isFreeDrivingMode() &&
+      (
+        state.modes.activeMode==='single' ||
+        (state.modes.activeMode==='loop' && currentPhase()==='race')
+      )
+    ){
+      const pos = buildCurrentRacePositionsSpeech();
       if(pos) text += ', ' + pos;
     }
     queueSpeak(text);
@@ -103,8 +111,9 @@ window.TIMTIME_ENTITIES = (function(){
     return computeDriverStandingsGlobal(laps);
   }
 
-  function buildCurrentRacePositionsSpeech(limit=3){
-    const rows = getCurrentSingleRaceStandings().slice(0, limit);
+  function buildCurrentRacePositionsSpeech(limit=null){
+    const allRows = getCurrentSingleRaceStandings();
+    const rows = Number.isFinite(Number(limit)) ? allRows.slice(0, Math.max(0, Number(limit))) : allRows;
     if(!rows.length) return '';
     const parts = rows.map((r, idx)=>{
       const ord = idx===0 ? 'Platz eins' : idx===1 ? 'Platz zwei' : idx===2 ? 'Platz drei' : ('Platz ' + (idx+1));
@@ -201,7 +210,7 @@ function getFinishNameForCarId(carId){
     ensureRaceAnnounceRuntime();
     if(state.session.announce.placementsSaidForRaceId===raceId) return;
 
-    const placements = getPlacementsForRace(raceId).slice(0,5);
+    const placements = getPlacementsForRace(raceId);
     if(!placements.length) return;
 
     const parts = placements.map(p=>{

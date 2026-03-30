@@ -622,6 +622,7 @@ sendPresenterSnapshot();
     safeRender('RenntagAuswertung', renderRenntagAuswertung);
     safeRender('Saison', renderSaison);
     safeRender('SaisonAuswertung', renderSaisonAuswertung);
+    safeRender('OBS', renderOBS);
     safeRender('Audio', renderAudio);
     safeRender('Einstellungen', renderEinstellungen);
     sanitizeVisibleText(document.body);

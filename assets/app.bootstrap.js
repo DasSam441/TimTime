@@ -139,6 +139,7 @@
   const renderStrecken = PagesApi.renderStrecken || (()=>{});
   const renderRenntag = PagesApi.renderRenntag || (()=>{});
   const renderSaison = PagesApi.renderSaison || (()=>{});
+  const renderOBS = PagesApi.renderOBS || (()=>{});
   const renderEinstellungen = PagesApi.renderEinstellungen || (()=>{});
   const readSettingsForm = PagesApi.readSettingsForm || (()=>({}));
   const commitSettingsDraft = PagesApi.commitSettingsDraft || (()=>({ saved:false, languageChanged:false }));
@@ -547,6 +548,7 @@
     renderRenntagAuswertung,
     renderSaison,
     renderSaisonAuswertung,
+    renderOBS,
     renderEinstellungen,
     getRaceDaysForSeason,
     getRaceById,
@@ -629,7 +631,6 @@
 // --------------------- Transport ---------------------
 // --------------------- UI Shell ---------------------
 })();
-
 
 
 

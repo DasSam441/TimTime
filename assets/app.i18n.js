@@ -11,6 +11,7 @@
     'tab.pageRenntagAuswertung':'Renntag Auswertung',
     'tab.pageSaison':'Saison',
     'tab.pageSaisonAuswertung':'Saison Auswertung',
+    'tab.pageOBS':'OBS',
     'tab.pageAudio':'Audio',
     'tab.pageEinstellungen':'Einstellungen',
     'header.subtitle':'offline • HTML/JS/CSS • build {build}',
@@ -408,6 +409,7 @@
     'tab.pageRenntagAuswertung':'Race Day Analysis',
     'tab.pageSaison':'Season',
     'tab.pageSaisonAuswertung':'Season Analysis',
+    'tab.pageOBS':'OBS',
     'tab.pageAudio':'Audio',
     'tab.pageEinstellungen':'Settings',
     'header.subtitle':'offline • HTML/JS/CSS • build {build}',
@@ -794,4 +796,3 @@
     'endurance.log_activated':'Endurance activated: {duration} min, minimum stint {minStint}, max stint {maxStint}, penalty {penalty}s, lap deduction from {threshold}s: {laps}'
   }
 };
-

@@ -1155,6 +1155,206 @@ function renderRenntag(){
   let _audioPreviewGain = null;
 
 
+  function readObsSettingsForm(root){
+    return {
+      obsEnabled: !!root.querySelector('#obsEnabled')?.checked,
+      obsHost: String(root.querySelector('#obsHost')?.value || '127.0.0.1').trim() || '127.0.0.1',
+      obsPort: Math.max(1, parseInt(root.querySelector('#obsPort')?.value,10)||4455),
+      obsPassword: String(root.querySelector('#obsPassword')?.value || '').trim(),
+      obsSceneTraining: String(root.querySelector('#obsSceneTraining')?.value || '').trim(),
+      obsSceneQualifying: String(root.querySelector('#obsSceneQualifying')?.value || '').trim(),
+      obsSceneRace: String(root.querySelector('#obsSceneRace')?.value || '').trim(),
+      obsScenePodium: String(root.querySelector('#obsScenePodium')?.value || '').trim(),
+      obsSourceTimer: String(root.querySelector('#obsSourceTimer')?.value || '').trim(),
+      obsSourceMode: String(root.querySelector('#obsSourceMode')?.value || '').trim(),
+      obsSourceTrack: String(root.querySelector('#obsSourceTrack')?.value || '').trim(),
+      obsSourceLeader: String(root.querySelector('#obsSourceLeader')?.value || '').trim(),
+      obsSourceLap: String(root.querySelector('#obsSourceLap')?.value || '').trim(),
+      obsSourcePlacements: String(root.querySelector('#obsSourcePlacements')?.value || '').trim()
+    };
+  }
+
+  function renderObsSettingsCard(){
+    return `
+      <div class="card settings-card" style="margin-bottom:12px">
+        <div class="card-h"><h2>OBS</h2></div>
+        <div class="card-b">
+          <div class="settings-note" style="margin-bottom:12px">
+            <div>Direkte Verbindung zu OBS per obs-websocket.</div>
+            <div class="muted small">Typisch: Host 127.0.0.1, Port 4455, dazu dein OBS-WebSocket-Passwort.</div>
+          </div>
+          <label class="row settings-toggle" style="margin-bottom:12px">
+            <input type="checkbox" id="obsEnabled" ${state.settings.obsEnabled?'checked':''}/>
+            <span>OBS-Anbindung aktivieren</span>
+          </label>
+          <div class="settings-subcards settings-subcards-compact">
+            <div class="settings-subcard">
+              <div class="settings-tag">Verbindung</div>
+              <h3>OBS WebSocket</h3>
+              <div class="field">
+                <label>Host</label>
+                <input class="input" id="obsHost" value="${esc(state.settings.obsHost || '127.0.0.1')}" placeholder="127.0.0.1"/>
+              </div>
+              <div class="field">
+                <label>Port</label>
+                <input class="input" id="obsPort" type="number" min="1" step="1" value="${esc(Number(state.settings.obsPort || 4455))}" placeholder="4455"/>
+              </div>
+              <div class="field">
+                <label>Passwort</label>
+                <input class="input" id="obsPassword" type="password" value="${esc(state.settings.obsPassword || '')}" placeholder="OBS WebSocket Passwort"/>
+              </div>
+              <div class="muted small" id="obsStatusLine">OBS: nicht verbunden</div>
+              <div class="settings-actions">
+                <button class="btn btn-primary" id="btnObsConnect" type="button">OBS verbinden</button>
+                <button class="btn" id="btnObsDisconnect" type="button">Trennen</button>
+              </div>
+            </div>
+            <div class="settings-subcard">
+              <div class="settings-tag">Szenen</div>
+              <h3>Automatischer Wechsel</h3>
+              <div class="field">
+                <label>Training</label>
+                <input class="input" id="obsSceneTraining" value="${esc(state.settings.obsSceneTraining || '')}" placeholder="Trainingsszene"/>
+              </div>
+              <div class="field">
+                <label>Qualifying</label>
+                <input class="input" id="obsSceneQualifying" value="${esc(state.settings.obsSceneQualifying || '')}" placeholder="Qualifyingszene"/>
+              </div>
+              <div class="field">
+                <label>Rennen</label>
+                <input class="input" id="obsSceneRace" value="${esc(state.settings.obsSceneRace || '')}" placeholder="Rennszene"/>
+              </div>
+              <div class="field">
+                <label>Podium</label>
+                <input class="input" id="obsScenePodium" value="${esc(state.settings.obsScenePodium || '')}" placeholder="Podiumsszene"/>
+              </div>
+              <div class="settings-actions">
+                <button class="btn" id="btnObsTestRace" type="button">Rennszene testen</button>
+                <button class="btn" id="btnObsTestPodium" type="button">Podium testen</button>
+              </div>
+            </div>
+            <div class="settings-subcard">
+              <div class="settings-tag">Textquellen</div>
+              <h3>Live-Daten in OBS</h3>
+              <div class="field">
+                <label>Timer-Quelle</label>
+                <input class="input" id="obsSourceTimer" value="${esc(state.settings.obsSourceTimer || '')}" placeholder="OBS Textquelle fuer Timer"/>
+              </div>
+              <div class="field">
+                <label>Modus-Quelle</label>
+                <input class="input" id="obsSourceMode" value="${esc(state.settings.obsSourceMode || '')}" placeholder="OBS Textquelle fuer Modus"/>
+              </div>
+              <div class="field">
+                <label>Strecken-Quelle</label>
+                <input class="input" id="obsSourceTrack" value="${esc(state.settings.obsSourceTrack || '')}" placeholder="OBS Textquelle fuer Strecke"/>
+              </div>
+              <div class="field">
+                <label>Fuehrender / P1</label>
+                <input class="input" id="obsSourceLeader" value="${esc(state.settings.obsSourceLeader || '')}" placeholder="OBS Textquelle fuer P1"/>
+              </div>
+              <div class="field">
+                <label>Runden / P1</label>
+                <input class="input" id="obsSourceLap" value="${esc(state.settings.obsSourceLap || '')}" placeholder="OBS Textquelle fuer Runden"/>
+              </div>
+              <div class="field">
+                <label>Platzierungsliste</label>
+                <input class="input" id="obsSourcePlacements" value="${esc(state.settings.obsSourcePlacements || '')}" placeholder="OBS Textquelle fuer 1. Name / 2. Name"/>
+                <div class="muted small">Format: 1. Name/Team, 2. Name/Team, 3. Name/Team ... jeweils in neuer Zeile.</div>
+              </div>
+              <div class="settings-actions">
+                <button class="btn" id="btnObsSyncText" type="button">Textquellen jetzt aktualisieren</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function wireObsSettings(root){
+    const applyObsDraft = ()=>{
+      Object.assign(state.settings, readObsSettingsForm(root));
+      saveState();
+    };
+    const obsStatusLine = root.querySelector('#obsStatusLine');
+    const refreshObsStatus = ()=>{
+      if(!obsStatusLine) return;
+      const st = (typeof getObsStatus === 'function') ? getObsStatus() : {};
+      if(st.connecting){ obsStatusLine.textContent = 'OBS: verbinde ...'; return; }
+      if(st.connected){
+        const sceneText = String(st.scene || '').trim();
+        obsStatusLine.textContent = sceneText ? `OBS: verbunden • Szene ${sceneText}` : 'OBS: verbunden';
+        return;
+      }
+      if(st.lastError){ obsStatusLine.textContent = `OBS: Fehler • ${String(st.lastError)}`; return; }
+      obsStatusLine.textContent = 'OBS: nicht verbunden';
+    };
+    refreshObsStatus();
+
+    const btnObsConnect = root.querySelector('#btnObsConnect');
+    if(btnObsConnect) btnObsConnect.onclick = async ()=>{
+      applyObsDraft();
+      btnObsConnect.disabled = true;
+      const prev = btnObsConnect.textContent;
+      btnObsConnect.textContent = 'Verbinde ...';
+      try{ await connectObs(true); refreshObsStatus(); toast('OBS','OBS verbunden.','ok'); }
+      catch(err){ refreshObsStatus(); toast('OBS','OBS Verbindung fehlgeschlagen.','err'); logLine('OBS Connect Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }
+      finally{ btnObsConnect.disabled = false; btnObsConnect.textContent = prev; }
+    };
+
+    const btnObsDisconnect = root.querySelector('#btnObsDisconnect');
+    if(btnObsDisconnect) btnObsDisconnect.onclick = async ()=>{
+      try{ await disconnectObs(); refreshObsStatus(); toast('OBS','OBS getrennt.','ok'); }
+      catch(err){ toast('OBS','OBS Trennen fehlgeschlagen.','err'); logLine('OBS Disconnect Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }
+    };
+
+    const btnObsTestRace = root.querySelector('#btnObsTestRace');
+    if(btnObsTestRace) btnObsTestRace.onclick = async ()=>{
+      applyObsDraft();
+      try{ await testObsScene('race'); refreshObsStatus(); toast('OBS','Rennszene gesetzt.','ok'); }
+      catch(err){ refreshObsStatus(); toast('OBS','Rennszene konnte nicht gesetzt werden.','err'); logLine('OBS Test Rennen Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }
+    };
+
+    const btnObsTestPodium = root.querySelector('#btnObsTestPodium');
+    if(btnObsTestPodium) btnObsTestPodium.onclick = async ()=>{
+      applyObsDraft();
+      try{ await testObsScene('podium'); refreshObsStatus(); toast('OBS','Podiumsszene gesetzt.','ok'); }
+      catch(err){ refreshObsStatus(); toast('OBS','Podiumsszene konnte nicht gesetzt werden.','err'); logLine('OBS Test Podium Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }
+    };
+
+    const btnObsSyncText = root.querySelector('#btnObsSyncText');
+    if(btnObsSyncText) btnObsSyncText.onclick = async ()=>{
+      applyObsDraft();
+      try{ await syncObsTextSources(true); refreshObsStatus(); toast('OBS','Textquellen aktualisiert.','ok'); }
+      catch(err){ refreshObsStatus(); toast('OBS','Textquellen konnten nicht gesetzt werden.','err'); logLine('OBS Textquellen Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }
+    };
+  }
+
+  function renderOBS(){
+    bindShared();
+    const el = document.getElementById('pageOBS');
+    if(!el) return;
+    el.innerHTML = `
+      <div class="settings-page">
+        <div class="card settings-card settings-overview">
+          <div class="card-b settings-overview-b">
+            <div>
+              <div class="settings-kicker">OBS</div>
+              <div class="settings-overview-title">Szenen, Textquellen und Live-Verbindung</div>
+              <div class="muted settings-overview-copy">Hier liegen alle OBS-Funktionen gesammelt, damit Einstellungen nicht weiter ueberladen werden.</div>
+            </div>
+            <div class="settings-overview-meta">
+              <span class="pill">obs-websocket</span>
+              <span class="pill">file:// ok</span>
+            </div>
+          </div>
+        </div>
+        ${renderObsSettingsCard()}
+      </div>
+    `;
+    wireObsSettings(el);
+  }
+
   function renderEinstellungen(){
     bindShared();
     const el = document.getElementById('pageEinstellungen');
@@ -1173,19 +1373,20 @@ function renderRenntag(){
         discordSeasonUseThread: !!el.querySelector('#discordSeasonUseThread')?.checked,
         discordRaceDayThreadName: String(el.querySelector('#discordRaceDayThreadName')?.value || '').trim(),
         discordSeasonThreadName: String(el.querySelector('#discordSeasonThreadName')?.value || '').trim(),
-        obsEnabled: !!el.querySelector('#obsEnabled')?.checked,
-        obsHost: String(el.querySelector('#obsHost')?.value || '127.0.0.1').trim() || '127.0.0.1',
-        obsPort: Math.max(1, parseInt(el.querySelector('#obsPort')?.value,10)||4455),
-        obsPassword: String(el.querySelector('#obsPassword')?.value || '').trim(),
-        obsSceneTraining: String(el.querySelector('#obsSceneTraining')?.value || '').trim(),
-        obsSceneQualifying: String(el.querySelector('#obsSceneQualifying')?.value || '').trim(),
-        obsSceneRace: String(el.querySelector('#obsSceneRace')?.value || '').trim(),
-        obsScenePodium: String(el.querySelector('#obsScenePodium')?.value || '').trim(),
-        obsSourceTimer: String(el.querySelector('#obsSourceTimer')?.value || '').trim(),
-        obsSourceMode: String(el.querySelector('#obsSourceMode')?.value || '').trim(),
-        obsSourceTrack: String(el.querySelector('#obsSourceTrack')?.value || '').trim(),
-        obsSourceLeader: String(el.querySelector('#obsSourceLeader')?.value || '').trim(),
-        obsSourceLap: String(el.querySelector('#obsSourceLap')?.value || '').trim(),
+        obsEnabled: el.querySelector('#obsEnabled') ? !!el.querySelector('#obsEnabled')?.checked : !!state.settings.obsEnabled,
+        obsHost: String(el.querySelector('#obsHost')?.value || state.settings.obsHost || '127.0.0.1').trim() || '127.0.0.1',
+        obsPort: Math.max(1, parseInt(el.querySelector('#obsPort')?.value ?? state.settings.obsPort,10)||4455),
+        obsPassword: String(el.querySelector('#obsPassword')?.value || state.settings.obsPassword || '').trim(),
+        obsSceneTraining: String(el.querySelector('#obsSceneTraining')?.value || state.settings.obsSceneTraining || '').trim(),
+        obsSceneQualifying: String(el.querySelector('#obsSceneQualifying')?.value || state.settings.obsSceneQualifying || '').trim(),
+        obsSceneRace: String(el.querySelector('#obsSceneRace')?.value || state.settings.obsSceneRace || '').trim(),
+        obsScenePodium: String(el.querySelector('#obsScenePodium')?.value || state.settings.obsScenePodium || '').trim(),
+        obsSourceTimer: String(el.querySelector('#obsSourceTimer')?.value || state.settings.obsSourceTimer || '').trim(),
+        obsSourceMode: String(el.querySelector('#obsSourceMode')?.value || state.settings.obsSourceMode || '').trim(),
+        obsSourceTrack: String(el.querySelector('#obsSourceTrack')?.value || state.settings.obsSourceTrack || '').trim(),
+        obsSourceLeader: String(el.querySelector('#obsSourceLeader')?.value || state.settings.obsSourceLeader || '').trim(),
+        obsSourceLap: String(el.querySelector('#obsSourceLap')?.value || state.settings.obsSourceLap || '').trim(),
+        obsSourcePlacements: String(el.querySelector('#obsSourcePlacements')?.value || state.settings.obsSourcePlacements || '').trim(),
         scaleDenominator: Math.max(1, parseInt(el.querySelector('#setScaleDenominator').value,10)||50),
         lapTimeSource:'mrc'
       };
@@ -1479,6 +1680,11 @@ function renderRenntag(){
                     <label>Runden / P1</label>
                     <input class="input" id="obsSourceLap" value="${esc(state.settings.obsSourceLap || '')}" placeholder="OBS Textquelle fuer Runden"/>
                   </div>
+                  <div class="field">
+                    <label>Platzierungsliste</label>
+                    <input class="input" id="obsSourcePlacements" value="${esc(state.settings.obsSourcePlacements || '')}" placeholder="OBS Textquelle fuer 1. Name / 2. Name"/>
+                    <div class="muted small">Format: 1. Name/Team, 2. Name/Team, 3. Name/Team ... jeweils in neuer Zeile.</div>
+                  </div>
                   <div class="settings-actions">
                     <button class="btn" id="btnObsSyncText" type="button">Textquellen jetzt aktualisieren</button>
                   </div>
@@ -1592,6 +1798,11 @@ function renderRenntag(){
     const dataExchangeCardNode = el.querySelector('#settingsDataExchangeCard');
     const backupCardNode = el.querySelector('#settingsBackupCard');
     const resetCardNode = el.querySelector('#btnResetAll')?.closest('.settings-card');
+    el.querySelectorAll('.settings-card .card-h h2').forEach(h=>{
+      if(String(h.textContent || '').trim() === 'OBS'){
+        h.closest('.settings-card')?.remove();
+      }
+    });
     if(settingsStacks.length >= 2 && dataExchangeCardNode && backupCardNode){
       settingsStacks[0].insertBefore(dataExchangeCardNode, resetCardNode || null);
       const rightSectionLabel = settingsStacks[1].querySelector('.settings-sectionlabel');
@@ -1884,5 +2095,5 @@ function renderRenntag(){
 // --------------------- Timer tick ---------------------
   
 
-  return { renderEinzellaeufe, renderTeamrennen, renderLangstrecke, renderStammdaten, renderStrecken, renderRenntag, renderSaison, renderEinstellungen };
-})();
+  return { renderEinzellaeufe, renderTeamrennen, renderLangstrecke, renderStammdaten, renderStrecken, renderRenntag, renderSaison, renderOBS, renderEinstellungen };
+  })();

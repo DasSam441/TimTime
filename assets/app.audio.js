@@ -994,12 +994,10 @@
     const mode = normalizeLapAnnounceMode(state.audio.lapAnnounceMode);
 
     if(mode==='best'){
-      playDriverLapSound(car);
       return;
     }
 
     if(mode==='off'){
-      playRootFallbackSound();
       return;
     }
 

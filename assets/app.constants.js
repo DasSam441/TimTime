@@ -12,6 +12,7 @@ window.TIMTIME_CONSTANTS = {
     { key:'Renntag Auswertung', page:'pageRenntagAuswertung' },
     { key:'Saison', page:'pageSaison' },
     { key:'Saison Auswertung', page:'pageSaisonAuswertung' },
+    { key:'OBS', page:'pageOBS' },
     { key:'Audio', page:'pageAudio' },
     { key:'Einstellungen', page:'pageEinstellungen' }
   ]
