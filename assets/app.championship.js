@@ -178,7 +178,7 @@ function computeTeamPointsStandings(laps){
     return {
       id: t.id,
       name: t.name || 'Team',
-      members: memberRows.map(x=>x.name).join(', ') || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â',
+      members: memberRows.map(x=>x.name).join(', ') || '—',
       memberRows,
       points,
       lapCount,
@@ -214,7 +214,7 @@ function computeTeamStandingsGlobal(laps, mode, finish){
     const totalMs = rel.reduce((s,l)=>s+(l.lapMs||0),0);
     const bestMs = lapCount ? Math.min(...rel.map(l=>l.lapMs||Infinity)) : null;
     const lastMs = lapCount ? rel[rel.length-1].lapMs : null;
-    const members = driverIds.map(id=>driverNameByIdGlobal(id)).join(', ') || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+    const members = driverIds.map(id=>driverNameByIdGlobal(id)).join(', ') || '—';
     let finished = false;
     if(finish && finish.pending && finish.activeCarIds && finish.finishedCarIds){
       const active = (finish.activeCarIds||[]).filter(cid=>carIds.has(cid));
@@ -462,7 +462,7 @@ const podiumHtml = `
     <div class="hr"></div>
 
     ${isTeams ? `
-      <div class="muted">Restliche PlÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤tze</div>
+      <div class="muted">Restliche Plätze</div>
       <table class="table">
         <thead><tr><th>#</th><th>Team</th><th>Runden</th><th>Gesamtzeit</th><th>Best</th><th>Letzte</th></tr></thead>
         <tbody>
@@ -470,25 +470,25 @@ const podiumHtml = `
             <td class="mono">${i+4}</td>
             <td><b>${esc(t.name)}</b><div class="muted tiny">${esc(t.members)}</div>${(mode==='endurance' && t.compliant===false)?`<div class="tiny" style="color:#ff8f8f">${esc(t.statusText||'Regelverstoss')}</div>`:''}</td>
             <td class="mono">${t.lapCount}</td>
-            <td class="mono">${t.totalMs?msToTime(t.totalMs, dec):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-            <td class="mono">${t.bestMs!=null && isFinite(t.bestMs)?msToTime(t.bestMs, dec):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-            <td class="mono">${t.lastMs!=null && isFinite(t.lastMs)?msToTime(t.lastMs, dec):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-          </tr>`).join('') || `<tr><td colspan="6" class="muted">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</td></tr>`}
+            <td class="mono">${t.totalMs?msToTime(t.totalMs, dec):'—'}</td>
+            <td class="mono">${t.bestMs!=null && isFinite(t.bestMs)?msToTime(t.bestMs, dec):'—'}</td>
+            <td class="mono">${t.lastMs!=null && isFinite(t.lastMs)?msToTime(t.lastMs, dec):'—'}</td>
+          </tr>`).join('') || `<tr><td colspan="6" class="muted">—</td></tr>`}
         </tbody>
       </table>
     ` : `
-      <div class="muted">Restliche PlÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤tze</div>
+      <div class="muted">Restliche Plätze</div>
       <table class="table">
         <thead><tr><th>#</th><th>Fahrer</th><th>Runden</th><th>Gesamtzeit</th><th>Best</th><th>Letzte</th></tr></thead>
         <tbody>
           ${rest.map((s,i)=>`<tr>
             <td class="mono">${i+4}</td>
-            <td><div class="nameCell">${(()=>{const url=getDriverAvatarDataUrl(s.id);const nm=(s.name||'');const ini=(nm.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase());return url?`<img class=\"avatar\" src=\"${esc(url)}\" alt=\"\"/>`:`<div class=\"avatar fallback\">${esc(ini||'?')}</div>`;})()}<span class="nm">${esc(s.name)}</span>${s.finished?'<span class="finishFlag">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â</span>':''}</div></td>
+            <td><div class="nameCell">${(()=>{const url=getDriverAvatarDataUrl(s.id);const nm=(s.name||'');const ini=(nm.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase());return url?`<img class=\"avatar\" src=\"${esc(url)}\" alt=\"\"/>`:`<div class=\"avatar fallback\">${esc(ini||'?')}</div>`;})()}<span class="nm">${esc(s.name)}</span>${s.finished?'<span class="finishFlag">🏁</span>':''}</div></td>
             <td class="mono">${s.laps}</td>
-            <td class="mono">${s.totalMs?msToTime(s.totalMs, dec):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-            <td class="mono">${s.bestMs!=null?msToTime(s.bestMs, dec):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-            <td class="mono">${s.lastMs!=null?msToTime(s.lastMs, dec):'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</td>
-          </tr>`).join('') || `<tr><td colspan="6" class="muted">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</td></tr>`}
+            <td class="mono">${s.totalMs?msToTime(s.totalMs, dec):'—'}</td>
+            <td class="mono">${s.bestMs!=null?msToTime(s.bestMs, dec):'—'}</td>
+            <td class="mono">${s.lastMs!=null?msToTime(s.lastMs, dec):'—'}</td>
+          </tr>`).join('') || `<tr><td colspan="6" class="muted">—</td></tr>`}
         </tbody>
       </table>
     `}
@@ -624,7 +624,7 @@ return demojibake(podiumHtml);
   function renderBestByTrackCell(bestByTrack){
     bindShared();
     const entries = Object.entries(bestByTrack||{});
-    if(!entries.length) return '<span class="muted">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</span>';
+    if(!entries.length) return '<span class="muted">—</span>';
     entries.sort((a,b)=>{
       const ta = state.tracks.tracks.find(t=>t.id===a[0])?.name || a[0];
       const tb = state.tracks.tracks.find(t=>t.id===b[0])?.name || b[0];
@@ -638,7 +638,7 @@ return demojibake(podiumHtml);
 
   function renderSessionDriverColumns(race){
     bindShared();
-    if(!race) return '<div class="muted">Keine Session gewÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤hlt.</div>';
+    if(!race) return '<div class="muted">Keine Session gewählt.</div>';
     const laps = getRelevantRaceLaps(race.id, state.session.laps||[]).slice().sort((a,b)=>a.ts-b.ts);
     const driverIds = Array.from(new Set(laps.map(l=>String(l.driverId || (l.carId ? (getCar(l.carId)?.driverId||'') : '') || '').trim()).filter(Boolean)));
     const drivers = driverIds.map(id=>getDriver(id)).filter(Boolean);
@@ -662,7 +662,7 @@ return demojibake(podiumHtml);
           <div class="card-b">
             <div class="row wrap" style="gap:8px">
               <span class="badge">Runden: ${dlaps.length}</span>
-              <span class="badge">Best: ${best!=null ? esc(msToTime(best,3)) : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â'}</span>
+              <span class="badge">Best: ${best!=null ? esc(msToTime(best,3)) : '—'}</span>
             </div>
             <div class="hr"></div>
             <table class="table">
@@ -674,14 +674,14 @@ return demojibake(podiumHtml);
                     <td class="mono">${esc(msToTime(l.lapMs,3))}</td>
                     <td>${esc(l.phase||'')}</td>
                     <td class="small">${esc(new Date(l.ts).toLocaleTimeString('de-DE',{hour12:false}))}</td>
-                    <td style="text-align:right"><button class="btn" style="padding:6px 10px" data-del-lap-analysis="${esc(l.id)}">ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“</button></td>
+                    <td style="text-align:right"><button class="btn" style="padding:6px 10px" data-del-lap-analysis="${esc(l.id)}">🗑</button></td>
                   </tr>
                 `).join('') || `<tr><td colspan="5" class="muted">Keine Runden.</td></tr>`}
               </tbody>
             </table>
           </div>
         </div>
-      ` : '<div class="muted">Kein Fahrer gewÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤hlt.</div>'}
+      ` : '<div class="muted">Kein Fahrer gewählt.</div>'}
     `;
   }
 
@@ -935,7 +935,7 @@ function renderRenntagAuswertung(){
       });
       for(const s of standings){
         if(!byId[s.id]){
-          const driver = getDriver(s.id) || { id:s.id, name:s.name||'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â' };
+          const driver = getDriver(s.id) || { id:s.id, name:s.name||'—' };
           byId[s.id] = {
             driver,
             races:0,
@@ -1116,12 +1116,12 @@ function renderRenntagAuswertung(){
       return `
         <polyline fill="none" stroke="${row.color}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/>
         ${series.map((v,i)=>`<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(v).toFixed(1)}" r="3.5" fill="${row.color}"/>`).join('')}
-        <text x="${Math.min(W-6, endX+8).toFixed(1)}" y="${Math.max(12, endY-8).toFixed(1)}" fill="${row.color}" font-size="12" font-weight="700">${esc(row.driver.name||'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â')}</text>
+        <text x="${Math.min(W-6, endX+8).toFixed(1)}" y="${Math.max(12, endY-8).toFixed(1)}" fill="${row.color}" font-size="12" font-weight="700">${esc(row.driver.name||'—')}</text>
       `;
     }).join('');
     const sub = mode==='championship'
-      ? 'X-Achse: Rennen dieser Saison ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ Y-Achse: Meisterschaftspunkte nach aktueller Regel'
-      : 'X-Achse: Rennen dieser Saison ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ Y-Achse: kumulierte Saisondaten';
+      ? 'X-Achse: Rennen dieser Saison • Y-Achse: Meisterschaftspunkte nach aktueller Regel'
+      : 'X-Achse: Rennen dieser Saison • Y-Achse: kumulierte Saisondaten';
     return `
       <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block; background:#0f131a; border-radius:16px; border:1px solid rgba(255,255,255,.08)">
         ${yTicks.map(v=>`<g><line x1="${L}" y1="${yAt(v).toFixed(1)}" x2="${W-R}" y2="${yAt(v).toFixed(1)}" stroke="rgba(255,255,255,.08)"/><text x="${L-10}" y="${(yAt(v)+4).toFixed(1)}" fill="rgba(255,255,255,.6)" font-size="11" text-anchor="end">${v}</text></g>`).join('')}
@@ -1130,7 +1130,7 @@ function renderRenntagAuswertung(){
         <line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="rgba(255,255,255,.18)"/>
         ${lines}
       </svg>
-      <div class="muted small" style="margin-top:8px">${sub}</div>
+      <div class="muted small" style="margin-top:8px">${esc(sub)}</div>
     `;
   }
 
@@ -1265,7 +1265,7 @@ function renderRenntagAuswertung(){
                   ${champRows.map((x,idx)=>`
                     <tr>
                       <td>${idx+1}</td>
-                      <td><span style="display:inline-flex; align-items:center; gap:8px"><span style="width:10px; height:10px; border-radius:999px; background:${x.color}; display:inline-block"></span>${esc(x.driver.name||'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â')}</span></td>
+                      <td><span style="display:inline-flex; align-items:center; gap:8px"><span style="width:10px; height:10px; border-radius:999px; background:${x.color}; display:inline-block"></span>${esc(x.driver.name||'—')}</span></td>
                       <td><b>${x.totalPoints||0}</b></td>
                       <td>${x.countedRacePoints||0}</td>
                       <td>${x.countedBonusPoints||0}</td>
