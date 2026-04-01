@@ -67,6 +67,12 @@ window.TIMTIME_ENTITIES = (function(){
   function ensureRaceAnnounceRuntime(){
     if(!state.session.announce) resetRaceAnnounceRuntime();
   }
+  function getPositionsSpeechLimitCount(){
+    const mode = String(state.audio?.positionsSpeechLimit || 'all').trim().toLowerCase();
+    if(mode === 'top3') return 3;
+    if(mode === 'top5') return 5;
+    return null;
+  }
 
   function speakRaceRemaining(totalSec){
     if(!state.audio?.enabled || !state.audio?.restAnnouncementsEnabled) return;
@@ -95,7 +101,7 @@ window.TIMTIME_ENTITIES = (function(){
         (state.modes.activeMode==='loop' && currentPhase()==='race')
       )
     ){
-      const pos = buildCurrentRacePositionsSpeech();
+      const pos = buildCurrentRacePositionsSpeech(getPositionsSpeechLimitCount());
       if(pos) text += ', ' + pos;
     }
     queueSpeak(text);
@@ -213,7 +219,9 @@ function getFinishNameForCarId(carId){
     const placements = getPlacementsForRace(raceId);
     if(!placements.length) return;
 
-    const parts = placements.map(p=>{
+    const limitCount = getPositionsSpeechLimitCount();
+    const list = Number.isFinite(Number(limitCount)) ? placements.slice(0, Math.max(0, Number(limitCount))) : placements;
+    const parts = list.map(p=>{
       const ord = p.pos===1 ? 'Platz eins' : p.pos===2 ? 'Platz zwei' : p.pos===3 ? 'Platz drei' : ('Platz ' + p.pos);
       return ord + ' ' + (p.speakName||p.name);
     });

@@ -501,6 +501,14 @@
                 <label class="row" style="gap:10px; margin:6px 0;"><input type="checkbox" id="sayOvertakes" ${state.audio.sayOvertakes?'checked':''}/> ${esc(t('audio.say_overtakes', null, 'Announce position changes'))}</label>
                 <label class="row" style="gap:10px; margin:6px 0;"><input type="checkbox" id="sayLappingWarning" ${state.audio.sayLappingWarning?'checked':''}/> ${esc(t('audio.say_lapping_warning', null, 'Announce lapping warning'))}</label>
                 <label class="row" style="gap:10px; margin:6px 0;"><input type="checkbox" id="sayPositionsAtRest" ${state.audio.sayPositionsAtRest?'checked':''}/> ${esc(t('audio.say_positions_at_rest', null, 'Announce current standings at remaining-time calls'))}</label>
+                <div class="field">
+                  <label>${esc(t('audio.positions_limit', null, 'Position announcement scope'))}</label>
+                  <select id="positionsSpeechLimit">
+                    <option value="all" ${String(state.audio.positionsSpeechLimit||'all')==='all'?'selected':''}>${esc(t('audio.positions_limit_all', null, 'All positions'))}</option>
+                    <option value="top5" ${String(state.audio.positionsSpeechLimit||'all')==='top5'?'selected':''}>${esc(t('audio.positions_limit_top5', null, 'Top 5'))}</option>
+                    <option value="top3" ${String(state.audio.positionsSpeechLimit||'all')==='top3'?'selected':''}>${esc(t('audio.positions_limit_top3', null, 'Top 3'))}</option>
+                  </select>
+                </div>
                 <div class="field"><label>${esc(t('audio.lapping_warn_sec', null, 'Lapping lead time (seconds)'))}</label><input class="input mono" id="lappingWarnSec" type="number" min="1" max="30" step="1" value="${esc(Number(state.audio.lappingWarnSec||3))}"/></div>
                 <label class="row" style="gap:10px; margin:6px 0;"><input type="checkbox" id="sayTrackRecordSeason" ${state.audio.sayTrackRecordSeason?'checked':''}/> ${esc(t('audio.say_track_record_season', null, 'Announce season track record'))}</label>
                 <label class="row" style="gap:10px; margin:6px 0;"><input type="checkbox" id="sayTrackRecordDay" ${state.audio.sayTrackRecordDay?'checked':''}/> ${esc(t('audio.say_track_record_day', null, 'Announce race-day track record'))}</label>
@@ -665,6 +673,7 @@
       state.audio.sayOvertakes = !!el.querySelector('#sayOvertakes').checked;
       state.audio.sayLappingWarning = !!el.querySelector('#sayLappingWarning').checked;
       state.audio.sayPositionsAtRest = !!el.querySelector('#sayPositionsAtRest').checked;
+      state.audio.positionsSpeechLimit = normalizePositionsSpeechLimit(el.querySelector('#positionsSpeechLimit')?.value);
       state.audio.lappingWarnSec = Math.max(1, Math.min(30, parseInt(el.querySelector('#lappingWarnSec').value,10) || 3));
       state.audio.sayTrackRecordSeason = !!el.querySelector('#sayTrackRecordSeason').checked;
       state.audio.sayTrackRecordDay = !!el.querySelector('#sayTrackRecordDay').checked;
@@ -863,6 +872,12 @@
     if(raw === 'nur bestzeit' || raw === 'best lap only' || raw === 'best') return 'best';
     if(raw === 'jede runde' || raw === 'every lap' || raw === 'every') return 'every';
     return 'every';
+  }
+  function normalizePositionsSpeechLimit(value){
+    const raw = String(value || '').trim().toLowerCase();
+    if(raw === 'top3' || raw === '3') return 'top3';
+    if(raw === 'top5' || raw === '5') return 'top5';
+    return 'all';
   }
 
   async function playSimpleLapBeep(){
@@ -1211,6 +1226,7 @@ function speakTrackRecord(prefix, name, ms){
     speakPersonalBest,
     updatePersonalBestsOnLap,
     speakTrackRecord,
-    normalizeLapAnnounceMode
+    normalizeLapAnnounceMode,
+    normalizePositionsSpeechLimit
   };
 })();

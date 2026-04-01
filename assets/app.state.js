@@ -41,6 +41,40 @@ window.TIMTIME_STATE = (function(){
   function safeBleAvailable(){
     return (typeof navigator !== 'undefined') && ('bluetooth' in navigator);
   }
+  function makeStorageHealthDefaults(){
+    return {
+      lastLocalSaveAt: 0,
+      lastLocalSaveOk: true,
+      lastLocalSaveError: '',
+      localSaveCount: 0,
+      lastProjectSaveAt: 0,
+      lastProjectSaveOk: true,
+      lastProjectSaveError: '',
+      projectSaveCount: 0
+    };
+  }
+  function ensureStorageHealthObject(targetState){
+    bindShared();
+    const s = (targetState && typeof targetState === 'object') ? targetState : state;
+    if(!s.ui || typeof s.ui !== 'object') s.ui = {};
+    const base = makeStorageHealthDefaults();
+    const cur = (s.ui.storageHealth && typeof s.ui.storageHealth === 'object') ? s.ui.storageHealth : {};
+    s.ui.storageHealth = Object.assign(base, cur);
+    if(!Number.isFinite(Number(s.ui.storageHealth.lastLocalSaveAt))) s.ui.storageHealth.lastLocalSaveAt = 0;
+    if(typeof s.ui.storageHealth.lastLocalSaveOk !== 'boolean') s.ui.storageHealth.lastLocalSaveOk = true;
+    if(typeof s.ui.storageHealth.lastLocalSaveError !== 'string') s.ui.storageHealth.lastLocalSaveError = '';
+    if(!Number.isFinite(Number(s.ui.storageHealth.localSaveCount))) s.ui.storageHealth.localSaveCount = 0;
+    if(!Number.isFinite(Number(s.ui.storageHealth.lastProjectSaveAt))) s.ui.storageHealth.lastProjectSaveAt = 0;
+    if(typeof s.ui.storageHealth.lastProjectSaveOk !== 'boolean') s.ui.storageHealth.lastProjectSaveOk = true;
+    if(typeof s.ui.storageHealth.lastProjectSaveError !== 'string') s.ui.storageHealth.lastProjectSaveError = '';
+    if(!Number.isFinite(Number(s.ui.storageHealth.projectSaveCount))) s.ui.storageHealth.projectSaveCount = 0;
+    return s.ui.storageHealth;
+  }
+  function getStorageHealthStatus(){
+    bindShared();
+    const info = ensureStorageHealthObject(state);
+    return JSON.parse(JSON.stringify(info));
+  }
   function defaultState(){
     bindShared();
     const year = new Date().getFullYear();
@@ -64,7 +98,8 @@ window.TIMTIME_STATE = (function(){
         freeDrivingEnabled:false,
         audioSelectedId:'',
         audioFilterCategory:'',
-        audioSearch:''
+        audioSearch:'',
+        storageHealth: makeStorageHealthDefaults()
       },
       settings:{ appName:'Zeitnahme 2.0', language:'de', baudRate:19200, discordWebhook:'', discordAutoSend:false, discordUseThread:false, discordThreadName:'', discordRaceDayWebhook:'', discordSeasonWebhook:'', discordRaceDayUseThread:false, discordSeasonUseThread:false, discordRaceDayThreadName:'{type} • {date}', discordSeasonThreadName:'{type} • {season}', dbPlaceholder:'', useAmpel:true, scaleDenominator:50, ampelWaitMs:1200, ampelStepMs:700, allowIdleReads:false, lapTimeSource:'mrc' },
       media:{ driverAvatars:{} },
@@ -108,6 +143,7 @@ window.TIMTIME_STATE = (function(){
         sayLappingWarning:true,
         lappingWarnSec:3,
         sayPositionsAtRest:true,
+        positionsSpeechLimit:'all',
         library:[]
       }
     };
@@ -214,6 +250,8 @@ window.TIMTIME_STATE = (function(){
     if(typeof s.audio?.sayOvertakes !== 'boolean') s.audio.sayOvertakes = true;
     if(typeof s.audio?.sayLappingWarning !== 'boolean') s.audio.sayLappingWarning = true;
     if(typeof s.audio?.sayPositionsAtRest !== 'boolean') s.audio.sayPositionsAtRest = true;
+    if(typeof s.audio?.positionsSpeechLimit !== 'string') s.audio.positionsSpeechLimit = 'all';
+    if(!['all','top5','top3'].includes(String(s.audio.positionsSpeechLimit).toLowerCase())) s.audio.positionsSpeechLimit = 'all';
     if(!Number.isFinite(Number(s.audio?.lappingWarnSec))) s.audio.lappingWarnSec = 3;
     // season
     if(!s.season?.seasons?.length){
@@ -358,6 +396,9 @@ s.season = { seasons:[{id,name:'Saison '+year,status:'active',createdAt:safeNow(
       if(typeof merged.audio.sayPlacements!=='boolean') merged.audio.sayPlacements = true;
       if(typeof merged.audio.sayTrackRecordSeason!=='boolean') merged.audio.sayTrackRecordSeason = true;
       if(typeof merged.audio.sayTrackRecordDay!=='boolean') merged.audio.sayTrackRecordDay = true;
+      if(typeof merged.audio.positionsSpeechLimit!=='string') merged.audio.positionsSpeechLimit = 'all';
+      if(!['all','top5','top3'].includes(String(merged.audio.positionsSpeechLimit).toLowerCase())) merged.audio.positionsSpeechLimit = 'all';
+      else merged.audio.positionsSpeechLimit = String(merged.audio.positionsSpeechLimit).toLowerCase();
       if(!merged.modes.team) merged.modes.team = { finishMode:'time', timeLimitSec:180, lapLimit:20, selectedDriverIds:[], teams:[] };
       if(!merged.modes.team.finishMode) merged.modes.team.finishMode = 'time';
       if(!Number.isFinite(Number(merged.modes.team.timeLimitSec))) merged.modes.team.timeLimitSec = 180;
@@ -379,6 +420,7 @@ s.season = { seasons:[{id,name:'Saison '+year,status:'active',createdAt:safeNow(
       if(typeof merged.ui.audioSelectedId!=='string') merged.ui.audioSelectedId = '';
       if(typeof merged.ui.audioFilterCategory!=='string') merged.ui.audioFilterCategory = '';
       if(typeof merged.ui.audioSearch!=='string') merged.ui.audioSearch = '';
+      if(!merged.ui.storageHealth || typeof merged.ui.storageHealth !== 'object') merged.ui.storageHealth = makeStorageHealthDefaults();
       if(typeof merged.settings?.discordAutoSend!=='boolean') merged.settings.discordAutoSend = false;
       if(typeof merged.settings?.language!=='string') merged.settings.language = 'de';
       if(typeof merged.settings?.projectDataFolderName!=='string') merged.settings.projectDataFolderName = '';
@@ -451,7 +493,8 @@ s.season = { seasons:[{id,name:'Saison '+year,status:'active',createdAt:safeNow(
       if(!Array.isArray(merged.masterData.cars)) merged.masterData.cars = [];
       if(!merged.masterData.drivers.length && discoveredDrivers.length) merged.masterData.drivers = discoveredDrivers.slice();
       if(!merged.masterData.cars.length && discoveredCars.length) merged.masterData.cars = discoveredCars.slice();
-return merged;
+      ensureStorageHealthObject(merged);
+      return merged;
     }catch{
       return defaultState();
     }
@@ -459,6 +502,7 @@ return merged;
 
   let state = loadState();
   ensureAutoEntities(state);
+  ensureStorageHealthObject(state);
 
   function replaceStateInPlace(nextState){
     const target = state && typeof state === 'object' ? state : {};
@@ -845,13 +889,23 @@ return merged;
 
   function saveState(){
     bindShared();
+    const ts = safeNow();
     try{
       ensureAutoEntities(state);
+      const storage = ensureStorageHealthObject(state);
+      storage.lastLocalSaveAt = ts;
+      storage.lastLocalSaveOk = true;
+      storage.lastLocalSaveError = '';
+      storage.localSaveCount = Math.max(0, Number(storage.localSaveCount || 0)) + 1;
       localStorage.setItem(LS_KEY, JSON.stringify(buildSlimPersistedState()));
       saveLocalStateChunkMirror(buildExternalStateChunkSnapshot());
       saveLocalProjectStateMirror(buildLocalProjectStateMirror());
       scheduleProjectStatePersist(buildFullExportState());
     }catch(err){
+      const storage = ensureStorageHealthObject(state);
+      storage.lastLocalSaveAt = ts;
+      storage.lastLocalSaveOk = false;
+      storage.lastLocalSaveError = String(err?.message || err || 'local_save_failed');
       logLine('State Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
     }
     if(_appDataHydrated) scheduleExternalAppDataPersist();
@@ -1125,8 +1179,19 @@ return merged;
     if(_projectStatePersistTimer) clearTimeout(_projectStatePersistTimer);
     _projectStatePersistTimer = setTimeout(()=>{
       _projectStatePersistTimer = null;
-      _projectStatePersistInFlight = persistProjectStateSnapshot(snapshot).catch(err=>{
-        try{ logLine('Projekt-Speicher Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }catch{}
+      _projectStatePersistInFlight = persistProjectStateSnapshot(snapshot).then(()=>{
+        const storage = ensureStorageHealthObject(state);
+        storage.lastProjectSaveAt = safeNow();
+        storage.lastProjectSaveOk = true;
+        storage.lastProjectSaveError = '';
+        storage.projectSaveCount = Math.max(0, Number(storage.projectSaveCount || 0)) + 1;
+      }).catch(err=>{
+        const msg = String(err?.message || err || 'Unbekannter Fehler');
+        const storage = ensureStorageHealthObject(state);
+        storage.lastProjectSaveAt = safeNow();
+        storage.lastProjectSaveOk = false;
+        storage.lastProjectSaveError = msg;
+        try{ logLine('Projekt-Speicher Save Fehler: ' + msg); }catch{}
       }).finally(()=>{
         _projectStatePersistInFlight = null;
       });
@@ -1145,11 +1210,21 @@ return merged;
     try{
       _projectStatePersistInFlight = persistProjectStateSnapshot(snapshot || state);
       await _projectStatePersistInFlight;
+      const storage = ensureStorageHealthObject(state);
+      storage.lastProjectSaveAt = safeNow();
+      storage.lastProjectSaveOk = true;
+      storage.lastProjectSaveError = '';
+      storage.projectSaveCount = Math.max(0, Number(storage.projectSaveCount || 0)) + 1;
       _projectStatePersistInFlight = null;
       return true;
     }catch(err){
+      const msg = String(err?.message || err || 'Unbekannter Fehler');
+      const storage = ensureStorageHealthObject(state);
+      storage.lastProjectSaveAt = safeNow();
+      storage.lastProjectSaveOk = false;
+      storage.lastProjectSaveError = msg;
       _projectStatePersistInFlight = null;
-      try{ logLine('Projekt-Speicher Save Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }catch{}
+      try{ logLine('Projekt-Speicher Save Fehler: ' + msg); }catch{}
       return false;
     }
   }
@@ -1584,5 +1659,5 @@ function downloadJson(filename, obj){
 
 
   // --------------------- Toast + Log ---------------------
-  return { defaultState, deepMerge, ensureAutoEntities, loadState, getState, replaceStateInPlace, idbRequestToPromise, getAppDataDb, buildExternalAppDataSnapshot, buildExternalStateChunkSnapshot, isStateChunkEmpty, buildSlimPersistedState, replaceObjectStoreData, persistExternalAppDataSnapshot, persistExternalStateChunkSnapshot, readAllFromObjectStore, loadExternalAppDataSnapshot, loadExternalStateChunkSnapshot, scheduleExternalAppDataPersist, flushExternalAppDataPersist, clearExternalAppDataStores, hydrateExternalAppData, saveState, chooseProjectDataDirectory, loadProjectStateSnapshot, persistProjectStateSnapshot, flushProjectStatePersist, getProjectDataStatus, _deepFindArrays, _isDriverArray, _isCarArray, getDriversArray, getCarsArray, ensureDriversArray, ensureCarsArray, downloadJson, exportStammdaten, buildFullExportState, exportAll, normalizeName, normalizeChipCode, isRestoreStateCandidate, extractRestorePayload, importStammdatenFile, restoreStateFromFile, importStammdatenFromJsonLegacy1, importStammdatenFromJsonLegacy2, importStammdatenFromJson };
+  return { defaultState, deepMerge, ensureAutoEntities, loadState, getState, replaceStateInPlace, idbRequestToPromise, getAppDataDb, buildExternalAppDataSnapshot, buildExternalStateChunkSnapshot, isStateChunkEmpty, buildSlimPersistedState, replaceObjectStoreData, persistExternalAppDataSnapshot, persistExternalStateChunkSnapshot, readAllFromObjectStore, loadExternalAppDataSnapshot, loadExternalStateChunkSnapshot, scheduleExternalAppDataPersist, flushExternalAppDataPersist, clearExternalAppDataStores, hydrateExternalAppData, saveState, chooseProjectDataDirectory, loadProjectStateSnapshot, persistProjectStateSnapshot, flushProjectStatePersist, getProjectDataStatus, getStorageHealthStatus, _deepFindArrays, _isDriverArray, _isCarArray, getDriversArray, getCarsArray, ensureDriversArray, ensureCarsArray, downloadJson, exportStammdaten, buildFullExportState, exportAll, normalizeName, normalizeChipCode, isRestoreStateCandidate, extractRestorePayload, importStammdatenFile, restoreStateFromFile, importStammdatenFromJsonLegacy1, importStammdatenFromJsonLegacy2, importStammdatenFromJson };
 })();

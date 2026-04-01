@@ -9,9 +9,15 @@ window.TIMTIME_OBS = (function(){
   let _pending = new Map();
   let _lastAutoScene = '';
   let _lastAutoKey = '';
+  let _lastAutoSceneErrorKey = '';
   let _lastTextPayloadKey = '';
   let _lastConnectError = '';
   let _reconnectTimer = null;
+  let _reconnectAttempt = 0;
+  let _manualDisconnect = false;
+  let _inventoryCache = { ts:0, scenes:new Set(), inputs:new Set() };
+  const OBS_RECONNECT_DELAYS_MS = [1000, 2000, 5000, 10000, 15000, 30000];
+  const OBS_INVENTORY_CACHE_MS = 15000;
 
   function getInitialStatus(){
     return {
@@ -21,7 +27,15 @@ window.TIMTIME_OBS = (function(){
       identified: false,
       scene: '',
       lastError: '',
-      endpoint: ''
+      endpoint: '',
+      reconnectAttempt: 0,
+      reconnectInMs: 0,
+      validation: {
+        checkedAt: 0,
+        ok: true,
+        missingScenes: [],
+        missingSources: []
+      }
     };
   }
 
@@ -31,6 +45,15 @@ window.TIMTIME_OBS = (function(){
     if(!state.ui.obsStatus || typeof state.ui.obsStatus !== 'object'){
       state.ui.obsStatus = getInitialStatus();
     }
+    if(!state.ui.obsStatus.validation || typeof state.ui.obsStatus.validation !== 'object'){
+      state.ui.obsStatus.validation = getInitialStatus().validation;
+    }
+    if(!Array.isArray(state.ui.obsStatus.validation.missingScenes)) state.ui.obsStatus.validation.missingScenes = [];
+    if(!Array.isArray(state.ui.obsStatus.validation.missingSources)) state.ui.obsStatus.validation.missingSources = [];
+    if(!Number.isFinite(Number(state.ui.obsStatus.validation.checkedAt))) state.ui.obsStatus.validation.checkedAt = 0;
+    if(typeof state.ui.obsStatus.validation.ok !== 'boolean') state.ui.obsStatus.validation.ok = true;
+    if(!Number.isFinite(Number(state.ui.obsStatus.reconnectAttempt))) state.ui.obsStatus.reconnectAttempt = 0;
+    if(!Number.isFinite(Number(state.ui.obsStatus.reconnectInMs))) state.ui.obsStatus.reconnectInMs = 0;
     return state.ui.obsStatus;
   }
 
@@ -43,7 +66,17 @@ window.TIMTIME_OBS = (function(){
 
   function getObsStatus(){
     bindShared();
-    return { ...ensureUiStatus() };
+    const st = ensureUiStatus();
+    const validation = st.validation || {};
+    return {
+      ...st,
+      validation: {
+        checkedAt: Number(validation.checkedAt || 0),
+        ok: !!validation.ok,
+        missingScenes: Array.isArray(validation.missingScenes) ? validation.missingScenes.slice() : [],
+        missingSources: Array.isArray(validation.missingSources) ? validation.missingSources.slice() : []
+      }
+    };
   }
 
   function getObsSettings(){
@@ -70,6 +103,123 @@ window.TIMTIME_OBS = (function(){
   function getObsEndpoint(){
     const cfg = getObsSettings();
     return `ws://${cfg.host}:${cfg.port}`;
+  }
+  function safeNow(){
+    bindShared();
+    return (typeof now === 'function') ? now() : Date.now();
+  }
+  function dedupeNonEmpty(values){
+    const out = [];
+    const seen = new Set();
+    for(const raw of values || []){
+      const v = String(raw || '').trim();
+      if(!v || seen.has(v)) continue;
+      seen.add(v);
+      out.push(v);
+    }
+    return out;
+  }
+  function getReconnectDelayMs(attempt){
+    const idx = Math.max(0, Math.min(OBS_RECONNECT_DELAYS_MS.length - 1, Number(attempt) || 0));
+    return OBS_RECONNECT_DELAYS_MS[idx] || 30000;
+  }
+  function setObsValidationStatus(missingScenes, missingSources){
+    setObsStatus({
+      validation: {
+        checkedAt: safeNow(),
+        ok: !(missingScenes.length || missingSources.length),
+        missingScenes: missingScenes.slice(),
+        missingSources: missingSources.slice()
+      }
+    });
+  }
+  function collectConfiguredTargets(){
+    const cfg = getObsSettings();
+    return {
+      scenes: dedupeNonEmpty([cfg.sceneTraining, cfg.sceneQualifying, cfg.sceneRace, cfg.scenePodium]),
+      sources: dedupeNonEmpty([cfg.sourceTimer, cfg.sourceMode, cfg.sourceTrack, cfg.sourceLeader, cfg.sourceLap, cfg.sourcePlacements])
+    };
+  }
+  async function fetchObsInventory(force=false){
+    const nowTs = safeNow();
+    if(!force && _inventoryCache.ts && (nowTs - _inventoryCache.ts) < OBS_INVENTORY_CACHE_MS){
+      return _inventoryCache;
+    }
+    await connectObs(true);
+    const [sceneData, inputData] = await Promise.all([
+      sendObsRequest('GetSceneList', {}),
+      sendObsRequest('GetInputList', {})
+    ]);
+    _inventoryCache = {
+      ts: nowTs,
+      scenes: new Set((sceneData?.scenes || []).map(s=>String(s?.sceneName || '').trim()).filter(Boolean)),
+      inputs: new Set((inputData?.inputs || []).map(i=>String(i?.inputName || '').trim()).filter(Boolean))
+    };
+    return _inventoryCache;
+  }
+  async function validateObsTargets(forceRefresh=false){
+    const cfg = getObsSettings();
+    if(!cfg.enabled){
+      setObsValidationStatus([], []);
+      return { ok:true, missingScenes:[], missingSources:[], checkedAt:safeNow() };
+    }
+    const targets = collectConfiguredTargets();
+    if(!targets.scenes.length && !targets.sources.length){
+      setObsValidationStatus([], []);
+      return { ok:true, missingScenes:[], missingSources:[], checkedAt:safeNow() };
+    }
+    const inv = await fetchObsInventory(!!forceRefresh);
+    const missingScenes = targets.scenes.filter(name=>!inv.scenes.has(name));
+    const missingSources = targets.sources.filter(name=>!inv.inputs.has(name));
+    setObsValidationStatus(missingScenes, missingSources);
+    return {
+      ok: !(missingScenes.length || missingSources.length),
+      missingScenes,
+      missingSources,
+      checkedAt: safeNow()
+    };
+  }
+  async function ensureObsSceneExists(sceneName){
+    const scene = String(sceneName || '').trim();
+    if(!scene) return true;
+    const inv = await fetchObsInventory(false);
+    if(inv.scenes.has(scene)) return true;
+    setObsValidationStatus([scene], []);
+    throw new Error('obs_scene_not_found:' + scene);
+  }
+  async function ensureObsSourceExists(sourceName){
+    const source = String(sourceName || '').trim();
+    if(!source) return true;
+    const inv = await fetchObsInventory(false);
+    if(inv.inputs.has(source)) return true;
+    setObsValidationStatus([], [source]);
+    throw new Error('obs_source_not_found:' + source);
+  }
+  function scheduleObsReconnect(reason=''){
+    bindShared();
+    if(_manualDisconnect) return;
+    if(_reconnectTimer) return;
+    if(_socket && _socket.readyState === WebSocket.OPEN) return;
+    const cfg = getObsSettings();
+    if(!cfg.enabled) return;
+    const delay = getReconnectDelayMs(_reconnectAttempt);
+    _reconnectAttempt += 1;
+    setObsStatus({
+      reconnectAttempt: _reconnectAttempt,
+      reconnectInMs: delay,
+      lastError: String(reason || _lastConnectError || '')
+    });
+    _reconnectTimer = setTimeout(async ()=>{
+      _reconnectTimer = null;
+      setObsStatus({ reconnectInMs: 0 });
+      try{
+        await connectObs(true);
+      }catch(err){
+        _lastConnectError = String(err?.message || err || 'obs_reconnect_failed');
+        setObsStatus({ lastError: _lastConnectError });
+        scheduleObsReconnect(_lastConnectError);
+      }
+    }, delay);
   }
 
   async function sha256Base64(text){
@@ -100,6 +250,7 @@ window.TIMTIME_OBS = (function(){
       try{ pending.reject(new Error('obs_disconnected')); }catch{}
     }
     _pending.clear();
+    _inventoryCache = { ts:0, scenes:new Set(), inputs:new Set() };
   }
 
   function handleRequestResponse(msg){
@@ -148,8 +299,9 @@ window.TIMTIME_OBS = (function(){
     if(_socket && _socket.readyState === WebSocket.OPEN) return true;
     if(_connectPromise) return _connectPromise;
 
+    _manualDisconnect = false;
     cleanupSocket(false);
-    setObsStatus({ available:true, connecting:true, connected:false, identified:false, lastError:'', endpoint });
+    setObsStatus({ available:true, connecting:true, connected:false, identified:false, lastError:'', endpoint, reconnectInMs:0 });
 
     _connectPromise = new Promise((resolve, reject)=>{
       let settled = false;
@@ -167,7 +319,9 @@ window.TIMTIME_OBS = (function(){
       const ok = ()=>{
         if(settled) return;
         settled = true;
-        setObsStatus({ connecting:false, connected:true, identified:true, lastError:'', endpoint });
+        _reconnectAttempt = 0;
+        _lastAutoSceneErrorKey = '';
+        setObsStatus({ connecting:false, connected:true, identified:true, lastError:'', endpoint, reconnectAttempt:0, reconnectInMs:0 });
         saveState();
         resolve(true);
       };
@@ -181,6 +335,7 @@ window.TIMTIME_OBS = (function(){
         }
         setObsStatus({ connecting:false, connected:false, identified:false, scene:'' });
         cleanupSocket(false);
+        scheduleObsReconnect('obs_connection_closed');
       };
       ws.onmessage = async (event)=>{
         try{
@@ -209,41 +364,52 @@ window.TIMTIME_OBS = (function(){
 
   async function disconnectObs(){
     bindShared();
+    _manualDisconnect = true;
+    _reconnectAttempt = 0;
     cleanupSocket(true);
-    setObsStatus({ connecting:false, connected:false, identified:false, scene:'' });
+    setObsStatus({ connecting:false, connected:false, identified:false, scene:'', reconnectAttempt:0, reconnectInMs:0 });
     saveState();
     return true;
   }
 
-  async function sendObsRequest(requestType, requestData){
+  async function sendObsRequest(requestType, requestData, retryCount=0){
     bindShared();
-    if(!_socket || _socket.readyState !== WebSocket.OPEN){
-      const connected = await connectObs(true).catch(()=>false);
-      if(!connected || !_socket || _socket.readyState !== WebSocket.OPEN) throw new Error('obs_not_connected');
-    }
-    const requestId = 'obs_' + (_requestId++);
-    return await new Promise((resolve, reject)=>{
-      _pending.set(requestId, { resolve, reject });
-      try{
-        _socket.send(JSON.stringify({
-          op: 6,
-          d: {
-            requestType: String(requestType || ''),
-            requestId,
-            requestData: requestData || {}
-          }
-        }));
-      }catch(err){
-        _pending.delete(requestId);
-        reject(err);
+    try{
+      if(!_socket || _socket.readyState !== WebSocket.OPEN){
+        const connected = await connectObs(true).catch(()=>false);
+        if(!connected || !_socket || _socket.readyState !== WebSocket.OPEN) throw new Error('obs_not_connected');
       }
-    });
+      const requestId = 'obs_' + (_requestId++);
+      return await new Promise((resolve, reject)=>{
+        _pending.set(requestId, { resolve, reject });
+        try{
+          _socket.send(JSON.stringify({
+            op: 6,
+            d: {
+              requestType: String(requestType || ''),
+              requestId,
+              requestData: requestData || {}
+            }
+          }));
+        }catch(err){
+          _pending.delete(requestId);
+          reject(err);
+        }
+      });
+    }catch(err){
+      if(Number(retryCount || 0) >= 1) throw err;
+      cleanupSocket(false);
+      const connected = await connectObs(true).catch(()=>false);
+      if(!connected) throw err;
+      return await sendObsRequest(requestType, requestData, Number(retryCount || 0) + 1);
+    }
   }
 
   async function setObsScene(sceneName){
     bindShared();
     const scene = String(sceneName || '').trim();
     if(!scene) return false;
+    await ensureObsSceneExists(scene);
     await sendObsRequest('SetCurrentProgramScene', { sceneName: scene });
     setObsStatus({ scene });
     return true;
@@ -252,6 +418,7 @@ window.TIMTIME_OBS = (function(){
   async function setObsTextSource(sourceName, textValue){
     const inputName = String(sourceName || '').trim();
     if(!inputName) return false;
+    await ensureObsSourceExists(inputName);
     await sendObsRequest('SetInputSettings', {
       inputName,
       inputSettings: {
@@ -308,16 +475,20 @@ window.TIMTIME_OBS = (function(){
     const desiredScene = inferObsSceneName();
     const desiredKey = inferObsSceneKey();
     if(!desiredScene) return false;
+    const errorKey = desiredScene + '|' + desiredKey;
     if(!force && desiredScene === _lastAutoScene && desiredKey === _lastAutoKey) return false;
+    if(!force && _lastAutoSceneErrorKey === errorKey) return false;
     try{
       await connectObs(true);
       await setObsScene(desiredScene);
       _lastAutoScene = desiredScene;
       _lastAutoKey = desiredKey;
+      _lastAutoSceneErrorKey = '';
       return true;
     }catch(err){
       _lastConnectError = String(err?.message || err || 'obs_auto_scene_failed');
       setObsStatus({ lastError:_lastConnectError, connected:false, connecting:false, identified:false });
+      _lastAutoSceneErrorKey = errorKey;
       return false;
     }
   }
@@ -369,11 +540,21 @@ window.TIMTIME_OBS = (function(){
     const payloadKey = JSON.stringify(entries);
     if(!force && payloadKey === _lastTextPayloadKey) return false;
     await connectObs(true);
-    for(const [sourceName, value] of entries){
+    let validation = null;
+    try{
+      validation = await validateObsTargets(false);
+    }catch{}
+    const missingSourceSet = new Set(Array.isArray(validation?.missingSources) ? validation.missingSources : []);
+    const validEntries = entries.filter(([sourceName])=>!missingSourceSet.has(String(sourceName || '').trim()));
+    if(!validEntries.length && missingSourceSet.size){
+      _lastTextPayloadKey = payloadKey;
+      throw new Error('obs_sources_missing:' + Array.from(missingSourceSet).join(', '));
+    }
+    for(const [sourceName, value] of validEntries){
       await setObsTextSource(sourceName, value);
     }
     _lastTextPayloadKey = payloadKey;
-    return true;
+    return validEntries.length > 0;
   }
 
   async function obsAutoConnectOnLoad(){
@@ -381,6 +562,7 @@ window.TIMTIME_OBS = (function(){
     if(!cfg.enabled) return false;
     try{
       await connectObs(true);
+      try{ await validateObsTargets(true); }catch{}
       return true;
     }catch{
       return false;
@@ -395,6 +577,7 @@ window.TIMTIME_OBS = (function(){
     setObsScene,
     testObsScene,
     setObsTextSource,
+    validateObsTargets,
     syncObsTextSources,
     syncObsAutoScene,
     obsAutoConnectOnLoad

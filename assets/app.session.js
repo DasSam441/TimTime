@@ -497,6 +497,7 @@ function singleTick(){
 
 // --------------------- Session controls ---------------------
   const PASS_DEBOUNCE_MS = 700;
+  const MAX_REASONABLE_LAP_MS = 30 * 60 * 1000;
 
   
   async function sessionStart(){
@@ -1041,6 +1042,11 @@ function finishRaceNow(reason){
     let anchorTs = state.session.lastPassByCarId[car.id];
     if(lastSeenTs && (ts - lastSeenTs) < PASS_DEBOUNCE_MS) return;
     state.session.lastPassSeenByCarId[car.id] = ts;
+    if(Number.isFinite(Number(anchorTs)) && Number(ts) <= Number(anchorTs)){
+      state.session.lastPassByCarId[car.id] = ts;
+      logLine(`Timing Guard: ${car.name} Zeitstempel Ruecksprung erkannt -> Startmarker neu gesetzt`);
+      return;
+    }
 
     const raceId = state.session.currentRaceId || '';
     const phase = currentPhase();
@@ -1128,6 +1134,11 @@ function finishRaceNow(reason){
     }
     if(!Number.isFinite(Number(lapMs)) || lapMs<=0){
       logLine(`Lap ignoriert: ${car.name} - keine gueltige MRC-Rundenzeit`);
+      return;
+    }
+    if(Number(lapMs) > MAX_REASONABLE_LAP_MS){
+      state.session.lastPassByCarId[car.id] = ts;
+      logLine(`Timing Guard: ${car.name} unplausible Rundenzeit ${msToTime(lapMs, 3)} -> als Startmarker gewertet`);
       return;
     }
     if(minLap && lapMs < minLap){

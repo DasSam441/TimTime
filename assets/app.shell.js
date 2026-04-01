@@ -170,6 +170,52 @@ function loadUi(){
       });
     }catch{}
   }
+  function formatStorageClock(ts){
+    bindShared();
+    const n = Number(ts || 0);
+    if(!Number.isFinite(n) || n <= 0) return '-';
+    try{
+      return new Date(n).toLocaleTimeString(getUiLocale(), { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }catch{
+      return String(n);
+    }
+  }
+  function renderStorageStatusBadge(){
+    bindShared();
+    const badge = document.getElementById('storageStatusBadge');
+    if(!badge) return;
+    const hasProjectFolder = !!String(state.settings?.projectDataFolderName || '').trim();
+    const info = (typeof getStorageHealthStatus === 'function') ? getStorageHealthStatus() : null;
+    if(!info){
+      badge.textContent = 'Speicher: -';
+      badge.classList.remove('ok','warn','err');
+      return;
+    }
+    let status = 'ok';
+    let label = 'Speicher: OK';
+    if(info.lastLocalSaveOk === false){
+      status = 'err';
+      label = 'Speicher: Fehler';
+    }else if(hasProjectFolder && info.lastProjectSaveOk === false){
+      status = 'warn';
+      label = 'Speicher: Warnung';
+    }else if(hasProjectFolder && Number(info.lastProjectSaveAt || 0) <= 0){
+      status = 'warn';
+      label = 'Speicher: pruefen';
+    }
+    badge.textContent = label;
+    badge.classList.remove('ok','warn','err');
+    badge.classList.add(status);
+    const tipParts = [
+      'Lokal: ' + (info.lastLocalSaveOk === false ? 'Fehler' : 'OK'),
+      'Letzter lokaler Save: ' + formatStorageClock(info.lastLocalSaveAt),
+      'Projektordner: ' + (hasProjectFolder ? (info.lastProjectSaveOk === false ? 'Fehler' : 'OK') : 'nicht verbunden'),
+      'Letzter Projekt-Save: ' + formatStorageClock(info.lastProjectSaveAt)
+    ];
+    if(info.lastLocalSaveError) tipParts.push('Lokaler Fehler: ' + String(info.lastLocalSaveError));
+    if(info.lastProjectSaveError) tipParts.push('Projekt-Fehler: ' + String(info.lastProjectSaveError));
+    badge.title = tipParts.join(' | ');
+  }
 
   function renderHeader(){
     bindShared();
@@ -178,6 +224,7 @@ function loadUi(){
 if(sub) sub.textContent = t('header.subtitle', { build:BUILD }, 'offline - HTML/JS/CSS - build ' + BUILD);
     setUsbUi(state.usb.connected);
     setBleUi(state.ble.connected);
+    renderStorageStatusBadge();
   }
 
   async function renderGlobalProjectDataWarning(){
@@ -185,9 +232,20 @@ if(sub) sub.textContent = t('header.subtitle', { build:BUILD }, 'offline - HTML/
     const bar = document.getElementById('globalProjectDataWarning');
     if(!bar) return;
     try{
+      const storage = (typeof getStorageHealthStatus === 'function') ? getStorageHealthStatus() : null;
+      if(storage && storage.lastLocalSaveOk === false){
+        bar.style.display = '';
+        bar.textContent = 'Wichtige Warnung: Lokales Speichern ist fehlgeschlagen. Fehler: ' + String(storage.lastLocalSaveError || 'Unbekannter Fehler');
+        return;
+      }
       if(typeof getProjectDataStatus !== 'function'){
-        bar.style.display = 'none';
-        bar.textContent = '';
+        if(storage && storage.lastProjectSaveOk === false){
+          bar.style.display = '';
+          bar.textContent = 'Wichtige Warnung: Projekt-Speichern fehlgeschlagen. Fehler: ' + String(storage.lastProjectSaveError || 'Unbekannter Fehler');
+        }else{
+          bar.style.display = 'none';
+          bar.textContent = '';
+        }
         return;
       }
       const status = await getProjectDataStatus();
@@ -204,6 +262,11 @@ if(sub) sub.textContent = t('header.subtitle', { build:BUILD }, 'offline - HTML/
       if(!status.reachable){
         bar.style.display = '';
         bar.textContent = 'Wichtige Warnung: Der verbundene TimTime-Datenordner ist aktuell nicht erreichbar oder die Freigabe fehlt.';
+        return;
+      }
+      if(storage && storage.lastProjectSaveOk === false){
+        bar.style.display = '';
+        bar.textContent = 'Wichtige Warnung: Speichern in den verbundenen TimTime-Ordner ist fehlgeschlagen. Fehler: ' + String(storage.lastProjectSaveError || 'Unbekannter Fehler');
         return;
       }
       bar.style.display = 'none';
@@ -421,6 +484,7 @@ if(sub) sub.textContent = t('header.subtitle', { build:BUILD }, 'offline - HTML/
   }
 
   let lastDashRenderTs = 0;
+  let lastStorageBadgeTs = 0;
 function tick(){
     bindShared();
     const t = document.getElementById('scTimer');
@@ -436,6 +500,11 @@ function tick(){
       }
     }
 
+    }
+    const nowTick = now();
+    if(nowTick - lastStorageBadgeTs > 1000){
+      lastStorageBadgeTs = nowTick;
+      try{ renderStorageStatusBadge(); }catch{}
     }
     
     // Race countdown / finish announcements
@@ -512,6 +581,7 @@ sendPresenterSnapshot();
     try{ renderSessionControl(); }catch{}
     try{ if(state.ui.activeTab==='Dashboard') renderDashboard(); }catch{}
     try{ sendPresenterSnapshot(false); }catch{}
+    try{ renderStorageStatusBadge(); }catch{}
   }
 
   setInterval(()=>{

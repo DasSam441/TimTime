@@ -209,10 +209,16 @@ if(!getUsbStopRead()){
   // --------------------- Pass queue (messkritischer Kern zuerst) ---------------------
   let passQueue = [];
   let passQueueBusy = false;
+  const PASS_QUEUE_WARN_THRESHOLD = 120;
+  let passQueueWarned = false;
 
   function enqueuePass(chip, ts, rawLine=''){
     bindShared();
     passQueue.push({ chip, ts, rawLine });
+    if(passQueue.length > PASS_QUEUE_WARN_THRESHOLD && !passQueueWarned){
+      passQueueWarned = true;
+      try{ logLine('Timing Guard: Pass-Queue hoch (' + String(passQueue.length) + ')'); }catch{}
+    }
     if(passQueueBusy) return;
     passQueueBusy = true;
     setTimeout(processPassQueue, 0);
@@ -234,9 +240,11 @@ if(!getUsbStopRead()){
       }
     } finally {
       if(passQueue.length){
+        if(passQueue.length < Math.floor(PASS_QUEUE_WARN_THRESHOLD / 2)) passQueueWarned = false;
         setTimeout(processPassQueue, 0);
       } else {
         passQueueBusy = false;
+        passQueueWarned = false;
       }
     }
   }

@@ -1263,7 +1263,10 @@ function renderRenntag(){
               </div>
               <div class="settings-actions">
                 <button class="btn" id="btnObsSyncText" type="button">Textquellen jetzt aktualisieren</button>
+                <button class="btn" id="btnObsValidateSources" type="button">Quellen pruefen</button>
               </div>
+              <div class="muted small" id="obsSourceValidationLine">OBS-Quellen: nicht geprueft</div>
+              <div class="muted small" id="obsReconnectLine"></div>
             </div>
           </div>
         </div>
@@ -1277,17 +1280,44 @@ function renderRenntag(){
       saveState();
     };
     const obsStatusLine = root.querySelector('#obsStatusLine');
+    const obsSourceValidationLine = root.querySelector('#obsSourceValidationLine');
+    const obsReconnectLine = root.querySelector('#obsReconnectLine');
     const refreshObsStatus = ()=>{
-      if(!obsStatusLine) return;
       const st = (typeof getObsStatus === 'function') ? getObsStatus() : {};
-      if(st.connecting){ obsStatusLine.textContent = 'OBS: verbinde ...'; return; }
-      if(st.connected){
-        const sceneText = String(st.scene || '').trim();
-        obsStatusLine.textContent = sceneText ? `OBS: verbunden • Szene ${sceneText}` : 'OBS: verbunden';
-        return;
+      if(obsStatusLine){
+        if(st.connecting){ obsStatusLine.textContent = 'OBS: verbinde ...'; }
+        else if(st.connected){
+          const sceneText = String(st.scene || '').trim();
+          obsStatusLine.textContent = sceneText ? `OBS: verbunden • Szene ${sceneText}` : 'OBS: verbunden';
+        }else if(st.lastError){
+          obsStatusLine.textContent = `OBS: Fehler • ${String(st.lastError)}`;
+        }else{
+          obsStatusLine.textContent = 'OBS: nicht verbunden';
+        }
       }
-      if(st.lastError){ obsStatusLine.textContent = `OBS: Fehler • ${String(st.lastError)}`; return; }
-      obsStatusLine.textContent = 'OBS: nicht verbunden';
+      if(obsSourceValidationLine){
+        const validation = st.validation || {};
+        const missingScenes = Array.isArray(validation.missingScenes) ? validation.missingScenes : [];
+        const missingSources = Array.isArray(validation.missingSources) ? validation.missingSources : [];
+        if(missingScenes.length || missingSources.length){
+          const sceneTxt = missingScenes.length ? ('Szenen fehlen: ' + missingScenes.join(', ')) : '';
+          const sourceTxt = missingSources.length ? ('Quellen fehlen: ' + missingSources.join(', ')) : '';
+          obsSourceValidationLine.textContent = [sceneTxt, sourceTxt].filter(Boolean).join(' | ');
+        }else if(Number(validation.checkedAt || 0) > 0){
+          obsSourceValidationLine.textContent = 'OBS-Quellen: OK';
+        }else{
+          obsSourceValidationLine.textContent = 'OBS-Quellen: nicht geprueft';
+        }
+      }
+      if(obsReconnectLine){
+        const inMs = Number(st.reconnectInMs || 0);
+        if(inMs > 0){
+          const sec = Math.max(1, Math.ceil(inMs / 1000));
+          obsReconnectLine.textContent = `Auto-Reconnect in ${sec}s (Versuch ${Math.max(1, Number(st.reconnectAttempt || 1))})`;
+        }else{
+          obsReconnectLine.textContent = '';
+        }
+      }
     };
     refreshObsStatus();
 
@@ -1297,7 +1327,12 @@ function renderRenntag(){
       btnObsConnect.disabled = true;
       const prev = btnObsConnect.textContent;
       btnObsConnect.textContent = 'Verbinde ...';
-      try{ await connectObs(true); refreshObsStatus(); toast('OBS','OBS verbunden.','ok'); }
+      try{
+        await connectObs(true);
+        try{ if(typeof validateObsTargets === 'function') await validateObsTargets(true); }catch{}
+        refreshObsStatus();
+        toast('OBS','OBS verbunden.','ok');
+      }
       catch(err){ refreshObsStatus(); toast('OBS','OBS Verbindung fehlgeschlagen.','err'); logLine('OBS Connect Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }
       finally{ btnObsConnect.disabled = false; btnObsConnect.textContent = prev; }
     };
@@ -1328,6 +1363,42 @@ function renderRenntag(){
       try{ await syncObsTextSources(true); refreshObsStatus(); toast('OBS','Textquellen aktualisiert.','ok'); }
       catch(err){ refreshObsStatus(); toast('OBS','Textquellen konnten nicht gesetzt werden.','err'); logLine('OBS Textquellen Fehler: ' + String(err?.message || err || 'Unbekannter Fehler')); }
     };
+    const btnObsValidateSources = root.querySelector('#btnObsValidateSources');
+    if(btnObsValidateSources) btnObsValidateSources.onclick = async ()=>{
+      applyObsDraft();
+      btnObsValidateSources.disabled = true;
+      const prev = btnObsValidateSources.textContent;
+      btnObsValidateSources.textContent = 'Pruefe ...';
+      try{
+        if(typeof validateObsTargets === 'function'){
+          await connectObs(true);
+          const result = await validateObsTargets(true);
+          refreshObsStatus();
+          if(result?.ok) toast('OBS', 'OBS-Quellen sind gueltig.', 'ok');
+          else toast('OBS', 'OBS-Quellen unvollstaendig. Bitte Namen pruefen.', 'warn');
+        }else{
+          toast('OBS', 'Quellenpruefung ist aktuell nicht verfuegbar.', 'warn');
+        }
+      }catch(err){
+        refreshObsStatus();
+        toast('OBS','Quellenpruefung fehlgeschlagen.','err');
+        logLine('OBS Quellenpruefung Fehler: ' + String(err?.message || err || 'Unbekannter Fehler'));
+      }finally{
+        btnObsValidateSources.disabled = false;
+        btnObsValidateSources.textContent = prev;
+      }
+    };
+    try{
+      if(root.__obsStatusTimer) clearInterval(root.__obsStatusTimer);
+      root.__obsStatusTimer = setInterval(()=>{
+        if(!document.body.contains(root)){
+          try{ clearInterval(root.__obsStatusTimer); }catch{}
+          root.__obsStatusTimer = null;
+          return;
+        }
+        refreshObsStatus();
+      }, 1000);
+    }catch{}
   }
 
   function renderOBS(){
